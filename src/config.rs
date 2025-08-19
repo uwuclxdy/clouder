@@ -102,6 +102,34 @@ impl Config {
             },
         })
     }
+    
+    #[cfg(test)]
+    pub fn test_config() -> Self {
+        Self {
+            discord: DiscordConfig {
+                token: "test_token".to_string(),
+                application_id: 12345,
+            },
+            web: WebConfig {
+                host: "127.0.0.1".to_string(),
+                port: 3000,
+                base_url: "http://localhost:3000".to_string(),
+                oauth: OAuthConfig {
+                    client_id: "test_client_id".to_string(),
+                    client_secret: "test_client_secret".to_string(),
+                    redirect_uri: "http://localhost:3000/auth/callback".to_string(),
+                },
+                embed: EmbedConfig {
+                    directory: "test_embed_files".to_string(),
+                    max_age_hours: 24,
+                    cleanup_interval_hours: 6,
+                },
+            },
+            database: DatabaseConfig {
+                url: ":memory:".to_string(),
+            },
+        }
+    }
 }
 
 #[derive(Clone)]

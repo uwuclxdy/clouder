@@ -5,6 +5,9 @@ mod events;
 mod web;
 mod utils;
 
+#[cfg(test)]
+mod tests;
+
 use crate::config::{Config, AppState};
 use crate::commands::selfroles::selfroles;
 use crate::commands::video::{video, video_help, cleanup_embeds};
@@ -119,6 +122,9 @@ async fn event_handler(
         }
         serenity::FullEvent::InteractionCreate { interaction } => {
             events::handle_interaction_create(ctx, interaction, data).await;
+        }
+        serenity::FullEvent::MessageDelete { channel_id, deleted_message_id, guild_id } => {
+            events::handle_message_delete(ctx, channel_id, deleted_message_id, guild_id, data).await;
         }
         _ => {}
     }

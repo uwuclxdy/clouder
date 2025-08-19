@@ -8,6 +8,12 @@ pub async fn cleanup_old_embeds(directory: &str, max_age_hours: u64) -> Result<(
         return Ok(());
     }
     
+    // If max_age_hours is 0, cleanup is disabled
+    if max_age_hours == 0 {
+        tracing::debug!("Embed cleanup skipped (max_age_hours=0)");
+        return Ok(());
+    }
+    
     let max_age_seconds = max_age_hours * 3600;
     let current_time = SystemTime::now()
         .duration_since(UNIX_EPOCH)?

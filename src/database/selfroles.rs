@@ -25,6 +25,7 @@ pub struct SelfRoleRole {
 }
 
 #[derive(Debug, sqlx::FromRow)]
+#[allow(dead_code)]
 pub struct SelfRoleCooldown {
     pub user_id: String,
     pub role_id: String,
@@ -164,6 +165,7 @@ impl SelfRoleConfig {
         Ok(roles)
     }
     
+    #[allow(dead_code)]
     pub async fn delete_by_message_id(
         pool: &SqlitePool,
         message_id: &str,
@@ -176,6 +178,7 @@ impl SelfRoleConfig {
         Ok(result.rows_affected() > 0)
     }
     
+    #[allow(dead_code)]
     pub async fn get_by_guild_id(
         pool: &SqlitePool,
         guild_id: u64,
@@ -190,6 +193,7 @@ impl SelfRoleConfig {
         Ok(configs)
     }
     
+    #[allow(dead_code)]
     pub async fn get_by_message_id_u64(
         pool: &SqlitePool,
         message_id: u64,

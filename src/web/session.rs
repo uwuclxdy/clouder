@@ -20,30 +20,44 @@ pub struct GuildInfo {
 
 #[derive(Deserialize)]
 pub struct DiscordUser {
+    #[allow(dead_code)]
     pub id: String,
+    #[allow(dead_code)]
     pub username: String,
+    #[allow(dead_code)]
     pub avatar: Option<String>,
 }
 
 #[derive(Deserialize)]
 pub struct DiscordGuild {
+    #[allow(dead_code)]
     pub id: String,
+    #[allow(dead_code)]
     pub name: String,
+    #[allow(dead_code)]
     pub icon: Option<String>,
+    #[allow(dead_code)]
     pub permissions: String,
+    #[allow(dead_code)]
     pub owner: bool,
 }
 
 #[derive(Deserialize)]
 pub struct TokenResponse {
+    #[allow(dead_code)]
     pub access_token: String,
+    #[allow(dead_code)]
     pub token_type: String,
+    #[allow(dead_code)]
     pub expires_in: u64,
+    #[allow(dead_code)]
     pub refresh_token: String,
+    #[allow(dead_code)]
     pub scope: String,
 }
 
 impl UserSession {
+    #[allow(dead_code)]
     pub fn has_manage_roles_in_guild(&self, guild_id: &str) -> bool {
         if let Some(guild) = self.guilds.iter().find(|g| g.id == guild_id) {
             if guild.owner {
@@ -58,6 +72,7 @@ impl UserSession {
         }
     }
     
+    #[allow(dead_code)]
     pub fn get_manageable_guilds(&self) -> Vec<&GuildInfo> {
         self.guilds.iter()
             .filter(|guild| {

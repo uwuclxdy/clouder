@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Edit Self-Role Message - {{GUILD_NAME}}</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        {{COMMON_CSS}}
+        {{DASHBOARD_CSS}}
+    </style>
+</head>
+<body>
+    <a href="/dashboard/{{GUILD_ID}}/selfroles" class="back-btn">← Back to Self-Roles</a>
+    <div class="container">
+        <div class="header">
+            <h1>Edit Self-Role Message</h1>
+            <p>Edit interactive role assignment message for {{GUILD_NAME}}</p>
+        </div>
+        <div class="main-content">
+            <div class="form-section">
+                <form id="selfRoleForm">
+                    <div class="form-group">
+                        <label for="channel">Target Channel:</label>
+                        <select id="channel" name="channel_id" required>
+                            <option value="">Loading channels...</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="title">Embed Title:</label>
+                        <input type="text" id="title" name="title" placeholder="Choose your roles" required maxlength="256">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="body">Embed Description:</label>
+                        <textarea id="body" name="body" placeholder="Click the buttons below to assign yourself roles..." required maxlength="2048"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Selection Type:</label>
+                        <div class="selection-type">
+                            <div class="radio-group">
+                                <input type="radio" id="multiple" name="selection_type" value="multiple" checked>
+                                <label for="multiple">Multiple Selection</label>
+                            </div>
+                            <div class="radio-group">
+                                <input type="radio" id="radio" name="selection_type" value="radio">
+                                <label for="radio">Single Selection</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Roles:</label>
+                        <div style="background: rgba(255, 193, 7, 0.2); border-left: 4px solid #ffc107; padding: 12px; border-radius: 4px; margin-bottom: 15px; color: #fff3cd;">
+                            <strong>ℹ️ Role Hierarchy Notice:</strong> Only roles that are below at least one of the bot's roles in the server hierarchy can be assigned through self-roles. If you don't see a role here, make sure at least one of the bot's roles is positioned above it in Server Settings → Roles.
+                        </div>
+                        <div class="roles-section">
+                            <div id="rolesList">
+                                <div class="loading">Loading server roles...</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn full-width" id="deployBtn" disabled>
+                        Update Self-Role Message
+                    </button>
+                </form>
+            </div>
+
+            <div class="preview-section">
+                <h3>Live Preview</h3>
+                <div class="preview-embed">
+                    <div class="preview-title" id="previewTitle">Choose your roles</div>
+                    <div class="preview-body" id="previewBody">Click the buttons below to assign yourself roles...</div>
+                </div>
+                <div class="preview-buttons" id="previewButtons">
+                    <!-- Buttons will be generated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        {{COMMON_JS}}
+        {{SELFROLES_JS}}
+
+        const guildId = '{{GUILD_ID}}';
+        const configId = '{{CONFIG_ID}}';
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            selfRoleManager = new SelfRoleManager(guildId, configId);
+            await selfRoleManager.init();
+        });
+    </script>
+</body>
+</html>

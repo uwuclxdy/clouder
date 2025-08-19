@@ -14,6 +14,28 @@ pub async fn handle_interaction_create(
     }
 }
 
+pub async fn handle_message_delete(
+    _ctx: &serenity::Context,
+    _channel_id: &serenity::ChannelId,
+    deleted_message_id: &serenity::MessageId,
+    _guild_id: &Option<serenity::GuildId>,
+    data: &AppState,
+) {
+    let message_id_str = deleted_message_id.to_string();
+    
+    // Check if this was a self-role message
+    if let Ok(Some(config)) = crate::database::selfroles::SelfRoleConfig::get_by_message_id(&data.db, &message_id_str).await {
+        tracing::info!("Self-role message deleted from Discord: {}, cleaning up database", message_id_str);
+        
+        // Delete the configuration from database
+        if let Err(e) = config.delete(&data.db).await {
+            tracing::error!("Failed to delete self-role config after Discord message deletion: {}", e);
+        } else {
+            tracing::info!("Successfully cleaned up self-role config for deleted message: {}", message_id_str);
+        }
+    }
+}
+
 async fn handle_component_interaction(
     ctx: &serenity::Context,
     interaction: &serenity::ComponentInteraction,

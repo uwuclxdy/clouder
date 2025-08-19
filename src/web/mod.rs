@@ -2,7 +2,7 @@ use crate::config::AppState;
 use axum::{
     extract::{Path, State},
     http::{StatusCode, HeaderMap},
-    routing::{get, post},
+    routing::{get, post, delete, put},
     Json, Router,
 };
 use serde::{Deserialize, Serialize};
@@ -24,9 +24,11 @@ pub fn create_router(app_state: AppState) -> Router {
         .route("/auth/callback", get(auth::callback))
         .route("/auth/logout", get(auth::logout))
         .route("/dashboard/{guild_id}", get(dashboard::guild_dashboard))
-        .route("/dashboard/{guild_id}/selfroles", get(dashboard::selfroles_dashboard))
+        .route("/dashboard/{guild_id}/selfroles", get(dashboard::selfroles_list))
+        .route("/dashboard/{guild_id}/selfroles/new", get(dashboard::selfroles_create))
+        .route("/dashboard/{guild_id}/selfroles/edit/{config_id}", get(dashboard::selfroles_edit))
         .route("/api/selfroles/{guild_id}", get(api_get_selfroles).post(api_create_selfroles))
-        .route("/api/selfroles/{guild_id}/{config_id}", get(api_get_selfrole_config).post(api_update_selfroles))
+        .route("/api/selfroles/{guild_id}/{config_id}", get(api_get_selfrole_config).put(api_update_selfroles).delete(api_delete_selfroles))
         .route("/api/guild/{guild_id}/channels", get(api_get_channels))
         .route("/api/guild/{guild_id}/roles", get(api_get_roles))
         .route("/debug/sessions", get(debug_sessions))
@@ -173,6 +175,36 @@ async fn api_create_selfroles(
         return Err(StatusCode::FORBIDDEN);
     }
 
+    // Validate title and body are not empty
+    if payload.title.trim().is_empty() {
+        return Ok(Json(serde_json::json!({
+            "success": false,
+            "message": "Title cannot be empty"
+        })));
+    }
+    
+    if payload.body.trim().is_empty() {
+        return Ok(Json(serde_json::json!({
+            "success": false,
+            "message": "Body cannot be empty"
+        })));
+    }
+    
+    // Validate title and body length
+    if payload.title.len() > 256 {
+        return Ok(Json(serde_json::json!({
+            "success": false,
+            "message": "Title must be 256 characters or less"
+        })));
+    }
+    
+    if payload.body.len() > 2048 {
+        return Ok(Json(serde_json::json!({
+            "success": false,
+            "message": "Body must be 2048 characters or less"
+        })));
+    }
+
     // Validate selection type
     if payload.selection_type != "radio" && payload.selection_type != "multiple" {
         return Ok(Json(serde_json::json!({
@@ -315,14 +347,188 @@ async fn api_create_selfroles(
 
 async fn api_update_selfroles(
     headers: HeaderMap,
-    State(_state): State<AppState>,
-    Path((_guild_id, _config_id)): Path<(String, String)>,
-    Json(_payload): Json<CreateSelfRoleRequest>,
+    State(state): State<AppState>,
+    Path((guild_id, config_id)): Path<(String, String)>,
+    Json(payload): Json<CreateSelfRoleRequest>,
 ) -> Result<Json<serde_json::Value>, StatusCode> {
-    let _session = extract_session_data(&headers).await?;
+    let (_, user) = extract_session_data(&headers).await
+        .map_err(|_| StatusCode::UNAUTHORIZED)?;
+    
+    let user = user.ok_or(StatusCode::UNAUTHORIZED)?;
+    
+    if !user.has_manage_roles_in_guild(&guild_id) {
+        return Err(StatusCode::FORBIDDEN);
+    }
+    
+    let config_id: i64 = config_id.parse().map_err(|_| StatusCode::BAD_REQUEST)?;
+    
+    // Validate title and body are not empty
+    if payload.title.trim().is_empty() {
+        return Ok(Json(serde_json::json!({
+            "success": false,
+            "message": "Title cannot be empty"
+        })));
+    }
+    
+    if payload.body.trim().is_empty() {
+        return Ok(Json(serde_json::json!({
+            "success": false,
+            "message": "Body cannot be empty"
+        })));
+    }
+    
+    // Validate title and body length
+    if payload.title.len() > 256 {
+        return Ok(Json(serde_json::json!({
+            "success": false,
+            "message": "Title must be 256 characters or less"
+        })));
+    }
+    
+    if payload.body.len() > 2048 {
+        return Ok(Json(serde_json::json!({
+            "success": false,
+            "message": "Body must be 2048 characters or less"
+        })));
+    }
+    
+    // Validate selection type
+    if payload.selection_type != "radio" && payload.selection_type != "multiple" {
+        return Ok(Json(serde_json::json!({
+            "success": false,
+            "message": "Invalid selection type. Must be 'radio' or 'multiple'"
+        })));
+    }
+    
+    // Validate roles count
+    if payload.roles.is_empty() {
+        return Ok(Json(serde_json::json!({
+            "success": false,
+            "message": "At least one role must be selected"
+        })));
+    }
+    
+    if payload.roles.len() > 25 {
+        return Ok(Json(serde_json::json!({
+            "success": false,
+            "message": "Maximum 25 roles allowed per self-role message"
+        })));
+    }
+    
+    // Get existing config and verify it belongs to this guild
+    let configs = match crate::database::selfroles::SelfRoleConfig::get_by_guild(&state.db, &guild_id).await {
+        Ok(configs) => configs,
+        Err(e) => {
+            tracing::error!("Failed to fetch self-role configs for guild {}: {}", guild_id, e);
+            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+        }
+    };
+    
+    let mut config = match configs.into_iter().find(|c| c.id == config_id) {
+        Some(config) => config,
+        None => return Err(StatusCode::NOT_FOUND),
+    };
+    
+    // Update the config
+    if let Err(e) = config.update(
+        &state.db,
+        &payload.title,
+        &payload.body,
+        &payload.selection_type,
+    ).await {
+        tracing::error!("Failed to update self-role config: {}", e);
+        return Ok(Json(serde_json::json!({
+            "success": false,
+            "message": "Failed to update configuration"
+        })));
+    }
+    
+    // Delete existing roles for this config
+    if let Err(e) = crate::database::selfroles::SelfRoleRole::delete_by_config_id(&state.db, config.id).await {
+        tracing::error!("Failed to delete existing roles for config {}: {}", config.id, e);
+        return Ok(Json(serde_json::json!({
+            "success": false,
+            "message": "Failed to update role configuration"
+        })));
+    }
+    
+    // Create new role entries
+    for role_data in &payload.roles {
+        if let Err(e) = crate::database::selfroles::SelfRoleRole::create(
+            &state.db,
+            config.id,
+            &role_data.role_id,
+            &role_data.emoji,
+        ).await {
+            tracing::error!("Failed to create self-role entry: {}", e);
+            return Ok(Json(serde_json::json!({
+                "success": false,
+                "message": "Failed to save role configuration"
+            })));
+        }
+    }
+    
+    // Update Discord message if message_id exists
+    if let Some(message_id) = &config.message_id {
+        let guild_id_u64: u64 = guild_id.parse().map_err(|_| StatusCode::BAD_REQUEST)?;
+        let channel_id_u64: u64 = config.channel_id.parse().map_err(|_| StatusCode::BAD_REQUEST)?;
+        let message_id_u64: u64 = message_id.parse().map_err(|_| StatusCode::BAD_REQUEST)?;
+        
+        // Create updated Discord embed and buttons
+        use serenity::all::{CreateEmbed, CreateActionRow, CreateButton, ButtonStyle, Colour, EditMessage};
+        
+        let embed = CreateEmbed::new()
+            .title(&payload.title)
+            .description(&payload.body)
+            .colour(Colour::from_rgb(102, 126, 234));
+        
+        // Create buttons
+        let mut action_rows = Vec::new();
+        let mut current_row = Vec::new();
+        
+        for (index, role_data) in payload.roles.iter().enumerate() {
+            let button = CreateButton::new(format!("selfrole_{}_{}", config.id, role_data.role_id))
+                .label(&format!("{} {}", role_data.emoji, 
+                    // Get role name from Discord API
+                    match state.http.get_guild_roles(guild_id_u64.into()).await {
+                        Ok(roles) => {
+                            roles.iter()
+                                .find(|r| r.id.to_string() == role_data.role_id)
+                                .map(|r| r.name.clone())
+                                .unwrap_or_else(|| format!("Role {}", role_data.role_id))
+                        }
+                        Err(_) => format!("Role {}", role_data.role_id)
+                    }
+                ))
+                .style(ButtonStyle::Primary);
+            
+            current_row.push(button);
+            
+            if current_row.len() == 5 || index == payload.roles.len() - 1 {
+                action_rows.push(CreateActionRow::Buttons(current_row.clone()));
+                current_row.clear();
+                
+                if action_rows.len() == 5 {
+                    break;
+                }
+            }
+        }
+        
+        let edit_message = EditMessage::new()
+            .embed(embed)
+            .components(action_rows);
+        
+        // Update the message on Discord
+        if let Err(e) = state.http.edit_message(channel_id_u64.into(), message_id_u64.into(), &edit_message, Vec::new()).await {
+            tracing::error!("Failed to update self-role message on Discord: {}", e);
+            // Don't fail the whole operation if Discord update fails
+        }
+    }
+    
     Ok(Json(serde_json::json!({
-        "status": "not_implemented",
-        "message": "Update self-roles API not yet implemented"
+        "success": true,
+        "message": "Self-role message updated successfully",
+        "config_id": config.id
     })))
 }
 
@@ -511,5 +717,62 @@ async fn api_get_selfrole_config(
                 "emoji": r.emoji
             })).collect::<Vec<_>>()
         }
+    })))
+}
+
+async fn api_delete_selfroles(
+    headers: HeaderMap,
+    State(state): State<AppState>,
+    Path((guild_id, config_id)): Path<(String, String)>,
+) -> Result<Json<serde_json::Value>, StatusCode> {
+    let (_, user) = extract_session_data(&headers).await
+        .map_err(|_| StatusCode::UNAUTHORIZED)?;
+    
+    let user = user.ok_or(StatusCode::UNAUTHORIZED)?;
+    
+    if !user.has_manage_roles_in_guild(&guild_id) {
+        return Err(StatusCode::FORBIDDEN);
+    }
+    
+    let config_id: i64 = config_id.parse().map_err(|_| StatusCode::BAD_REQUEST)?;
+    
+    // Get existing config and verify it belongs to this guild
+    let configs = match crate::database::selfroles::SelfRoleConfig::get_by_guild(&state.db, &guild_id).await {
+        Ok(configs) => configs,
+        Err(e) => {
+            tracing::error!("Failed to fetch self-role configs for guild {}: {}", guild_id, e);
+            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+        }
+    };
+    
+    let config = match configs.into_iter().find(|c| c.id == config_id) {
+        Some(config) => config,
+        None => return Err(StatusCode::NOT_FOUND),
+    };
+    
+    // Delete the Discord message if it exists
+    if let Some(message_id) = &config.message_id {
+        let channel_id_u64: u64 = config.channel_id.parse().map_err(|_| StatusCode::BAD_REQUEST)?;
+        let message_id_u64: u64 = message_id.parse().map_err(|_| StatusCode::BAD_REQUEST)?;
+        
+        // Try to delete the Discord message
+        if let Err(e) = state.http.delete_message(channel_id_u64.into(), message_id_u64.into(), Some("Self-role configuration deleted")).await {
+            tracing::warn!("Failed to delete Discord message {}: {}", message_id, e);
+            // Don't fail the operation if Discord message deletion fails
+        }
+    }
+    
+    // Delete the configuration from database (this will cascade delete roles)
+    if let Err(e) = config.delete(&state.db).await {
+        tracing::error!("Failed to delete self-role config: {}", e);
+        return Ok(Json(serde_json::json!({
+            "success": false,
+            "message": "Failed to delete configuration"
+        })));
+    }
+    
+    Ok(Json(serde_json::json!({
+        "success": true,
+        "message": "Self-role message deleted successfully"
     })))
 }

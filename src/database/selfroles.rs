@@ -123,6 +123,36 @@ impl SelfRoleConfig {
         Ok(())
     }
     
+    pub async fn update(
+        &mut self,
+        pool: &SqlitePool,
+        title: &str,
+        body: &str,
+        selection_type: &str,
+    ) -> Result<()> {
+        sqlx::query(
+            r#"
+            UPDATE selfrole_configs 
+            SET title = ?, body = ?, selection_type = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+            "#
+        )
+        .bind(title)
+        .bind(body)
+        .bind(selection_type)
+        .bind(self.id)
+        .execute(pool)
+        .await?;
+        
+        // Update the local instance
+        self.title = title.to_string();
+        self.body = body.to_string();
+        self.selection_type = selection_type.to_string();
+        self.updated_at = Utc::now();
+        
+        Ok(())
+    }
+    
     pub async fn get_roles(&self, pool: &SqlitePool) -> Result<Vec<SelfRoleRole>> {
         let roles = sqlx::query_as::<_, SelfRoleRole>(
             "SELECT * FROM selfrole_roles WHERE config_id = ?"
@@ -132,6 +162,46 @@ impl SelfRoleConfig {
         .await?;
         
         Ok(roles)
+    }
+    
+    pub async fn delete_by_message_id(
+        pool: &SqlitePool,
+        message_id: &str,
+    ) -> Result<bool> {
+        let result = sqlx::query("DELETE FROM selfrole_configs WHERE message_id = ?")
+            .bind(message_id)
+            .execute(pool)
+            .await?;
+        
+        Ok(result.rows_affected() > 0)
+    }
+    
+    pub async fn get_by_guild_id(
+        pool: &SqlitePool,
+        guild_id: u64,
+    ) -> Result<Vec<Self>> {
+        let configs = sqlx::query_as::<_, Self>(
+            "SELECT * FROM selfrole_configs WHERE guild_id = ? ORDER BY created_at DESC"
+        )
+        .bind(guild_id.to_string())
+        .fetch_all(pool)
+        .await?;
+        
+        Ok(configs)
+    }
+    
+    pub async fn get_by_message_id_u64(
+        pool: &SqlitePool,
+        message_id: u64,
+    ) -> Result<Option<Self>> {
+        let config = sqlx::query_as::<_, Self>(
+            "SELECT * FROM selfrole_configs WHERE message_id = ?"
+        )
+        .bind(message_id.to_string())
+        .fetch_optional(pool)
+        .await?;
+        
+        Ok(config)
     }
 }
 

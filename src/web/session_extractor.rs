@@ -51,7 +51,7 @@ pub async fn extract_session_data(headers: &HeaderMap) -> Result<SessionData, St
     Ok((session, user_data))
 }
 
-fn extract_session_id_from_headers(headers: &HeaderMap) -> Result<String, StatusCode> {
+pub fn extract_session_id_from_headers(headers: &HeaderMap) -> Result<String, StatusCode> {
     let cookie_header = headers
         .get(axum::http::header::COOKIE)
         .ok_or_else(|| {

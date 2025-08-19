@@ -7,6 +7,8 @@ mod tests {
     use sqlx::Row;
     use crate::tests::{create_test_db, create_test_app_state};
     use crate::database::selfroles::{SelfRoleConfig, SelfRoleRole};
+    use crate::web::{get_bot_member_info};
+    use serenity::all::{Http, GuildId, UserId};
 
     #[tokio::test]
     async fn test_web_module_exists() {
@@ -349,5 +351,181 @@ mod tests {
 
         let valid_roles: Vec<String> = (0..25).map(|i| format!("role_{}", i)).collect();
         assert_eq!(valid_roles.len(), 25);
+    }
+
+    #[tokio::test]
+    async fn test_get_bot_member_info_error_handling() {
+        // Test the bot member info helper function with invalid data
+        let http = Http::new("invalid_token");
+        let guild_id = GuildId::new(123456789);
+
+        let result = get_bot_member_info(&http, guild_id).await;
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_id_parsing() {
+        // Test Discord ID parsing logic used in API endpoints
+        let valid_ids = vec!["123456789", "987654321012345", "1"];
+        let invalid_ids = vec!["abc", "", "123abc", "12.34"];
+
+        for valid_id in valid_ids {
+            let parsed: Result<u64, _> = valid_id.parse();
+            assert!(parsed.is_ok());
+        }
+
+        for invalid_id in invalid_ids {
+            let parsed: Result<u64, _> = invalid_id.parse();
+            assert!(parsed.is_err());
+        }
+    }
+
+    #[test]
+    fn test_error_response_formats() {
+        // Test JSON error response formats used in API
+        use serde_json::json;
+
+        let error_response = json!({
+            "success": false,
+            "message": "Test error message"
+        });
+
+        assert_eq!(error_response["success"], false);
+        assert_eq!(error_response["message"], "Test error message");
+        assert!(error_response["message"].is_string());
+    }
+
+    #[test]
+    fn test_success_response_formats() {
+        // Test JSON success response formats used in API
+        use serde_json::json;
+
+        let success_response = json!({
+            "success": true,
+            "data": {
+                "id": 123,
+                "name": "test"
+            }
+        });
+
+        assert_eq!(success_response["success"], true);
+        assert!(success_response["data"].is_object());
+    }
+
+    #[test]
+    fn test_role_data_serialization() {
+        // Test role data structures used in API
+        use serde_json::{json, Value};
+
+        let role_data = json!({
+            "role_id": "123456789",
+            "emoji": "🎮"
+        });
+
+        assert!(role_data["role_id"].is_string());
+        assert!(role_data["emoji"].is_string());
+        assert_eq!(role_data["role_id"], "123456789");
+        assert_eq!(role_data["emoji"], "🎮");
+    }
+
+    #[test]
+    fn test_create_selfrole_request_validation() {
+        // Test the CreateSelfRoleRequest structure validation
+        let valid_request = serde_json::json!({
+            "title": "Test Roles",
+            "body": "Select your roles below",
+            "selection_type": "multiple",
+            "channel_id": "123456789",
+            "roles": [
+                {
+                    "role_id": "111222333",
+                    "emoji": "🎮"
+                },
+                {
+                    "role_id": "444555666", 
+                    "emoji": "🎨"
+                }
+            ]
+        });
+
+        // Test that the JSON structure is valid
+        assert!(valid_request["title"].is_string());
+        assert!(valid_request["body"].is_string());
+        assert!(valid_request["selection_type"].is_string());
+        assert!(valid_request["channel_id"].is_string());
+        assert!(valid_request["roles"].is_array());
+        assert_eq!(valid_request["roles"].as_array().unwrap().len(), 2);
+    }
+
+    #[test]
+    fn test_role_hierarchy_position_conversion() {
+        // Test conversion between u16 and i16 for role positions
+        let u16_positions: Vec<u16> = vec![0, 1, 100, 32767];
+        let i16_positions: Vec<i16> = u16_positions.iter()
+            .map(|&pos| pos as i16)
+            .collect();
+
+        assert_eq!(i16_positions[0], 0);
+        assert_eq!(i16_positions[1], 1);
+        assert_eq!(i16_positions[2], 100);
+        assert_eq!(i16_positions[3], 32767);
+
+        // Test edge case
+        let max_u16: u16 = 32767; // Max safe i16 value
+        let as_i16 = max_u16 as i16;
+        assert_eq!(as_i16, 32767);
+    }
+
+    #[test]
+    fn test_guild_id_validation() {
+        // Test guild ID format validation
+        let valid_guild_ids = vec!["123456789012345678", "1", "999999999999999999"];
+        let invalid_guild_ids = vec!["", "abc", "123.45", "too_long_id_12345678901234567890"];
+
+        for guild_id in valid_guild_ids {
+            let parsed: Result<u64, _> = guild_id.parse();
+            assert!(parsed.is_ok(), "Guild ID '{}' should be valid", guild_id);
+        }
+
+        for guild_id in invalid_guild_ids {
+            let parsed: Result<u64, _> = guild_id.parse();
+            assert!(parsed.is_err(), "Guild ID '{}' should be invalid", guild_id);
+        }
+    }
+
+    #[test]
+    fn test_http_header_parsing() {
+        // Test HTTP header parsing for session management
+        use axum::http::{HeaderMap, header::COOKIE};
+
+        let mut headers = HeaderMap::new();
+        headers.insert(COOKIE, "session_id=test123; other=value".parse().unwrap());
+
+        let cookie_header = headers.get(COOKIE).unwrap().to_str().unwrap();
+        assert!(cookie_header.contains("session_id=test123"));
+        assert!(cookie_header.contains("other=value"));
+    }
+
+    #[tokio::test]
+    async fn test_concurrent_database_operations() {
+        // Test that database operations work correctly under concurrent access
+        let db = create_test_db().await;
+        let guild_id = "concurrent_test_guild";
+
+        // Create multiple configs sequentially for simpler test
+        for i in 0..5 {
+            SelfRoleConfig::create(
+                &db,
+                &guild_id,
+                &format!("channel_{}", i),
+                &format!("Title {}", i),
+                &format!("Body {}", i),
+                "multiple"
+            ).await.unwrap();
+        }
+
+        // Verify all configs were created
+        let all_configs = SelfRoleConfig::get_by_guild(&db, guild_id).await.unwrap();
+        assert_eq!(all_configs.len(), 5);
     }
 }

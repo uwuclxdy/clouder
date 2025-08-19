@@ -253,7 +253,7 @@ mod tests {
     async fn test_selfrole_config_get_by_id() {
         let db = create_test_db().await;
         
-        let config = SelfRoleConfig::create(
+        let _config = SelfRoleConfig::create(
             &db,
             "123456789",
             "987654321",
@@ -537,5 +537,121 @@ mod tests {
             ).await.unwrap();
             assert!(is_on_cooldown);
         }
+    }
+
+    #[tokio::test]
+    async fn test_selfrole_config_get_by_guild_id() {
+        let db = create_test_db().await;
+        
+        // Create multiple configs for the same guild
+        let guild_id = 123456789u64;
+        let config1 = SelfRoleConfig::create(
+            &db,
+            &guild_id.to_string(),
+            "channel1",
+            "Config 1",
+            "Body 1",
+            "radio"
+        ).await.unwrap();
+        
+        let config2 = SelfRoleConfig::create(
+            &db,
+            &guild_id.to_string(),
+            "channel2", 
+            "Config 2",
+            "Body 2",
+            "multiple"
+        ).await.unwrap();
+        
+        // Create config for different guild
+        let other_guild_id = 987654321u64;
+        let _config3 = SelfRoleConfig::create(
+            &db,
+            &other_guild_id.to_string(),
+            "channel3",
+            "Config 3", 
+            "Body 3",
+            "radio"
+        ).await.unwrap();
+        
+        // Test getting configs by guild ID
+        let configs = SelfRoleConfig::get_by_guild_id(&db, guild_id).await.unwrap();
+        assert_eq!(configs.len(), 2);
+        
+        // Verify both configs are present (order may vary due to timing)
+        let config_ids: Vec<i64> = configs.iter().map(|c| c.id).collect();
+        assert!(config_ids.contains(&config1.id));
+        assert!(config_ids.contains(&config2.id));
+        
+        // Test with guild that has no configs
+        let empty_configs = SelfRoleConfig::get_by_guild_id(&db, 999999999u64).await.unwrap();
+        assert!(empty_configs.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_selfrole_config_get_by_message_id_u64() {
+        let db = create_test_db().await;
+        
+        let mut config = SelfRoleConfig::create(
+            &db,
+            "123456789",
+            "987654321",
+            "Test Config",
+            "Test body",
+            "radio"
+        ).await.unwrap();
+        
+        // Update with a message ID
+        let message_id = 555666777u64;
+        config.update_message_id(&db, &message_id.to_string()).await.unwrap();
+        
+        // Test getting by message ID as u64
+        let retrieved = SelfRoleConfig::get_by_message_id_u64(&db, message_id).await.unwrap();
+        assert!(retrieved.is_some());
+        let retrieved_config = retrieved.unwrap();
+        assert_eq!(retrieved_config.id, config.id);
+        assert_eq!(retrieved_config.title, "Test Config");
+        
+        // Test with non-existent message ID
+        let not_found = SelfRoleConfig::get_by_message_id_u64(&db, 999888777u64).await.unwrap();
+        assert!(not_found.is_none());
+    }
+
+    #[tokio::test]
+    async fn test_selfrole_config_delete_by_message_id() {
+        let db = create_test_db().await;
+        
+        let mut config = SelfRoleConfig::create(
+            &db,
+            "123456789",
+            "987654321", 
+            "Delete Test",
+            "This will be deleted",
+            "multiple"
+        ).await.unwrap();
+        
+        // Create some roles for this config
+        let _role1 = SelfRoleRole::create(&db, config.id, "role1", "🎮").await.unwrap();
+        let _role2 = SelfRoleRole::create(&db, config.id, "role2", "🎨").await.unwrap();
+        
+        // Update with message ID
+        let message_id = "999888777";
+        config.update_message_id(&db, message_id).await.unwrap();
+        
+        // Verify config exists
+        let before_delete = SelfRoleConfig::get_by_message_id(&db, message_id).await.unwrap();
+        assert!(before_delete.is_some());
+        
+        // Delete by message ID
+        let deleted = SelfRoleConfig::delete_by_message_id(&db, message_id).await.unwrap();
+        assert!(deleted);
+        
+        // Verify config and its roles are deleted (CASCADE)
+        let after_delete = SelfRoleConfig::get_by_message_id(&db, message_id).await.unwrap();
+        assert!(after_delete.is_none());
+        
+        // Test deleting non-existent message ID
+        let not_deleted = SelfRoleConfig::delete_by_message_id(&db, "nonexistent").await.unwrap();
+        assert!(!not_deleted);
     }
 }

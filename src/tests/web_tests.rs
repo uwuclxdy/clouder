@@ -8,7 +8,7 @@ mod tests {
     use crate::tests::{create_test_db, create_test_app_state};
     use crate::database::selfroles::{SelfRoleConfig, SelfRoleRole};
     use crate::web::{get_bot_member_info};
-    use serenity::all::{Http, GuildId, UserId};
+    use serenity::all::{Http, GuildId};
 
     #[tokio::test]
     async fn test_web_module_exists() {
@@ -415,7 +415,7 @@ mod tests {
     #[test]
     fn test_role_data_serialization() {
         // Test role data structures used in API
-        use serde_json::{json, Value};
+        use serde_json::json;
 
         let role_data = json!({
             "role_id": "123456789",

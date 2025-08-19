@@ -252,7 +252,7 @@ async fn api_create_selfroles(
     let guild_id_u64: u64 = guild_id.parse().map_err(|_| StatusCode::BAD_REQUEST)?;
 
     // Get guild roles first for role validation
-    let guild_roles = match state.http.get_guild_roles(guild_id_u64.into()).await {
+    let _guild_roles = match state.http.get_guild_roles(guild_id_u64.into()).await {
         Ok(roles) => roles,
         Err(e) => {
             tracing::error!("Failed to get guild roles for {}: {}", guild_id, e);

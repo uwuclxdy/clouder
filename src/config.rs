@@ -2,14 +2,10 @@ use anyhow::Result;
 use dotenvy::dotenv;
 use serde::{Deserialize, Serialize};
 use std::env;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use sqlx::SqlitePool;
-use serenity::{all::{Cache, Http}, prelude::*};
-
-// Global mutex to synchronize environment variable access during tests
-lazy_static::lazy_static! {
-    static ref ENV_MUTEX: Mutex<()> = Mutex::new(());
-}
+use serenity::{all::{Cache, Http}};
+use tracing::{warn, error, info};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
@@ -54,57 +50,157 @@ pub struct DatabaseConfig {
 
 impl Config {
     pub fn from_env() -> Result<Self, anyhow::Error> {
-        // In test scenarios, use a mutex to synchronize environment variable access
-        // to prevent race conditions between parallel tests
-        let _guard = if cfg!(test) { 
-            Some(ENV_MUTEX.lock().unwrap())
-        } else { 
-            None 
-        };
-        
-        // Only load .env in production/non-test scenarios
-        // In tests, we rely entirely on explicitly set environment variables
-        if !cfg!(test) {
-            if let Err(_) = dotenv() {
-                // .env file not found or couldn't be loaded, continue without it
-            }
+        // Load .env file if available, but don't fail if it's missing
+        if let Err(e) = dotenv() {
+            warn!("Could not load .env file: {}. Continuing with system environment variables.", e);
         }
         
-        // Capture all environment variables at once to avoid race conditions
-        // in parallel test execution
-        let discord_token = env::var("DISCORD_TOKEN");
-        let application_id_str = env::var("DISCORD_APPLICATION_ID");
-        let oauth_client_id = env::var("DISCORD_CLIENT_ID");
-        let oauth_client_secret = env::var("DISCORD_CLIENT_SECRET");
-        let base_url = env::var("BASE_URL");
-        let host = env::var("HOST");
-        let port_str = env::var("PORT");
+        // Try to get Discord token
+        let discord_token = match env::var("DISCORD_TOKEN") {
+            Ok(token) => token,
+            Err(_) => {
+                error!("DISCORD_TOKEN environment variable not set - this is required for the bot to function");
+                return Err(anyhow::anyhow!("DISCORD_TOKEN environment variable not set"));
+            }
+        };
         
-        // Now process the captured values
-        let discord_token = discord_token
-            .map_err(|_| anyhow::anyhow!("DISCORD_TOKEN environment variable not set"))?;
+        // Try to get application ID
+        let application_id = match env::var("DISCORD_APPLICATION_ID") {
+            Ok(id_str) => match id_str.parse::<u64>() {
+                Ok(id) => id,
+                Err(e) => {
+                    error!("DISCORD_APPLICATION_ID has invalid format '{}': {}", id_str, e);
+                    return Err(anyhow::anyhow!("Invalid DISCORD_APPLICATION_ID format"));
+                }
+            },
+            Err(_) => {
+                error!("DISCORD_APPLICATION_ID environment variable not set - this is required for Discord interactions");
+                return Err(anyhow::anyhow!("DISCORD_APPLICATION_ID environment variable not set"));
+            }
+        };
         
-        let application_id = application_id_str
-            .map_err(|_| anyhow::anyhow!("DISCORD_APPLICATION_ID environment variable not set"))?
-            .parse::<u64>()
-            .map_err(|_| anyhow::anyhow!("Invalid DISCORD_APPLICATION_ID format"))?;
+        // Try to get OAuth credentials
+        let oauth_client_id = match env::var("DISCORD_CLIENT_ID") {
+            Ok(id) => id,
+            Err(_) => {
+                error!("DISCORD_CLIENT_ID environment variable not set - this is required for OAuth");
+                return Err(anyhow::anyhow!("DISCORD_CLIENT_ID environment variable not set"));
+            }
+        };
         
-        let oauth_client_id = oauth_client_id
-            .map_err(|_| anyhow::anyhow!("DISCORD_CLIENT_ID environment variable not set"))?;
+        let oauth_client_secret = match env::var("DISCORD_CLIENT_SECRET") {
+            Ok(secret) => secret,
+            Err(_) => {
+                error!("DISCORD_CLIENT_SECRET environment variable not set - this is required for OAuth");
+                return Err(anyhow::anyhow!("DISCORD_CLIENT_SECRET environment variable not set"));
+            }
+        };
         
-        let oauth_client_secret = oauth_client_secret
-            .map_err(|_| anyhow::anyhow!("DISCORD_CLIENT_SECRET environment variable not set"))?;
+        // Optional configuration with defaults and error logging
+        let base_url = match env::var("BASE_URL") {
+            Ok(url) => {
+                info!("Using custom BASE_URL: {}", url);
+                url
+            },
+            Err(_) => {
+                info!("BASE_URL not set, using default: http://localhost:3000");
+                "http://localhost:3000".to_string()
+            }
+        };
         
-        let base_url = base_url
-            .unwrap_or_else(|_| "http://localhost:3000".to_string());
+        let host = match env::var("HOST") {
+            Ok(host) => {
+                info!("Using custom HOST: {}", host);
+                host
+            },
+            Err(_) => {
+                info!("HOST not set, using default: 127.0.0.1");
+                "127.0.0.1".to_string()
+            }
+        };
         
-        let host = host
-            .unwrap_or_else(|_| "127.0.0.1".to_string());
+        let port = match env::var("PORT") {
+            Ok(port_str) => match port_str.parse::<u16>() {
+                Ok(port) => {
+                    info!("Using custom PORT: {}", port);
+                    port
+                },
+                Err(e) => {
+                    warn!("PORT '{}' has invalid format: {}. Using default port 3000", port_str, e);
+                    3000
+                }
+            },
+            Err(_) => {
+                info!("PORT not set, using default: 3000");
+                3000
+            }
+        };
         
-        let port = port_str
-            .unwrap_or_else(|_| "3000".to_string())
-            .parse::<u16>()
-            .unwrap_or(3000);
+        // Optional database URL
+        let database_url = match env::var("DATABASE_URL") {
+            Ok(url) => {
+                info!("Using custom DATABASE_URL: {}", url);
+                url
+            },
+            Err(_) => {
+                info!("DATABASE_URL not set, using default: data/db.sqlite");
+                "data/db.sqlite".to_string()
+            }
+        };
+        
+        // Optional embed configuration
+        let embed_directory = match env::var("EMBED_DIRECTORY") {
+            Ok(dir) => {
+                info!("Using custom EMBED_DIRECTORY: {}", dir);
+                dir
+            },
+            Err(_) => {
+                info!("EMBED_DIRECTORY not set, using default: embed_files");
+                "embed_files".to_string()
+            }
+        };
+        
+        let embed_max_age_hours = match env::var("EMBED_MAX_AGE_HOURS") {
+            Ok(hours_str) => match hours_str.parse::<u64>() {
+                Ok(hours) => {
+                    if hours == 0 {
+                        info!("EMBED_MAX_AGE_HOURS set to 0 - embed cleanup disabled");
+                    } else {
+                        info!("Using custom EMBED_MAX_AGE_HOURS: {}", hours);
+                    }
+                    hours
+                },
+                Err(e) => {
+                    warn!("EMBED_MAX_AGE_HOURS '{}' has invalid format: {}. Using default: 24", hours_str, e);
+                    24
+                }
+            },
+            Err(_) => {
+                info!("EMBED_MAX_AGE_HOURS not set, using default: 24");
+                24
+            }
+        };
+        
+        let embed_cleanup_interval_hours = match env::var("EMBED_CLEANUP_INTERVAL_HOURS") {
+            Ok(hours_str) => match hours_str.parse::<u64>() {
+                Ok(hours) => {
+                    if hours == 0 {
+                        info!("EMBED_CLEANUP_INTERVAL_HOURS set to 0 - embed cleanup disabled");
+                    } else {
+                        info!("Using custom EMBED_CLEANUP_INTERVAL_HOURS: {}", hours);
+                    }
+                    hours
+                },
+                Err(e) => {
+                    warn!("EMBED_CLEANUP_INTERVAL_HOURS '{}' has invalid format: {}. Using default: 6", hours_str, e);
+                    6
+                }
+            },
+            Err(_) => {
+                info!("EMBED_CLEANUP_INTERVAL_HOURS not set, using default: 6");
+                6
+            }
+        };
         
         let redirect_uri = format!("{}/auth/callback", base_url);
         
@@ -123,13 +219,13 @@ impl Config {
                     redirect_uri,
                 },
                 embed: EmbedConfig {
-                    directory: "embed_files".to_string(),
-                    max_age_hours: 24,
-                    cleanup_interval_hours: 6,
+                    directory: embed_directory,
+                    max_age_hours: embed_max_age_hours,
+                    cleanup_interval_hours: embed_cleanup_interval_hours,
                 },
             },
             database: DatabaseConfig {
-                url: "data/db.sqlite".to_string(),
+                url: database_url,
             },
         })
     }
@@ -167,6 +263,7 @@ impl Config {
 pub struct AppState {
     pub config: Arc<Config>,
     pub db: Arc<SqlitePool>,
+    #[allow(dead_code)]
     pub cache: Arc<Cache>,
     pub http: Arc<Http>,
 }

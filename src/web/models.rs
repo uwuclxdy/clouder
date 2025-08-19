@@ -80,7 +80,9 @@ pub struct SessionUser {
 
 #[derive(Debug, Deserialize)]
 pub struct AuthCallback {
+    #[allow(dead_code)]
     pub code: String,
+    #[allow(dead_code)]
     pub state: Option<String>,
 }
 

@@ -22,7 +22,6 @@ use tracing::{error, info};
 // Bot data for Poise
 type Data = AppState;
 type Error = Box<dyn std::error::Error + Send + Sync>;
-type Context<'a> = poise::Context<'a, Data, Error>;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -162,6 +161,14 @@ fn start_cleanup_task(app_state: AppState) {
 
 fn start_embed_cleanup_task(app_state: AppState) {
     let embed_config = app_state.config.web.embed.clone();
+    
+    // Check if cleanup is disabled (either value set to 0)
+    if embed_config.cleanup_interval_hours == 0 || embed_config.max_age_hours == 0 {
+        info!("Embed cleanup disabled (cleanup_interval_hours={}, max_age_hours={})", 
+              embed_config.cleanup_interval_hours, embed_config.max_age_hours);
+        return;
+    }
+    
     tokio::spawn(async move {
         loop {
             let interval_seconds = embed_config.cleanup_interval_hours * 3600;

@@ -14,14 +14,14 @@ pub async fn server_list(
         Ok(session) => session,
         Err(_) => return Err(Redirect::temporary("/auth/login")),
     };
-    
+
     let user = match session.1 {
         Some(user) => user,
         None => return Err(Redirect::temporary("/auth/login")),
     };
-    
+
     let manageable_guilds = user.get_manageable_guilds();
-    
+
     let mut guilds_html = String::new();
     for guild in manageable_guilds {
         let icon_url = if let Some(icon) = &guild.icon {
@@ -29,7 +29,7 @@ pub async fn server_list(
         } else {
             "https://cdn.discordapp.com/embed/avatars/0.png".to_string()
         };
-        
+
         guilds_html.push_str(&format!(
             r#"
             <div class="server-card" onclick="location.href='/dashboard/{}'">
@@ -47,7 +47,7 @@ pub async fn server_list(
             if guild.owner { "Owner" } else { "Manage Roles" }
         ));
     }
-    
+
     if guilds_html.is_empty() {
         let has_guilds = !user.guilds.is_empty();
         guilds_html = if has_guilds {
@@ -69,7 +69,7 @@ pub async fn server_list(
             "#.to_string()
         };
     }
-    
+
     let html = format!(
         r#"
         <!DOCTYPE html>
@@ -216,7 +216,7 @@ pub async fn server_list(
         user.user.username,
         guilds_html
     );
-    
+
     Ok(Html(html))
 }
 
@@ -229,18 +229,18 @@ pub async fn guild_dashboard(
         Ok(session) => session,
         Err(_) => return Err(Redirect::temporary("/auth/login")),
     };
-    
+
     let user = match session.1 {
         Some(user) => user,
         None => return Err(Redirect::temporary("/auth/login")),
     };
-    
+
     if !user.has_manage_roles_in_guild(&guild_id) {
         return Err(Redirect::temporary("/"));
     }
-    
+
     let guild = user.guilds.iter().find(|g| g.id == guild_id).unwrap();
-    
+
     let html = format!(
         r#"
         <!DOCTYPE html>
@@ -394,7 +394,7 @@ pub async fn guild_dashboard(
         guild.name,
         guild_id
     );
-    
+
     Ok(Html(html))
 }
 
@@ -407,18 +407,18 @@ pub async fn selfroles_list(
         Ok(session) => session,
         Err(_) => return Err(Redirect::temporary("/auth/login")),
     };
-    
+
     let user = match session.1 {
         Some(user) => user,
         None => return Err(Redirect::temporary("/auth/login")),
     };
-    
+
     if !user.has_manage_roles_in_guild(&guild_id) {
         return Err(Redirect::temporary("/"));
     }
-    
+
     let guild = user.guilds.iter().find(|g| g.id == guild_id).unwrap();
-    
+
     let html = format!(
         r#"
         <!DOCTYPE html>
@@ -618,30 +618,30 @@ pub async fn selfroles_list(
                     <div class="loading">Loading self-role messages...</div>
                 </div>
             </div>
-            
+
             <script>
                 const guildId = '{}';
-                
+
                 document.addEventListener('DOMContentLoaded', async function() {{
                     await loadMessages();
                 }});
-                
+
                 async function loadMessages() {{
                     try {{
                         const response = await fetch(`/api/selfroles/${{guildId}}`);
                         const data = await response.json();
-                        
+
                         const messagesGrid = document.getElementById('messagesGrid');
-                        
+
                         if (data.success && data.configs.length > 0) {{
                             messagesGrid.innerHTML = '';
-                            
+
                             data.configs.forEach(config => {{
                                 const messageCard = document.createElement('div');
                                 messageCard.className = 'message-card';
-                                
+
                                 const createdDate = new Date(config.created_at).toLocaleDateString();
-                                
+
                                 messageCard.innerHTML = `
                                     <div class="message-title">${{config.title}}</div>
                                     <div class="message-body">${{config.body}}</div>
@@ -657,7 +657,7 @@ pub async fn selfroles_list(
                                         <button class="delete-btn" onclick="deleteMessage(event, ${{config.id}}, '${{config.title}}')">Delete</button>
                                     </div>
                                 `;
-                                
+
                                 messagesGrid.appendChild(messageCard);
                             }});
                         }} else {{
@@ -679,21 +679,21 @@ pub async fn selfroles_list(
                         `;
                     }}
                 }}
-                
+
                 async function deleteMessage(event, configId, title) {{
                     event.stopPropagation();
-                    
+
                     if (!confirm(`Are you sure you want to delete "${{title}}"? This will also remove the message from Discord and cannot be undone.`)) {{
                         return;
                     }}
-                    
+
                     try {{
                         const response = await fetch(`/api/selfroles/${{guildId}}/${{configId}}`, {{
                             method: 'DELETE'
                         }});
-                        
+
                         const result = await response.json();
-                        
+
                         if (response.ok && result.success) {{
                             alert('Self-role message deleted successfully!');
                             await loadMessages(); // Reload the messages list
@@ -715,7 +715,7 @@ pub async fn selfroles_list(
         guild_id,
         guild_id
     );
-    
+
     Ok(Html(html))
 }
 
@@ -728,18 +728,18 @@ pub async fn selfroles_create(
         Ok(session) => session,
         Err(_) => return Err(Redirect::temporary("/auth/login")),
     };
-    
+
     let user = match session.1 {
         Some(user) => user,
         None => return Err(Redirect::temporary("/auth/login")),
     };
-    
+
     if !user.has_manage_roles_in_guild(&guild_id) {
         return Err(Redirect::temporary("/"));
     }
-    
+
     let guild = user.guilds.iter().find(|g| g.id == guild_id).unwrap();
-    
+
     let html = format!(
         r#"
         <!DOCTYPE html>
@@ -968,17 +968,17 @@ pub async fn selfroles_create(
                                     <option value="">Loading channels...</option>
                                 </select>
                             </div>
-                            
+
                             <div class="form-group">
                                 <label for="title">Embed Title:</label>
                                 <input type="text" id="title" name="title" placeholder="Choose your roles" required maxlength="256">
                             </div>
-                            
+
                             <div class="form-group">
                                 <label for="body">Embed Description:</label>
                                 <textarea id="body" name="body" placeholder="Click the buttons below to assign yourself roles..." required maxlength="2048"></textarea>
                             </div>
-                            
+
                             <div class="form-group">
                                 <label>Selection Type:</label>
                                 <div class="selection-type">
@@ -992,7 +992,7 @@ pub async fn selfroles_create(
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <div class="form-group">
                                 <label>Roles:</label>
                                 <div style="background: rgba(255, 193, 7, 0.2); border-left: 4px solid #ffc107; padding: 12px; border-radius: 4px; margin-bottom: 15px; color: #fff3cd;">
@@ -1004,13 +1004,13 @@ pub async fn selfroles_create(
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <button type="submit" class="btn" id="deployBtn" disabled>
                                 Deploy Self-Role Message
                             </button>
                         </form>
                     </div>
-                    
+
                     <div class="preview-section">
                         <h3 style="margin-top: 0;">Live Preview</h3>
                         <div class="preview-embed">
@@ -1023,24 +1023,24 @@ pub async fn selfroles_create(
                     </div>
                 </div>
             </div>
-            
+
             <script>
                 const guildId = '{}';
                 let channels = [];
                 let roles = [];
-                
+
                 // Load channels and roles on page load
                 document.addEventListener('DOMContentLoaded', async function() {{
                     await Promise.all([loadChannels(), loadRoles()]);
                     updateDeployButton();
                 }});
-                
+
                 async function loadChannels() {{
                     try {{
                         const response = await fetch(`/api/guild/${{guildId}}/channels`);
                         const data = await response.json();
                         channels = data.channels.filter(ch => ch.type === 0); // Text channels only
-                        
+
                         const channelSelect = document.getElementById('channel');
                         channelSelect.innerHTML = '<option value="">Select a channel...</option>';
                         channels.forEach(channel => {{
@@ -1051,12 +1051,12 @@ pub async fn selfroles_create(
                         document.getElementById('channel').innerHTML = '<option value="">Failed to load channels</option>';
                     }}
                 }}
-                
+
                 async function loadRoles() {{
                     try {{
                         const response = await fetch(`/api/guild/${{guildId}}/roles`);
                         const data = await response.json();
-                        
+
                         if (!data.success) {{
                             // Handle permission or other errors
                             const rolesList = document.getElementById('rolesList');
@@ -1076,12 +1076,12 @@ pub async fn selfroles_create(
                             `;
                             return;
                         }}
-                        
+
                         roles = data.roles.filter(role => role.name !== '@everyone').sort((a, b) => b.position - a.position);
-                        
+
                         const rolesList = document.getElementById('rolesList');
                         rolesList.innerHTML = '';
-                        
+
                         if (roles.length === 0) {{
                             rolesList.innerHTML = `
                                 <div style="color: #fff3cd; padding: 15px; background: rgba(255, 193, 7, 0.2); border-radius: 8px; margin-bottom: 15px;">
@@ -1097,7 +1097,7 @@ pub async fn selfroles_create(
                             `;
                             return;
                         }}
-                        
+
                         roles.forEach(role => {{
                             const roleItem = document.createElement('div');
                             roleItem.className = 'role-item';
@@ -1118,24 +1118,24 @@ pub async fn selfroles_create(
                         `;
                     }}
                 }}
-                
+
                 function updatePreview() {{
                     const title = document.getElementById('title').value || 'Choose your roles';
                     const body = document.getElementById('body').value || 'Click the buttons below to assign yourself roles...';
-                    
+
                     document.getElementById('previewTitle').textContent = title;
                     document.getElementById('previewBody').textContent = body;
-                    
+
                     const previewButtons = document.getElementById('previewButtons');
                     previewButtons.innerHTML = '';
-                    
+
                     const checkboxes = document.querySelectorAll('.role-checkbox:checked');
                     checkboxes.forEach(checkbox => {{
                         const roleId = checkbox.dataset.roleId;
                         const role = roles.find(r => r.id === roleId);
                         const emojiInput = checkbox.parentElement.querySelector('.emoji-input');
                         const emoji = emojiInput.value || '📝';
-                        
+
                         if (role) {{
                             const button = document.createElement('button');
                             button.className = 'preview-button';
@@ -1143,20 +1143,20 @@ pub async fn selfroles_create(
                             previewButtons.appendChild(button);
                         }}
                     }});
-                    
+
                     updateDeployButton();
                 }}
-                
+
                 function updateDeployButton() {{
                     const channel = document.getElementById('channel').value;
                     const title = document.getElementById('title').value;
                     const body = document.getElementById('body').value;
                     const selectedRoles = document.querySelectorAll('.role-checkbox:checked');
-                    
+
                     const deployBtn = document.getElementById('deployBtn');
                     deployBtn.disabled = !channel || !title || !body || selectedRoles.length === 0;
                 }}
-                
+
                 // Add event listeners
                 document.getElementById('title').addEventListener('input', updatePreview);
                 document.getElementById('body').addEventListener('input', updatePreview);
@@ -1164,24 +1164,24 @@ pub async fn selfroles_create(
                 document.querySelectorAll('input[name="selection_type"]').forEach(radio => {{
                     radio.addEventListener('change', updatePreview);
                 }});
-                
+
                 // Handle form submission
                 document.getElementById('selfRoleForm').addEventListener('submit', async function(e) {{
                     e.preventDefault();
-                    
+
                     const deployBtn = document.getElementById('deployBtn');
                     deployBtn.disabled = true;
                     deployBtn.textContent = 'Deploying...';
-                    
+
                     const formData = new FormData(this);
                     const selectedRoles = [];
-                    
+
                     document.querySelectorAll('.role-checkbox:checked').forEach(checkbox => {{
                         const roleId = checkbox.dataset.roleId;
                         const emoji = checkbox.parentElement.querySelector('.emoji-input').value || '📝';
                         selectedRoles.push({{ role_id: roleId, emoji: emoji }});
                     }});
-                    
+
                     const payload = {{
                         title: formData.get('title'),
                         body: formData.get('body'),
@@ -1189,7 +1189,7 @@ pub async fn selfroles_create(
                         channel_id: formData.get('channel_id'),
                         roles: selectedRoles
                     }};
-                    
+
                     try {{
                         const response = await fetch(`/api/selfroles/${{guildId}}`, {{
                             method: 'POST',
@@ -1198,9 +1198,9 @@ pub async fn selfroles_create(
                             }},
                             body: JSON.stringify(payload)
                         }});
-                        
+
                         const result = await response.json();
-                        
+
                         if (response.ok && result.success) {{
                             alert('Self-role message deployed successfully!');
                             window.location.href = `/dashboard/${{guildId}}/selfroles`;
@@ -1224,7 +1224,7 @@ pub async fn selfroles_create(
         guild.name,
         guild_id
     );
-    
+
     Ok(Html(html))
 }
 
@@ -1237,18 +1237,18 @@ pub async fn selfroles_edit(
         Ok(session) => session,
         Err(_) => return Err(Redirect::temporary("/auth/login")),
     };
-    
+
     let user = match session.1 {
         Some(user) => user,
         None => return Err(Redirect::temporary("/auth/login")),
     };
-    
+
     if !user.has_manage_roles_in_guild(&guild_id) {
         return Err(Redirect::temporary("/"));
     }
-    
+
     let guild = user.guilds.iter().find(|g| g.id == guild_id).unwrap();
-    
+
     let html = format!(
         r#"
         <!DOCTYPE html>
@@ -1477,17 +1477,17 @@ pub async fn selfroles_edit(
                                     <option value="">Loading channels...</option>
                                 </select>
                             </div>
-                            
+
                             <div class="form-group">
                                 <label for="title">Embed Title:</label>
                                 <input type="text" id="title" name="title" placeholder="Choose your roles" required maxlength="256">
                             </div>
-                            
+
                             <div class="form-group">
                                 <label for="body">Embed Description:</label>
                                 <textarea id="body" name="body" placeholder="Click the buttons below to assign yourself roles..." required maxlength="2048"></textarea>
                             </div>
-                            
+
                             <div class="form-group">
                                 <label>Selection Type:</label>
                                 <div class="selection-type">
@@ -1501,7 +1501,7 @@ pub async fn selfroles_edit(
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <div class="form-group">
                                 <label>Roles:</label>
                                 <div style="background: rgba(255, 193, 7, 0.2); border-left: 4px solid #ffc107; padding: 12px; border-radius: 4px; margin-bottom: 15px; color: #fff3cd;">
@@ -1513,13 +1513,13 @@ pub async fn selfroles_edit(
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <button type="submit" class="btn" id="deployBtn" disabled>
                                 Update Self-Role Message
                             </button>
                         </form>
                     </div>
-                    
+
                     <div class="preview-section">
                         <h3 style="margin-top: 0;">Live Preview</h3>
                         <div class="preview-embed">
@@ -1532,26 +1532,26 @@ pub async fn selfroles_edit(
                     </div>
                 </div>
             </div>
-            
+
             <script>
                 const guildId = '{}';
                 const configId = '{}';
                 let channels = [];
                 let roles = [];
-                
+
                 // Load channels and roles on page load
                 document.addEventListener('DOMContentLoaded', async function() {{
                     await Promise.all([loadChannels(), loadRoles()]);
                     await loadExistingConfig();
                     updateDeployButton();
                 }});
-                
+
                 async function loadChannels() {{
                     try {{
                         const response = await fetch(`/api/guild/${{guildId}}/channels`);
                         const data = await response.json();
                         channels = data.channels.filter(ch => ch.type === 0); // Text channels only
-                        
+
                         const channelSelect = document.getElementById('channel');
                         channelSelect.innerHTML = '<option value="">Select a channel...</option>';
                         channels.forEach(channel => {{
@@ -1562,12 +1562,12 @@ pub async fn selfroles_edit(
                         document.getElementById('channel').innerHTML = '<option value="">Failed to load channels</option>';
                     }}
                 }}
-                
+
                 async function loadRoles() {{
                     try {{
                         const response = await fetch(`/api/guild/${{guildId}}/roles`);
                         const data = await response.json();
-                        
+
                         if (!data.success) {{
                             // Handle permission or other errors
                             const rolesList = document.getElementById('rolesList');
@@ -1587,12 +1587,12 @@ pub async fn selfroles_edit(
                             `;
                             return;
                         }}
-                        
+
                         roles = data.roles.filter(role => role.name !== '@everyone').sort((a, b) => b.position - a.position);
-                        
+
                         const rolesList = document.getElementById('rolesList');
                         rolesList.innerHTML = '';
-                        
+
                         if (roles.length === 0) {{
                             rolesList.innerHTML = `
                                 <div style="color: #fff3cd; padding: 15px; background: rgba(255, 193, 7, 0.2); border-radius: 8px; margin-bottom: 15px;">
@@ -1608,7 +1608,7 @@ pub async fn selfroles_edit(
                             `;
                             return;
                         }}
-                        
+
                         roles.forEach(role => {{
                             const roleItem = document.createElement('div');
                             roleItem.className = 'role-item';
@@ -1629,24 +1629,24 @@ pub async fn selfroles_edit(
                         `;
                     }}
                 }}
-                
+
                 function updatePreview() {{
                     const title = document.getElementById('title').value || 'Choose your roles';
                     const body = document.getElementById('body').value || 'Click the buttons below to assign yourself roles...';
-                    
+
                     document.getElementById('previewTitle').textContent = title;
                     document.getElementById('previewBody').textContent = body;
-                    
+
                     const previewButtons = document.getElementById('previewButtons');
                     previewButtons.innerHTML = '';
-                    
+
                     const checkboxes = document.querySelectorAll('.role-checkbox:checked');
                     checkboxes.forEach(checkbox => {{
                         const roleId = checkbox.dataset.roleId;
                         const role = roles.find(r => r.id === roleId);
                         const emojiInput = checkbox.parentElement.querySelector('.emoji-input');
                         const emoji = emojiInput.value || '📝';
-                        
+
                         if (role) {{
                             const button = document.createElement('button');
                             button.className = 'preview-button';
@@ -1654,36 +1654,36 @@ pub async fn selfroles_edit(
                             previewButtons.appendChild(button);
                         }}
                     }});
-                    
+
                     updateDeployButton();
                 }}
-                
+
                 function updateDeployButton() {{
                     const channel = document.getElementById('channel').value;
                     const title = document.getElementById('title').value;
                     const body = document.getElementById('body').value;
                     const selectedRoles = document.querySelectorAll('.role-checkbox:checked');
-                    
+
                     const deployBtn = document.getElementById('deployBtn');
                     deployBtn.disabled = !channel || !title || !body || selectedRoles.length === 0;
                 }}
-                
+
                 async function loadExistingConfig() {{
                     try {{
                         const response = await fetch(`/api/selfroles/${{guildId}}/${{configId}}`);
                         const data = await response.json();
-                        
+
                         if (data.success) {{
                             const config = data.config;
-                            
+
                             // Fill in basic fields
                             document.getElementById('title').value = config.title;
                             document.getElementById('body').value = config.body;
                             document.getElementById('channel').value = config.channel_id;
-                            
+
                             // Set selection type
                             document.querySelector(`input[name="selection_type"][value="${{config.selection_type}}"]`).checked = true;
-                            
+
                             // Mark roles as selected and set their emojis
                             config.roles.forEach(configRole => {{
                                 const checkbox = document.querySelector(`input[data-role-id="${{configRole.role_id}}"]`);
@@ -1693,7 +1693,7 @@ pub async fn selfroles_edit(
                                     emojiInput.value = configRole.emoji;
                                 }}
                             }});
-                            
+
                             // Update the preview and deploy button
                             updatePreview();
                         }}
@@ -1701,7 +1701,7 @@ pub async fn selfroles_edit(
                         console.error('Failed to load existing config:', error);
                     }}
                 }}
-                
+
                 // Add event listeners
                 document.getElementById('title').addEventListener('input', updatePreview);
                 document.getElementById('body').addEventListener('input', updatePreview);
@@ -1709,24 +1709,24 @@ pub async fn selfroles_edit(
                 document.querySelectorAll('input[name="selection_type"]').forEach(radio => {{
                     radio.addEventListener('change', updatePreview);
                 }});
-                
+
                 // Handle form submission
                 document.getElementById('selfRoleForm').addEventListener('submit', async function(e) {{
                     e.preventDefault();
-                    
+
                     const deployBtn = document.getElementById('deployBtn');
                     deployBtn.disabled = true;
                     deployBtn.textContent = 'Updating...';
-                    
+
                     const formData = new FormData(this);
                     const selectedRoles = [];
-                    
+
                     document.querySelectorAll('.role-checkbox:checked').forEach(checkbox => {{
                         const roleId = checkbox.dataset.roleId;
                         const emoji = checkbox.parentElement.querySelector('.emoji-input').value || '📝';
                         selectedRoles.push({{ role_id: roleId, emoji: emoji }});
                     }});
-                    
+
                     const payload = {{
                         title: formData.get('title'),
                         body: formData.get('body'),
@@ -1734,7 +1734,7 @@ pub async fn selfroles_edit(
                         channel_id: formData.get('channel_id'),
                         roles: selectedRoles
                     }};
-                    
+
                     try {{
                         const response = await fetch(`/api/selfroles/${{guildId}}/${{configId}}`, {{
                             method: 'PUT',
@@ -1743,9 +1743,9 @@ pub async fn selfroles_edit(
                             }},
                             body: JSON.stringify(payload)
                         }});
-                        
+
                         const result = await response.json();
-                        
+
                         if (response.ok && result.success) {{
                             alert('Self-role message updated successfully!');
                             window.location.href = `/dashboard/${{guildId}}/selfroles`;
@@ -1770,6 +1770,6 @@ pub async fn selfroles_edit(
         guild_id,
         config_id
     );
-    
+
     Ok(Html(html))
 }

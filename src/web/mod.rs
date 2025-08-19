@@ -287,10 +287,7 @@ async fn api_create_selfroles(
     };
 
     // Get all bot role positions
-    let bot_role_positions: Vec<u16> = bot_member.roles.iter()
-        .filter_map(|role_id| guild_roles.iter().find(|r| r.id == *role_id))
-        .map(|role| role.position)
-        .collect();
+    let bot_role_positions = crate::utils::get_bot_role_positions(&bot_member, &guild_roles);
 
     // Validate each role in the payload
     for role_data in &payload.roles {
@@ -531,10 +528,7 @@ async fn api_update_selfroles(
     };
 
     // Get all bot role positions
-    let bot_role_positions: Vec<u16> = bot_member.roles.iter()
-        .filter_map(|role_id| guild_roles.iter().find(|r| r.id == *role_id))
-        .map(|role| role.position)
-        .collect();
+    let bot_role_positions = crate::utils::get_bot_role_positions(&bot_member, &guild_roles);
 
     // Validate each role in the payload
     for role_data in &payload.roles {

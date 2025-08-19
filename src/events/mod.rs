@@ -260,7 +260,7 @@ async fn handle_selfrole_interaction(
 
     // Validate role hierarchy
     if !crate::utils::can_bot_manage_role(&bot_role_positions, target_role.position) {
-        tracing::warn!("Role hierarchy validation failed: bot positions {:?} vs target role '{}' position {}", 
+        tracing::warn!("Role hierarchy validation failed: bot positions {:?} vs target role '{}' position {}",
                       bot_role_positions, target_role.name, target_role.position);
         if let Err(e) = interaction
             .create_response(

@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     use crate::web::session_extractor::{extract_session_data, extract_session_id_from_headers};
-    use crate::web::middleware::{SessionData, Session, GLOBAL_SESSION_STORE};
+    use crate::web::middleware::{Session, GLOBAL_SESSION_STORE};
     use crate::web::models::SessionUser;
     use axum::http::{HeaderMap, header::COOKIE, StatusCode};
     use chrono::{Utc, Duration};

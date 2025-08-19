@@ -1,5 +1,6 @@
 // Utility functions for the bot
 
+#[allow(dead_code)]
 pub fn format_duration(seconds: u64) -> String {
     let days = seconds / 86400;
     let hours = (seconds % 86400) / 3600;
@@ -17,6 +18,7 @@ pub fn format_duration(seconds: u64) -> String {
     }
 }
 
+#[allow(dead_code)]
 pub fn validate_role_hierarchy(
     bot_highest_role_position: i16,
     target_role_position: i16,
@@ -54,6 +56,7 @@ pub fn can_bot_manage_roles_in_guild(
 }
 
 /// Returns discord formatted time
+#[allow(dead_code)]
 pub fn format_discord_timestamp(time: &str, style: char) -> String {
     let date_time = match chrono::DateTime::parse_from_rfc3339(time) {
         Ok(dt) => dt,

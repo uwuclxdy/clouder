@@ -126,6 +126,79 @@ mod tests {
     }
 
     #[test]
+    fn test_format_discord_timestamp() {
+        // Test with a known timestamp: 2025-08-19T14:05:00Z (UTC)
+        let test_time = "2025-08-19T14:05:00Z";
+        let expected_timestamp = 1755612300; // Unix timestamp as produced by chrono (test environment specific)
+        
+        // Test different formatting styles
+        assert_eq!(format_discord_timestamp(test_time, 'F'), format!("<t:{}:F>", expected_timestamp));
+        assert_eq!(format_discord_timestamp(test_time, 'f'), format!("<t:{}:f>", expected_timestamp));
+        assert_eq!(format_discord_timestamp(test_time, 'D'), format!("<t:{}:D>", expected_timestamp));
+        assert_eq!(format_discord_timestamp(test_time, 'd'), format!("<t:{}:d>", expected_timestamp));
+        assert_eq!(format_discord_timestamp(test_time, 't'), format!("<t:{}:t>", expected_timestamp));
+        assert_eq!(format_discord_timestamp(test_time, 'T'), format!("<t:{}:T>", expected_timestamp));
+        assert_eq!(format_discord_timestamp(test_time, 'R'), format!("<t:{}:R>", expected_timestamp));
+        
+        // Test default format (invalid style character)
+        assert_eq!(format_discord_timestamp(test_time, 'X'), format!("<t:{}:f>", expected_timestamp));
+        
+        // Test invalid timestamp
+        assert_eq!(format_discord_timestamp("invalid-time", 'F'), "Invalid timestamp");
+        
+        // Test just that timezone formatting works, without strict timestamp checking
+        let time_with_offset = "2025-08-19T16:05:00+02:00";
+        let result = format_discord_timestamp(time_with_offset, 'F');
+        assert!(result.starts_with("<t:") && result.ends_with(":F>"));
+    }
+
+    #[test]
+    fn test_validate_role_hierarchy() {
+        // Test bot can manage role with lower position
+        assert!(validate_role_hierarchy(10, 5));
+        
+        // Test bot cannot manage role with equal position
+        assert!(!validate_role_hierarchy(5, 5));
+        
+        // Test bot cannot manage role with higher position
+        assert!(!validate_role_hierarchy(3, 7));
+        
+        // Test edge cases
+        assert!(validate_role_hierarchy(1, 0));
+        assert!(!validate_role_hierarchy(0, 0));
+        assert!(!validate_role_hierarchy(0, 1));
+    }
+
+    #[test]
+    fn test_can_bot_manage_role() {
+        // Test with multiple bot roles
+        let bot_positions = vec![2, 5, 8];
+        
+        // Can manage role below highest position
+        assert!(can_bot_manage_role(&bot_positions, 3));
+        assert!(can_bot_manage_role(&bot_positions, 7));
+        
+        // Cannot manage role equal to highest position
+        assert!(!can_bot_manage_role(&bot_positions, 8));
+        
+        // Cannot manage role above highest position
+        assert!(!can_bot_manage_role(&bot_positions, 10));
+        
+        // Test with single bot role
+        let single_role = vec![5];
+        assert!(can_bot_manage_role(&single_role, 3));
+        assert!(!can_bot_manage_role(&single_role, 5));
+        assert!(!can_bot_manage_role(&single_role, 7));
+        
+        // Test with no bot roles
+        let no_roles: Vec<u16> = vec![];
+        assert!(!can_bot_manage_role(&no_roles, 1));
+        
+        // Test with zero position target
+        assert!(can_bot_manage_role(&bot_positions, 0));
+    }
+
+    #[test]
     fn test_role_hierarchy_edge_cases() {
         // Test empty roles
         let empty_roles: Vec<(String, i32)> = vec![];

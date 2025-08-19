@@ -11,6 +11,7 @@ use reqwest::Client;
 #[derive(Deserialize)]
 pub struct AuthQuery {
     code: Option<String>,
+    #[allow(dead_code)]
     state: Option<String>,
     error: Option<String>,
 }
@@ -18,9 +19,13 @@ pub struct AuthQuery {
 #[derive(Deserialize)]
 pub struct TokenResponse {
     access_token: String,
+    #[allow(dead_code)]
     token_type: String,
+    #[allow(dead_code)]
     expires_in: u64,
+    #[allow(dead_code)]
     refresh_token: String,
+    #[allow(dead_code)]
     scope: String,
 }
 

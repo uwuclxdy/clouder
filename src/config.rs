@@ -1,9 +1,15 @@
 use anyhow::Result;
+use dotenvy::dotenv;
 use serde::{Deserialize, Serialize};
 use std::env;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use sqlx::SqlitePool;
 use serenity::{all::{Cache, Http}, prelude::*};
+
+// Global mutex to synchronize environment variable access during tests
+lazy_static::lazy_static! {
+    static ref ENV_MUTEX: Mutex<()> = Mutex::new(());
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
@@ -47,30 +53,55 @@ pub struct DatabaseConfig {
 }
 
 impl Config {
-    pub fn from_env() -> Result<Self> {
-        dotenvy::dotenv().ok();
+    pub fn from_env() -> Result<Self, anyhow::Error> {
+        // In test scenarios, use a mutex to synchronize environment variable access
+        // to prevent race conditions between parallel tests
+        let _guard = if cfg!(test) { 
+            Some(ENV_MUTEX.lock().unwrap())
+        } else { 
+            None 
+        };
         
-        let discord_token = env::var("DISCORD_TOKEN")
+        // Only load .env in production/non-test scenarios
+        // In tests, we rely entirely on explicitly set environment variables
+        if !cfg!(test) {
+            if let Err(_) = dotenv() {
+                // .env file not found or couldn't be loaded, continue without it
+            }
+        }
+        
+        // Capture all environment variables at once to avoid race conditions
+        // in parallel test execution
+        let discord_token = env::var("DISCORD_TOKEN");
+        let application_id_str = env::var("DISCORD_APPLICATION_ID");
+        let oauth_client_id = env::var("DISCORD_CLIENT_ID");
+        let oauth_client_secret = env::var("DISCORD_CLIENT_SECRET");
+        let base_url = env::var("BASE_URL");
+        let host = env::var("HOST");
+        let port_str = env::var("PORT");
+        
+        // Now process the captured values
+        let discord_token = discord_token
             .map_err(|_| anyhow::anyhow!("DISCORD_TOKEN environment variable not set"))?;
         
-        let application_id = env::var("DISCORD_APPLICATION_ID")
+        let application_id = application_id_str
             .map_err(|_| anyhow::anyhow!("DISCORD_APPLICATION_ID environment variable not set"))?
             .parse::<u64>()
             .map_err(|_| anyhow::anyhow!("Invalid DISCORD_APPLICATION_ID format"))?;
         
-        let oauth_client_id = env::var("DISCORD_CLIENT_ID")
+        let oauth_client_id = oauth_client_id
             .map_err(|_| anyhow::anyhow!("DISCORD_CLIENT_ID environment variable not set"))?;
         
-        let oauth_client_secret = env::var("DISCORD_CLIENT_SECRET")
+        let oauth_client_secret = oauth_client_secret
             .map_err(|_| anyhow::anyhow!("DISCORD_CLIENT_SECRET environment variable not set"))?;
         
-        let base_url = env::var("BASE_URL")
+        let base_url = base_url
             .unwrap_or_else(|_| "http://localhost:3000".to_string());
         
-        let host = env::var("HOST")
+        let host = host
             .unwrap_or_else(|_| "127.0.0.1".to_string());
         
-        let port = env::var("PORT")
+        let port = port_str
             .unwrap_or_else(|_| "3000".to_string())
             .parse::<u16>()
             .unwrap_or(3000);

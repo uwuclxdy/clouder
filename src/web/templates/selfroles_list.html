@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Self-Roles - {{GUILD_NAME}}</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        {{COMMON_CSS}}
+        {{DASHBOARD_CSS}}
+    </style>
+</head>
+<body>
+    <a href="/dashboard/{{GUILD_ID}}" class="back-btn">← Back to Dashboard</a>
+    <div class="container">
+        <div class="header selfroles-header">
+            <div class="header-info">
+                <h1>Self-Roles Messages</h1>
+                <p>Manage interactive role assignment messages for {{GUILD_NAME}}</p>
+            </div>
+            <a href="/dashboard/{{GUILD_ID}}/selfroles/new" class="create-btn">+ Create New Message</a>
+        </div>
+        <div class="messages-grid" id="messagesGrid">
+            <div class="loading">Loading self-role messages...</div>
+        </div>
+    </div>
+
+    <script>
+        {{COMMON_JS}}
+        {{SELFROLES_JS}}
+
+        const guildId = '{{GUILD_ID}}';
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            await loadMessages(guildId);
+        });
+    </script>
+</body>
+</html>

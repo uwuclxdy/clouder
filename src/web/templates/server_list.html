@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clouder Bot Dashboard</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        {{COMMON_CSS}}
+        {{DASHBOARD_CSS}}
+    </style>
+</head>
+<body>
+    <a href="/auth/logout" class="logout-btn">Logout</a>
+    <div class="container">
+        <div class="header">
+            <h1>Clouder Bot Dashboard</h1>
+            <p>Select a server to configure self-roles</p>
+            <div class="user-info">
+                <img src="{{USER_AVATAR}}" alt="{{USER_NAME}}" class="user-avatar">
+                <span>Welcome, {{USER_NAME}}!</span>
+            </div>
+        </div>
+        <div class="servers-grid">
+            {{GUILDS_HTML}}
+        </div>
+    </div>
+</body>
+</html>

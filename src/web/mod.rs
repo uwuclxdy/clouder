@@ -57,74 +57,16 @@ pub fn create_router(app_state: AppState) -> Router {
         .with_state(app_state)
 }
 
-async fn login_page() -> axum::response::Html<&'static str> {
-    axum::response::Html(r#"
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Clouder Bot - Login</title>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <style>
-            body {
-                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                margin: 0;
-                padding: 20px;
-                min-height: 100vh;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            }
-            .login-container {
-                background: rgba(255, 255, 255, 0.1);
-                backdrop-filter: blur(10px);
-                border-radius: 15px;
-                padding: 40px;
-                text-align: center;
-                color: white;
-                max-width: 400px;
-                width: 100%;
-            }
-            h1 {
-                margin: 0 0 20px 0;
-                font-size: 2.5em;
-                font-weight: 300;
-            }
-            p {
-                margin-bottom: 30px;
-                opacity: 0.9;
-                line-height: 1.6;
-            }
-            .login-btn {
-                background: #5865F2;
-                color: white;
-                padding: 15px 30px;
-                border: none;
-                border-radius: 8px;
-                font-size: 16px;
-                font-weight: 500;
-                cursor: pointer;
-                text-decoration: none;
-                display: inline-block;
-                transition: all 0.3s ease;
-            }
-            .login-btn:hover {
-                background: #4752C4;
-                transform: translateY(-2px);
-                box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-            }
-        </style>
-    </head>
-    <body>
-        <div class="login-container">
-            <h1>Clouder Bot</h1>
-            <p>Welcome to the Clouder Discord bot dashboard. You need to authenticate with Discord to access the dashboard and configure self-roles for your servers.</p>
-            <a href="/auth/discord" class="login-btn">Login with Discord</a>
-        </div>
-    </body>
-    </html>
-    "#)
+async fn login_page() -> axum::response::Html<String> {
+    let common_css = include_str!("static/css/common.css");
+    let auth_css = include_str!("static/css/auth.css");
+    let template = include_str!("templates/login.html");
+    
+    let html = template
+        .replace("{{COMMON_CSS}}", common_css)
+        .replace("{{AUTH_CSS}}", auth_css);
+    
+    axum::response::Html(html)
 }
 
 async fn debug_sessions(headers: HeaderMap) -> axum::response::Html<String> {
@@ -147,19 +89,14 @@ async fn debug_sessions(headers: HeaderMap) -> axum::response::Html<String> {
         Err(e) => format!("Session extraction error: {:?}", e),
     };
 
-    let html = format!(r#"
-    <!DOCTYPE html>
-    <html>
-    <head><title>Debug Sessions</title></head>
-    <body>
-        <h1>Session Debug</h1>
-        <p>Total sessions in store: {}</p>
-        <p>{}</p>
-        <p>{}</p>
-        <a href="/">Back to Home</a>
-    </body>
-    </html>
-    "#, sessions_count, cookie_info, session_data);
+    let common_css = include_str!("static/css/common.css");
+    let template = include_str!("templates/debug_sessions.html");
+    
+    let html = template
+        .replace("{{COMMON_CSS}}", common_css)
+        .replace("{{SESSIONS_COUNT}}", &sessions_count.to_string())
+        .replace("{{COOKIE_INFO}}", &cookie_info)
+        .replace("{{SESSION_DATA}}", &session_data);
 
     axum::response::Html(html)
 }

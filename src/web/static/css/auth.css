@@ -1,0 +1,50 @@
+/* Authentication-specific styles */
+.login-container {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border-radius: 15px;
+    padding: 40px;
+    text-align: center;
+    color: white;
+    max-width: 400px;
+    width: 100%;
+    margin: 0 auto;
+}
+
+.login-container h1 {
+    margin: 0 0 20px 0;
+    font-size: 2.5em;
+    font-weight: 300;
+}
+
+.login-container p {
+    margin-bottom: 30px;
+    opacity: 0.9;
+    line-height: 1.6;
+}
+
+.login-btn {
+    background: #5865F2;
+    color: white;
+    padding: 15px 30px;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    transition: all 0.3s ease;
+}
+
+.login-btn:hover {
+    background: #4752C4;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+body.auth-page {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}

@@ -65,13 +65,13 @@ async fn main() -> Result<()> {
             let token = token_clone.clone();
             Box::pin(async move {
                 poise::builtins::register_globally(ctx, &framework.options().commands).await?;
-                
+
                 // Create shared app state
                 let http = Arc::new(serenity::Http::new(&token));
                 let cache = Arc::new(serenity::all::Cache::new());
-                
+
                 let app_state = AppState::new(config, Arc::new(db), cache, http);
-                
+
                 Ok(app_state)
             })
         })
@@ -82,16 +82,16 @@ async fn main() -> Result<()> {
         .await?;
 
     let mut client = client;
-    
+
     // Get the app state from the framework data after setup
     let cache = client.cache.clone();
     let http = client.http.clone();
     let app_state = AppState::new(config.clone(), Arc::new(db), cache, http);
-    
+
     // Start cleanup tasks
     start_cleanup_task(app_state.clone());
     start_embed_cleanup_task(app_state.clone());
-    
+
     // Start web server
     let web_config = config.web.clone();
     let web_state = app_state.clone();
@@ -132,17 +132,17 @@ async fn event_handler(
 }
 
 async fn start_web_server(
-    web_config: crate::config::WebConfig,
+    web_config: config::WebConfig,
     app_state: AppState,
 ) -> Result<()> {
     let app = web::create_router(app_state);
     let addr = format!("{}:{}", web_config.host, web_config.port);
-    
+
     info!("Starting web server on {}", addr);
-    
+
     let listener = tokio::net::TcpListener::bind(&addr).await?;
     axum::serve(listener, app).await?;
-    
+
     Ok(())
 }
 
@@ -150,7 +150,7 @@ fn start_cleanup_task(app_state: AppState) {
     tokio::spawn(async move {
         loop {
             sleep(Duration::from_secs(300)).await; // Run every 5 minutes
-            
+
             if let Err(e) = SelfRoleCooldown::cleanup_expired(&app_state.db).await {
                 error!("Failed to cleanup expired cooldowns: {}", e);
             } else {
@@ -166,7 +166,7 @@ fn start_embed_cleanup_task(app_state: AppState) {
         loop {
             let interval_seconds = embed_config.cleanup_interval_hours * 3600;
             sleep(Duration::from_secs(interval_seconds)).await;
-            
+
             if let Err(e) = embed::cleanup_old_embeds(&embed_config.directory, embed_config.max_age_hours).await {
                 error!("Failed to cleanup old embed files: {}", e);
             } else {

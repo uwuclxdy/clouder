@@ -9,14 +9,12 @@ pub mod utils_tests;
 use crate::config::AppState;
 use sqlx::SqlitePool;
 use std::sync::Arc;
-use serenity::all::{Cache, Http};
-use tempfile::NamedTempFile;
 
 /// Create a test database for testing
 pub async fn create_test_db() -> SqlitePool {
     // Use in-memory database for tests
     let pool = SqlitePool::connect("sqlite::memory:").await.unwrap();
-    
+
     // Run migrations manually instead of using sqlx::migrate!
     sqlx::query(r#"
         CREATE TABLE selfrole_configs (
@@ -31,7 +29,7 @@ pub async fn create_test_db() -> SqlitePool {
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
         );
     "#).execute(&pool).await.unwrap();
-    
+
     sqlx::query(r#"
         CREATE TABLE selfrole_roles (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -41,7 +39,7 @@ pub async fn create_test_db() -> SqlitePool {
             FOREIGN KEY (config_id) REFERENCES selfrole_configs(id) ON DELETE CASCADE
         );
     "#).execute(&pool).await.unwrap();
-    
+
     sqlx::query(r#"
         CREATE TABLE selfrole_cooldowns (
             user_id TEXT NOT NULL,
@@ -51,7 +49,7 @@ pub async fn create_test_db() -> SqlitePool {
             PRIMARY KEY (user_id, role_id, guild_id)
         );
     "#).execute(&pool).await.unwrap();
-    
+
     pool
 }
 
@@ -61,6 +59,6 @@ pub async fn create_test_app_state() -> AppState {
     let db = Arc::new(create_test_db().await);
     let cache = Arc::new(Cache::new());
     let http = Arc::new(Http::new("test_token"));
-    
+
     AppState::new(config, db, cache, http)
 }

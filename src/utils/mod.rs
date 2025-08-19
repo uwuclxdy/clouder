@@ -20,3 +20,51 @@ pub fn validate_role_hierarchy(
 ) -> bool {
     bot_highest_role_position > target_role_position
 }
+
+/// Check if the bot can manage a target role by checking if ANY of the bot's roles
+/// is higher than the target role in the hierarchy
+pub fn can_bot_manage_role(
+    bot_role_positions: &[u16],
+    target_role_position: u16,
+) -> bool {
+    bot_role_positions.iter()
+        .any(|&bot_pos| bot_pos > target_role_position)
+}
+
+/// Check if a bot member can manage roles, considering admin permissions
+pub fn can_bot_manage_roles_in_guild(
+    bot_member: &serenity::all::Member,
+    guild_roles: &[serenity::all::Role],
+) -> (bool, Vec<u16>) {
+    // Check if bot has administrator permission
+    if bot_member.permissions.unwrap_or_default().administrator() {
+        return (true, vec![]); // Admin can manage all roles, return empty positions list
+    }
+
+    // Get all bot role positions for hierarchy checking
+    let bot_role_positions: Vec<u16> = bot_member.roles.iter()
+        .filter_map(|role_id| guild_roles.iter().find(|r| r.id == *role_id))
+        .map(|role| role.position)
+        .collect();
+
+    (false, bot_role_positions)
+}
+
+/// Returns discord formatted time
+pub fn format_discord_timestamp(time: &str, style: char) -> String {
+    let date_time = match chrono::DateTime::parse_from_rfc3339(time) {
+        Ok(dt) => dt,
+        Err(_) => return "Invalid timestamp".to_string(),
+    };
+    let timestamp = date_time.timestamp();
+    match style {
+        'F' => format!("<t:{}:F>", timestamp), // Tuesday, August 19, 2025 at 04:05:00 PM
+        'f' => format!("<t:{}:f>", timestamp), // August 19, 2025 at 04:05 PM
+        'D' => format!("<t:{}:D>", timestamp), // Tuesday, August 19, 2025
+        'd' => format!("<t:{}:d>", timestamp), // 08/19/2025
+        't' => format!("<t:{}:t>", timestamp), // 04:05 PM
+        'T' => format!("<t:{}:T>", timestamp), // 04:05:00 PM
+        'R' => format!("<t:{}:R>", timestamp), // relative time
+        _ => format!("<t:{}:f>", timestamp),   // default to brief format
+    }
+}

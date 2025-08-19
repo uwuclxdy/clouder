@@ -995,6 +995,9 @@ pub async fn selfroles_create(
                             
                             <div class="form-group">
                                 <label>Roles:</label>
+                                <div style="background: rgba(255, 193, 7, 0.2); border-left: 4px solid #ffc107; padding: 12px; border-radius: 4px; margin-bottom: 15px; color: #fff3cd;">
+                                    <strong>ℹ️ Role Hierarchy Notice:</strong> Only roles that are below at least one of the bot's roles in the server hierarchy can be assigned through self-roles. If you don't see a role here, make sure at least one of the bot's roles is positioned above it in Server Settings → Roles.
+                                </div>
                                 <div class="roles-section">
                                     <div id="rolesList">
                                         <div class="loading">Loading server roles...</div>
@@ -1053,10 +1056,47 @@ pub async fn selfroles_create(
                     try {{
                         const response = await fetch(`/api/guild/${{guildId}}/roles`);
                         const data = await response.json();
+                        
+                        if (!data.success) {{
+                            // Handle permission or other errors
+                            const rolesList = document.getElementById('rolesList');
+                            rolesList.innerHTML = `
+                                <div style="color: #ffcccb; padding: 15px; background: rgba(220, 53, 69, 0.2); border-radius: 8px; margin-bottom: 15px;">
+                                    <strong>⚠️ Error Loading Roles:</strong><br>
+                                    ${{data.message || 'Failed to load server roles.'}}
+                                    <br><br>
+                                    <strong>Common solutions:</strong>
+                                    <ul style="margin: 10px 0;">
+                                        <li>Ensure the bot is properly added to your server</li>
+                                        <li>Make sure the bot has "Manage Roles" permission</li>
+                                        <li>Check that the bot's role is above the roles you want to manage</li>
+                                        <li>Try re-inviting the bot with proper permissions</li>
+                                    </ul>
+                                </div>
+                            `;
+                            return;
+                        }}
+                        
                         roles = data.roles.filter(role => role.name !== '@everyone').sort((a, b) => b.position - a.position);
                         
                         const rolesList = document.getElementById('rolesList');
                         rolesList.innerHTML = '';
+                        
+                        if (roles.length === 0) {{
+                            rolesList.innerHTML = `
+                                <div style="color: #fff3cd; padding: 15px; background: rgba(255, 193, 7, 0.2); border-radius: 8px; margin-bottom: 15px;">
+                                    <strong>ℹ️ No Manageable Roles Found</strong><br>
+                                    The bot cannot manage any roles in this server. This could be because:
+                                    <ul style="margin: 10px 0;">
+                                        <li>All server roles are positioned above the bot's highest role</li>
+                                        <li>The bot lacks "Manage Roles" permission</li>
+                                        <li>No roles have been created in this server yet</li>
+                                    </ul>
+                                    Please adjust role positions in Server Settings → Roles, or create some roles for the bot to manage.
+                                </div>
+                            `;
+                            return;
+                        }}
                         
                         roles.forEach(role => {{
                             const roleItem = document.createElement('div');
@@ -1070,7 +1110,12 @@ pub async fn selfroles_create(
                         }});
                     }} catch (error) {{
                         console.error('Failed to load roles:', error);
-                        document.getElementById('rolesList').innerHTML = '<div>Failed to load roles</div>';
+                        document.getElementById('rolesList').innerHTML = `
+                            <div style="color: #ffcccb; padding: 15px; background: rgba(220, 53, 69, 0.2); border-radius: 8px;">
+                                <strong>❌ Network Error</strong><br>
+                                Failed to load roles due to a network error. Please check your connection and try again.
+                            </div>
+                        `;
                     }}
                 }}
                 
@@ -1459,6 +1504,9 @@ pub async fn selfroles_edit(
                             
                             <div class="form-group">
                                 <label>Roles:</label>
+                                <div style="background: rgba(255, 193, 7, 0.2); border-left: 4px solid #ffc107; padding: 12px; border-radius: 4px; margin-bottom: 15px; color: #fff3cd;">
+                                    <strong>ℹ️ Role Hierarchy Notice:</strong> Only roles that are below at least one of the bot's roles in the server hierarchy can be assigned through self-roles. If you don't see a role here, make sure at least one of the bot's roles is positioned above it in Server Settings → Roles.
+                                </div>
                                 <div class="roles-section">
                                     <div id="rolesList">
                                         <div class="loading">Loading server roles...</div>
@@ -1519,10 +1567,47 @@ pub async fn selfroles_edit(
                     try {{
                         const response = await fetch(`/api/guild/${{guildId}}/roles`);
                         const data = await response.json();
+                        
+                        if (!data.success) {{
+                            // Handle permission or other errors
+                            const rolesList = document.getElementById('rolesList');
+                            rolesList.innerHTML = `
+                                <div style="color: #ffcccb; padding: 15px; background: rgba(220, 53, 69, 0.2); border-radius: 8px; margin-bottom: 15px;">
+                                    <strong>⚠️ Error Loading Roles:</strong><br>
+                                    ${{data.message || 'Failed to load server roles.'}}
+                                    <br><br>
+                                    <strong>Common solutions:</strong>
+                                    <ul style="margin: 10px 0;">
+                                        <li>Ensure the bot is properly added to your server</li>
+                                        <li>Make sure the bot has "Manage Roles" permission</li>
+                                        <li>Check that the bot's role is above the roles you want to manage</li>
+                                        <li>Try re-inviting the bot with proper permissions</li>
+                                    </ul>
+                                </div>
+                            `;
+                            return;
+                        }}
+                        
                         roles = data.roles.filter(role => role.name !== '@everyone').sort((a, b) => b.position - a.position);
                         
                         const rolesList = document.getElementById('rolesList');
                         rolesList.innerHTML = '';
+                        
+                        if (roles.length === 0) {{
+                            rolesList.innerHTML = `
+                                <div style="color: #fff3cd; padding: 15px; background: rgba(255, 193, 7, 0.2); border-radius: 8px; margin-bottom: 15px;">
+                                    <strong>ℹ️ No Manageable Roles Found</strong><br>
+                                    The bot cannot manage any roles in this server. This could be because:
+                                    <ul style="margin: 10px 0;">
+                                        <li>All server roles are positioned above the bot's highest role</li>
+                                        <li>The bot lacks "Manage Roles" permission</li>
+                                        <li>No roles have been created in this server yet</li>
+                                    </ul>
+                                    Please adjust role positions in Server Settings → Roles, or create some roles for the bot to manage.
+                                </div>
+                            `;
+                            return;
+                        }}
                         
                         roles.forEach(role => {{
                             const roleItem = document.createElement('div');
@@ -1536,7 +1621,12 @@ pub async fn selfroles_edit(
                         }});
                     }} catch (error) {{
                         console.error('Failed to load roles:', error);
-                        document.getElementById('rolesList').innerHTML = '<div>Failed to load roles</div>';
+                        document.getElementById('rolesList').innerHTML = `
+                            <div style="color: #ffcccb; padding: 15px; background: rgba(220, 53, 69, 0.2); border-radius: 8px;">
+                                <strong>❌ Network Error</strong><br>
+                                Failed to load roles due to a network error. Please check your connection and try again.
+                            </div>
+                        `;
                     }}
                 }}
                 

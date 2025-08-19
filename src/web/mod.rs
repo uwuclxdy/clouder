@@ -2,10 +2,11 @@ use crate::config::AppState;
 use axum::{
     extract::{Path, State},
     http::{StatusCode, HeaderMap},
-    routing::{get, post, delete, put},
+    routing::get,
     Json, Router,
 };
 use serde::{Deserialize, Serialize};
+use serenity::all::{Http, GuildId, Member};
 use session_extractor::extract_session_data;
 
 pub mod embed;
@@ -15,6 +16,26 @@ pub mod session;
 pub mod middleware;
 pub mod models;
 pub mod session_extractor;
+
+/// Helper function to get bot member info with fallback methods
+pub async fn get_bot_member_info(http: &Http, guild_id: GuildId) -> Result<Member, Box<dyn std::error::Error + Send + Sync>> {
+    // For bots, we should use the alternative method directly since bots cannot use get_current_user_guild_member
+    // Try to get the bot user first, then get member info
+    let bot_user = http.get_current_user().await
+        .map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>)?;
+    tracing::debug!("Got bot user ID: {}, getting member info for guild {}", bot_user.id, guild_id);
+    
+    match http.get_member(guild_id, bot_user.id).await {
+        Ok(member) => {
+            tracing::debug!("Successfully retrieved bot member info for guild {}", guild_id);
+            Ok(member)
+        }
+        Err(e) => {
+            tracing::error!("Failed to get bot member info for guild {}: {:?}", guild_id, e);
+            Err(Box::new(e) as Box<dyn std::error::Error + Send + Sync>)
+        }
+    }
+}
 
 pub fn create_router(app_state: AppState) -> Router {
     Router::new()
@@ -229,6 +250,75 @@ async fn api_create_selfroles(
     }
 
     let guild_id_u64: u64 = guild_id.parse().map_err(|_| StatusCode::BAD_REQUEST)?;
+
+    // Get guild roles first for role validation
+    let guild_roles = match state.http.get_guild_roles(guild_id_u64.into()).await {
+        Ok(roles) => roles,
+        Err(e) => {
+            tracing::error!("Failed to get guild roles for {}: {}", guild_id, e);
+            return Ok(Json(serde_json::json!({
+                "success": false,
+                "message": "Failed to retrieve server roles for validation."
+            })));
+        }
+    };
+
+    // Validate role hierarchy - get bot's member info
+    let bot_member = match get_bot_member_info(&state.http, guild_id_u64.into()).await {
+        Ok(member) => member,
+        Err(e) => {
+            tracing::error!("Failed to get bot member info for guild {}: {:?}", guild_id, e);
+            return Ok(Json(serde_json::json!({
+                "success": false,
+                "message": format!("Unable to verify bot permissions. The bot may not be properly added to this server. Error: {}", e)
+            })));
+        }
+    };
+
+    let guild_roles = match state.http.get_guild_roles(guild_id_u64.into()).await {
+        Ok(roles) => roles,
+        Err(e) => {
+            tracing::error!("Failed to get guild roles for {}: {}", guild_id, e);
+            return Ok(Json(serde_json::json!({
+                "success": false,
+                "message": "Failed to retrieve server roles for validation."
+            })));
+        }
+    };
+
+    // Get all bot role positions
+    let bot_role_positions: Vec<u16> = bot_member.roles.iter()
+        .filter_map(|role_id| guild_roles.iter().find(|r| r.id == *role_id))
+        .map(|role| role.position)
+        .collect();
+
+    // Validate each role in the payload
+    for role_data in &payload.roles {
+        let role_id_u64: u64 = match role_data.role_id.parse() {
+            Ok(id) => id,
+            Err(_) => {
+                return Ok(Json(serde_json::json!({
+                    "success": false,
+                    "message": format!("Invalid role ID: {}", role_data.role_id)
+                })));
+            }
+        };
+
+        if let Some(target_role) = guild_roles.iter().find(|r| r.id.get() == role_id_u64) {
+            if !crate::utils::can_bot_manage_role(&bot_role_positions, target_role.position) {
+                return Ok(Json(serde_json::json!({
+                    "success": false,
+                    "message": format!("Cannot manage role '{}' - it is higher than or equal to all of the bot's roles in the hierarchy.", target_role.name)
+                })));
+            }
+        } else {
+            return Ok(Json(serde_json::json!({
+                "success": false,
+                "message": format!("Role with ID {} not found in this server.", role_data.role_id)
+            })));
+        }
+    }
+
     let channel_id_u64: u64 = payload.channel_id.parse().map_err(|_| StatusCode::BAD_REQUEST)?;
 
     // Create the database entry first
@@ -414,6 +504,64 @@ async fn api_update_selfroles(
             "message": "Maximum 25 roles allowed per self-role message"
         })));
     }
+
+    let guild_id_u64: u64 = guild_id.parse().map_err(|_| StatusCode::BAD_REQUEST)?;
+
+    // Validate role hierarchy - get bot's member info
+    let bot_member = match get_bot_member_info(&state.http, guild_id_u64.into()).await {
+        Ok(member) => member,
+        Err(e) => {
+            tracing::error!("Failed to get bot member info for guild {}: {:?}", guild_id, e);
+            return Ok(Json(serde_json::json!({
+                "success": false,
+                "message": format!("Unable to verify bot permissions. The bot may not be properly added to this server. Error: {}", e)
+            })));
+        }
+    };
+
+    let guild_roles = match state.http.get_guild_roles(guild_id_u64.into()).await {
+        Ok(roles) => roles,
+        Err(e) => {
+            tracing::error!("Failed to get guild roles for {}: {}", guild_id, e);
+            return Ok(Json(serde_json::json!({
+                "success": false,
+                "message": "Failed to retrieve server roles for validation."
+            })));
+        }
+    };
+
+    // Get all bot role positions
+    let bot_role_positions: Vec<u16> = bot_member.roles.iter()
+        .filter_map(|role_id| guild_roles.iter().find(|r| r.id == *role_id))
+        .map(|role| role.position)
+        .collect();
+
+    // Validate each role in the payload
+    for role_data in &payload.roles {
+        let role_id_u64: u64 = match role_data.role_id.parse() {
+            Ok(id) => id,
+            Err(_) => {
+                return Ok(Json(serde_json::json!({
+                    "success": false,
+                    "message": format!("Invalid role ID: {}", role_data.role_id)
+                })));
+            }
+        };
+
+        if let Some(target_role) = guild_roles.iter().find(|r| r.id.get() == role_id_u64) {
+            if !crate::utils::can_bot_manage_role(&bot_role_positions, target_role.position) {
+                return Ok(Json(serde_json::json!({
+                    "success": false,
+                    "message": format!("Cannot manage role '{}' - it is higher than or equal to all of the bot's roles in the hierarchy.", target_role.name)
+                })));
+            }
+        } else {
+            return Ok(Json(serde_json::json!({
+                "success": false,
+                "message": format!("Role with ID {} not found in this server.", role_data.role_id)
+            })));
+        }
+    }
     
     // Get existing config and verify it belongs to this guild
     let configs = match crate::database::selfroles::SelfRoleConfig::get_by_guild(&state.db, &guild_id).await {
@@ -587,28 +735,61 @@ async fn api_get_roles(
 
     let guild_id_u64: u64 = guild_id.parse().map_err(|_| StatusCode::BAD_REQUEST)?;
 
-    match state.http.get_guild_roles(guild_id_u64.into()).await {
-        Ok(roles) => {
-            let role_data: Vec<serde_json::Value> = roles
-                .into_iter()
-                .filter(|role| role.name != "@everyone") // Filter out @everyone role
-                .map(|role| serde_json::json!({
-                    "id": role.id.to_string(),
-                    "name": role.name,
-                    "color": role.colour.0,
-                    "position": role.position
-                }))
-                .collect();
-
-            Ok(Json(serde_json::json!({
-                "roles": role_data
-            })))
-        }
+    // Get guild roles first
+    let guild_roles = match state.http.get_guild_roles(guild_id_u64.into()).await {
+        Ok(roles) => roles,
         Err(e) => {
             tracing::error!("Failed to fetch roles for guild {}: {}", guild_id, e);
-            Err(StatusCode::INTERNAL_SERVER_ERROR)
+            return Err(StatusCode::INTERNAL_SERVER_ERROR);
         }
-    }
+    };
+
+    // Get bot's member info to check role hierarchy
+    let bot_member = match get_bot_member_info(&state.http, guild_id_u64.into()).await {
+        Ok(member) => member,
+        Err(e) => {
+            tracing::error!("Failed to get bot member info for guild {}: {:?}", guild_id, e);
+            return Ok(Json(serde_json::json!({
+                "success": false,
+                "error": "permission_check_failed",
+                "message": format!("Unable to verify bot permissions in this server. This usually means the bot is not properly added to the server or lacks necessary permissions. Error: {}", e),
+                "roles": []
+            })));
+        }
+    };
+
+    // Check if bot has administrator permission or get role positions
+    let (is_admin, bot_role_positions) = crate::utils::can_bot_manage_roles_in_guild(&bot_member, &guild_roles);
+
+    let role_data: Vec<serde_json::Value> = guild_roles
+        .into_iter()
+        .filter(|role| {
+            // Filter out @everyone role and apply role management logic
+            if role.name == "@everyone" {
+                return false;
+            }
+            
+            // If bot is admin, it can manage all roles
+            if is_admin {
+                return true;
+            }
+            
+            // Otherwise check hierarchy
+            crate::utils::can_bot_manage_role(&bot_role_positions, role.position)
+        })
+        .map(|role| serde_json::json!({
+            "id": role.id.to_string(),
+            "name": role.name,
+            "color": role.colour.0,
+            "position": role.position,
+            "manageable": true
+        }))
+        .collect();
+
+    Ok(Json(serde_json::json!({
+        "success": true,
+        "roles": role_data
+    })))
 }
 
 async fn api_get_selfroles(

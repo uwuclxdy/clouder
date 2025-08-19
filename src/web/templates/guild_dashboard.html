@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dashboard - {{GUILD_NAME}}</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        {{COMMON_CSS}}
+        {{DASHBOARD_CSS}}
+    </style>
+</head>
+<body>
+    <a href="/" class="back-btn">← Back to Servers</a>
+    <a href="/auth/logout" class="logout-btn">Logout</a>
+    <div class="container">
+        <div class="header guild-header">
+            <img src="{{GUILD_ICON}}" alt="{{GUILD_NAME}}" class="guild-icon">
+            <div class="header-info">
+                <h1>{{GUILD_NAME}}</h1>
+                <p>Configure bot features for this server</p>
+            </div>
+        </div>
+        <div class="features-grid">
+            <div class="feature-card" onclick="location.href='/dashboard/{{GUILD_ID}}/selfroles'">
+                <div class="feature-icon">🎭</div>
+                <h3>Self Roles</h3>
+                <p>Create interactive role assignment messages. Let members choose their own roles by clicking buttons.</p>
+            </div>
+            <div class="feature-card" style="opacity: 0.6; cursor: not-allowed;">
+                <div class="feature-icon">⚙️</div>
+                <h3>Server Settings</h3>
+                <p>Configure timezone, prefixes, and other server-specific settings. (Coming Soon)</p>
+            </div>
+            <div class="feature-card" style="opacity: 0.6; cursor: not-allowed;">
+                <div class="feature-icon">📊</div>
+                <h3>Analytics</h3>
+                <p>View usage statistics and insights about your server's bot activity. (Coming Soon)</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

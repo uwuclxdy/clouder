@@ -1,6 +1,8 @@
-use crate::config::AppState;
-use poise::serenity_prelude as serenity;
+use chrono::{Duration, Utc};
 use serenity::all::{CreateInteractionResponse, CreateInteractionResponseMessage};
+use crate::config::AppState;
+use crate::database::selfroles::{SelfRoleConfig, SelfRoleCooldown};
+use crate::serenity;
 
 pub async fn handle_interaction_create(
     ctx: &serenity::Context,
@@ -25,7 +27,7 @@ pub async fn handle_message_delete(
     let message_id_str = deleted_message_id.to_string();
 
     // Check if this was a self-role message
-    if let Ok(Some(config)) = crate::database::selfroles::SelfRoleConfig::get_by_message_id(&data.db, &message_id_str).await {
+    if let Ok(Some(config)) = SelfRoleConfig::get_by_message_id(&data.db, &message_id_str).await {
         tracing::info!("Self-role message deleted from Discord: {}, cleaning up database", message_id_str);
 
         // Delete the configuration from database
@@ -47,15 +49,8 @@ async fn handle_component_interaction(
     }
 }
 
-async fn handle_selfrole_interaction(
-    ctx: &serenity::Context,
-    interaction: &serenity::ComponentInteraction,
-    data: &AppState,
-) {
-    use serenity::{CreateInteractionResponse, CreateInteractionResponseMessage};
-    use crate::database::selfroles::{SelfRoleConfig, SelfRoleCooldown};
-    use chrono::{Utc, Duration};
-
+async fn handle_selfrole_interaction(ctx: &serenity::Context, interaction: &serenity::ComponentInteraction, data: &AppState, )
+{
     // Parse the custom_id: "selfrole_{config_id}_{role_id}"
     let parts: Vec<&str> = interaction.data.custom_id.split('_').collect();
     if parts.len() != 3 {
@@ -231,10 +226,7 @@ async fn handle_selfrole_interaction(
     };
 
     // Get all bot role positions
-    let bot_role_positions: Vec<u16> = bot_member.roles.iter()
-        .filter_map(|role_id| guild_roles.iter().find(|r| r.id == *role_id))
-        .map(|role| role.position)
-        .collect();
+    let bot_role_positions = crate::utils::get_bot_role_positions(&bot_member, &guild_roles);
 
     // Find the target role and validate hierarchy
     let target_role = match guild_roles.iter().find(|r| r.id.get() == role_id_u64) {

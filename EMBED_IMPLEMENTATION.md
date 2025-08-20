@@ -22,7 +22,7 @@ According to Discord developers, arbitrary iframes cannot be embedded—the only
 This Rust bot already has an HTTP server to serve the generated HTML files using `axum` framework.
 
 **Endpoints needed:**
-- `GET /{filename}.html` - Serves generated HTML files
+- `GET /video/{filename}.html` - Serves generated HTML files
 
 #### **2. HTML Template System**
 Create a template that generates the required meta tags for Discord compatibility.

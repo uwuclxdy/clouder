@@ -12,6 +12,7 @@ use crate::config::{Config, AppState};
 use crate::commands::selfroles::selfroles;
 use crate::commands::video::{video, video_help, cleanup_embeds};
 use crate::commands::about::about;
+use crate::commands::help::help;
 use crate::database::selfroles::SelfRoleCooldown;
 use anyhow::Result;
 use poise::serenity_prelude as serenity;
@@ -52,7 +53,7 @@ async fn main() -> Result<()> {
 
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
-            commands: vec![selfroles(), video(), video_help(), cleanup_embeds(), about()],
+            commands: vec![selfroles(), video(), video_help(), cleanup_embeds(), about(), help()],
             event_handler: |ctx, event, framework, data| {
                 Box::pin(event_handler(ctx, event, framework, data))
             },
@@ -124,6 +125,9 @@ async fn event_handler(
         }
         serenity::FullEvent::MessageDelete { channel_id, deleted_message_id, guild_id } => {
             events::handle_message_delete(ctx, channel_id, deleted_message_id, guild_id, data).await;
+        }
+        serenity::FullEvent::Message { new_message } => {
+            events::handle_message_create(ctx, new_message, data).await;
         }
         _ => {}
     }

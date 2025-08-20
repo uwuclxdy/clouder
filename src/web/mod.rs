@@ -75,7 +75,7 @@ async fn validate_roles_hierarchy(
     roles: &[SelfRoleData],
 ) -> Result<Vec<serenity::all::Role>, String> {
     let guild_id_u64: u64 = guild_id.parse().map_err(|_| "Invalid guild ID")?;
-    
+
     let bot_member = get_bot_member_info(&state.http, guild_id_u64.into()).await
         .map_err(|e| format!("Bot permission error: {}", e))?;
 
@@ -138,12 +138,19 @@ async fn api_create_selfroles(
         }
     }
 
-    use serenity::all::{CreateEmbed, CreateMessage, CreateActionRow, CreateButton, ButtonStyle, Colour};
+    use serenity::all::{CreateEmbed, CreateMessage, CreateActionRow, CreateButton, ButtonStyle, Colour, CreateEmbedFooter};
+
+    let footer_text = match payload.selection_type.as_str() {
+        "multiple" => "Multiple roles",
+        "radio" => "Single role",
+        _ => "",
+    };
 
     let embed = CreateEmbed::new()
         .title(&payload.title)
         .description(&payload.body)
-        .colour(Colour::from_rgb(102, 126, 234));
+        .colour(Colour::from_rgb(102, 126, 234))
+        .footer(CreateEmbedFooter::new(footer_text));
 
     let mut action_rows = Vec::new();
     let mut current_row = Vec::new();
@@ -196,13 +203,13 @@ async fn api_update_selfroles(
 ) -> Result<Json<serde_json::Value>, StatusCode> {
     let (_, user) = extract_session_data(&headers).await.map_err(|_| StatusCode::UNAUTHORIZED)?;
     let user = user.ok_or(StatusCode::UNAUTHORIZED)?;
-    
+
     if !user.has_manage_roles_in_guild(&guild_id) {
         return Err(StatusCode::FORBIDDEN);
     }
-    
+
     let config_id: i64 = config_id.parse().map_err(|_| StatusCode::BAD_REQUEST)?;
-    
+
     if let Err(msg) = validate_selfrole_request(&payload) {
         return Ok(Json(serde_json::json!({"success": false, "message": msg})));
     }
@@ -211,41 +218,48 @@ async fn api_update_selfroles(
         Ok(roles) => roles,
         Err(msg) => return Ok(Json(serde_json::json!({"success": false, "message": msg}))),
     };
-    
+
     let configs = crate::database::selfroles::SelfRoleConfig::get_by_guild(&state.db, &guild_id).await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-    
+
     let mut config = configs.into_iter().find(|c| c.id == config_id)
         .ok_or(StatusCode::NOT_FOUND)?;
-    
+
     if config.update(&state.db, &payload.title, &payload.body, &payload.selection_type).await.is_err() {
         return Ok(Json(serde_json::json!({"success": false, "message": "Failed to update configuration"})));
     }
-    
+
     if crate::database::selfroles::SelfRoleRole::delete_by_config_id(&state.db, config.id).await.is_err() {
         return Ok(Json(serde_json::json!({"success": false, "message": "Failed to update roles"})));
     }
-    
+
     for role_data in &payload.roles {
         if crate::database::selfroles::SelfRoleRole::create(&state.db, config.id, &role_data.role_id, &role_data.emoji).await.is_err() {
             return Ok(Json(serde_json::json!({"success": false, "message": "Failed to save roles"})));
         }
     }
-    
+
     if let Some(message_id) = &config.message_id {
         let channel_id_u64: u64 = config.channel_id.parse().map_err(|_| StatusCode::BAD_REQUEST)?;
         let message_id_u64: u64 = message_id.parse().map_err(|_| StatusCode::BAD_REQUEST)?;
-        
-        use serenity::all::{CreateEmbed, CreateActionRow, CreateButton, ButtonStyle, Colour, EditMessage};
-        
+
+        use serenity::all::{CreateEmbed, CreateActionRow, CreateButton, ButtonStyle, Colour, EditMessage, CreateEmbedFooter};
+
+        let footer_text = match payload.selection_type.as_str() {
+            "multiple" => "Multiple roles",
+            "radio" => "Single role",
+            _ => "",
+        };
+
         let embed = CreateEmbed::new()
             .title(&payload.title)
             .description(&payload.body)
-            .colour(Colour::from_rgb(102, 126, 234));
-        
+            .colour(Colour::from_rgb(102, 126, 234))
+            .footer(CreateEmbedFooter::new(footer_text));
+
         let mut action_rows = Vec::new();
         let mut current_row = Vec::new();
-        
+
         for (index, role_data) in payload.roles.iter().enumerate() {
             let role_name = guild_roles.iter()
                 .find(|r| r.id.to_string() == role_data.role_id)
@@ -255,20 +269,20 @@ async fn api_update_selfroles(
             let button = CreateButton::new(format!("selfrole_{}_{}", config.id, role_data.role_id))
                 .label(&format!("{} {}", role_data.emoji, role_name))
                 .style(ButtonStyle::Primary);
-            
+
             current_row.push(button);
-            
+
             if current_row.len() == 5 || index == payload.roles.len() - 1 {
                 action_rows.push(CreateActionRow::Buttons(current_row.clone()));
                 current_row.clear();
                 if action_rows.len() == 5 { break; }
             }
         }
-        
+
         let edit_message = EditMessage::new().embed(embed).components(action_rows);
         let _ = state.http.edit_message(channel_id_u64.into(), message_id_u64.into(), &edit_message, Vec::new()).await;
     }
-    
+
     Ok(Json(serde_json::json!({"success": true, "message": "Self-role message updated successfully", "config_id": config.id})))
 }
 
@@ -439,27 +453,27 @@ async fn api_delete_selfroles(
 ) -> Result<Json<serde_json::Value>, StatusCode> {
     let (_, user) = extract_session_data(&headers).await.map_err(|_| StatusCode::UNAUTHORIZED)?;
     let user = user.ok_or(StatusCode::UNAUTHORIZED)?;
-    
+
     if !user.has_manage_roles_in_guild(&guild_id) {
         return Err(StatusCode::FORBIDDEN);
     }
-    
+
     let config_id: i64 = config_id.parse().map_err(|_| StatusCode::BAD_REQUEST)?;
     let configs = crate::database::selfroles::SelfRoleConfig::get_by_guild(&state.db, &guild_id).await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-    
+
     let config = configs.into_iter().find(|c| c.id == config_id)
         .ok_or(StatusCode::NOT_FOUND)?;
-    
+
     if let Some(message_id) = &config.message_id {
         let channel_id_u64: u64 = config.channel_id.parse().map_err(|_| StatusCode::BAD_REQUEST)?;
         let message_id_u64: u64 = message_id.parse().map_err(|_| StatusCode::BAD_REQUEST)?;
         let _ = state.http.delete_message(channel_id_u64.into(), message_id_u64.into(), Some("Self-role deleted")).await;
     }
-    
+
     if config.delete(&state.db).await.is_err() {
         return Ok(Json(serde_json::json!({"success": false, "message": "Failed to delete configuration"})));
     }
-    
+
     Ok(Json(serde_json::json!({"success": true, "message": "Self-role message deleted successfully"})))
 }

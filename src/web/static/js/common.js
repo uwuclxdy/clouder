@@ -1,6 +1,6 @@
-// Common JavaScript functions used across multiple pages
+// Common JavaScript functions
 
-// API request helper with error handling
+// API request helper
 async function apiRequest(url, options = {}) {
     try {
         const response = await fetch(url, {
@@ -24,7 +24,7 @@ async function apiRequest(url, options = {}) {
     }
 }
 
-// Show loading state for buttons
+// Button loading state
 function setButtonLoading(button, loading, originalText) {
     if (loading) {
         button.disabled = true;
@@ -36,9 +36,8 @@ function setButtonLoading(button, loading, originalText) {
     }
 }
 
-// Show success/error messages
+// Show messages
 function showMessage(message, type = 'info') {
-    // Simple alert for now - could be enhanced with custom toast notifications
     if (type === 'error') {
         alert('Error: ' + message);
     } else if (type === 'success') {
@@ -48,7 +47,7 @@ function showMessage(message, type = 'info') {
     }
 }
 
-// Debounce function for input events
+// Debounce function
 function debounce(func, wait) {
     let timeout;
     return function executedFunction(...args) {

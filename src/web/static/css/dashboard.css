@@ -760,3 +760,39 @@ textarea {
         padding: 3px 6px;
     }
 }
+
+/* Utility classes for inline styles */
+.guild-name-highlight {
+    color: #667eea;
+    font-weight: 500;
+}
+
+.welcome-username {
+    margin: 0;
+    font-size: 1.2em;
+    color: white;
+}
+
+.welcome-subtitle {
+    margin: 5px 0 0 0;
+    opacity: 0.8;
+    color: white;
+}
+
+.role-hierarchy-notice {
+    background: rgba(255, 193, 7, 0.2);
+    border-left: 4px solid #ffc107;
+    padding: 12px;
+    border-radius: 4px;
+    margin-bottom: 15px;
+    color: #fff3cd;
+}
+
+.deploy-btn-spacing {
+    margin-top: 20px;
+}
+
+.feature-card-disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}

@@ -32,7 +32,7 @@
     <div class="container">
         <div class="header">
             <h1>{{HEADER_TITLE}}</h1>
-            <p>{{HEADER_DESCRIPTION}} <span style="color: #667eea; font-weight: 500;">{{GUILD_NAME}}</span></p>
+            <p>{{HEADER_DESCRIPTION}} <span class="guild-name-highlight">{{GUILD_NAME}}</span></p>
         </div>
         <div class="main-content">
             <div class="form-section">
@@ -70,7 +70,7 @@
 
                     <div class="form-group">
                         <label>Roles:</label>
-                        <div style="background: rgba(255, 193, 7, 0.2); border-left: 4px solid #ffc107; padding: 12px; border-radius: 4px; margin-bottom: 15px; color: #fff3cd;">
+                        <div class="role-hierarchy-notice">
                             <strong>ℹ️ Role Hierarchy Notice:</strong> Only roles that are below at least one of the bot's roles in the server hierarchy can be assigned through self-roles. If you don't see a role here, make sure at least one of the bot's roles is positioned above it in Server Settings → Roles.
                         </div>
                         <div class="roles-section">
@@ -92,7 +92,7 @@
                 <div class="preview-buttons" id="previewButtons">
                     <!-- Buttons will be generated here -->
                 </div>
-                <button type="submit" class="btn full-width" id="deployBtn" disabled form="selfRoleForm" style="margin-top: 20px;">
+                <button type="submit" class="btn full-width deploy-btn-spacing" id="deployBtn" disabled form="selfRoleForm">>
                     {{BUTTON_TEXT}}
                 </button>
             </div>
@@ -101,13 +101,12 @@
 
     <script>
         {{COMMON_JS}}
+        {{SELFROLES_CONFIG_JS}}
         {{SELFROLES_JS}}
 
-        const guildId = '{{GUILD_ID}}';
-        {{CONFIG_ID_SCRIPT}}
-
         document.addEventListener('DOMContentLoaded', async function() {
-            selfRoleManager = new SelfRoleManager(guildId{{CONFIG_ID_PARAM}});
+            const configId = window.selfRoleConfig.isEdit() ? window.selfRoleConfig.getConfigId() : undefined;
+            selfRoleManager = new SelfRoleManager(window.selfRoleConfig.getGuildId(), configId);
             await selfRoleManager.init();
         });
     </script>

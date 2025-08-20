@@ -231,12 +231,12 @@
     background: rgba(0, 0, 0, 0.4);
     backdrop-filter: blur(10px);
     border-radius: 15px;
-    padding: 25px;
+    padding: 20px;
     cursor: pointer;
     transition: all 0.3s ease;
     display: flex;
     flex-direction: column;
-    min-height: 140px;
+    min-height: 100px;
     position: relative;
     color: #f5f5f5;
     animation: slideInUp 0.6s ease-out;
@@ -326,26 +326,26 @@
 
 .message-badges {
     position: absolute;
-    top: 20px;
-    right: 20px;
+    top: 15px;
+    right: 15px;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
     align-items: flex-end;
 }
 
 .message-actions {
     position: absolute;
-    bottom: 20px;
-    right: 20px;
+    bottom: 15px;
+    right: 15px;
 }
 
 .delete-btn {
-    padding: 6px 12px;
+    padding: 10px 16px;
     border: none;
-    border-radius: 6px;
+    border-radius: 8px;
     cursor: pointer;
-    font-size: 0.8em;
+    font-size: 0.9em;
     font-weight: 500;
     text-decoration: none;
     display: inline-block;
@@ -353,7 +353,7 @@
     background: rgba(220, 53, 69, 0.9);
     color: #ffffff;
     text-align: center;
-    min-width: 60px;
+    min-width: 75px;
 }
 
 .delete-btn:hover {
@@ -723,8 +723,8 @@ textarea {
 
     /* Mobile-specific adjustments for message cards */
     .message-card {
-        padding: 20px;
-        min-height: 140px;
+        padding: 18px;
+        min-height: 110px;
     }
 
     .message-card-content {
@@ -733,14 +733,14 @@ textarea {
     }
 
     .message-badges {
-        top: 15px;
-        right: 15px;
-        gap: 6px;
+        top: 12px;
+        right: 12px;
+        gap: 5px;
     }
 
     .message-actions {
-        bottom: 15px;
-        right: 15px;
+        bottom: 12px;
+        right: 12px;
     }
 
     .message-meta {
@@ -750,9 +750,9 @@ textarea {
     }
 
     .delete-btn {
-        padding: 6px 10px;
-        font-size: 0.75em;
-        min-width: 50px;
+        padding: 8px 12px;
+        font-size: 0.8em;
+        min-width: 65px;
     }
 
     .role-count, .selection-type {

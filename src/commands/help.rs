@@ -1,9 +1,10 @@
 //! Help command system with automatic registration and category organization.
 
 use crate::config::AppState;
+use crate::utils::get_default_embed_color;
 use anyhow::Result;
 use poise::serenity_prelude as serenity;
-use serenity::{CreateEmbed, Color, CreateEmbedFooter};
+use serenity::{CreateEmbed, CreateEmbedFooter};
 
 type Error = Box<dyn std::error::Error + Send + Sync>;
 type Context<'a> = poise::Context<'a, AppState, Error>;
@@ -96,13 +97,13 @@ pub async fn help(
 }
 
 async fn show_general_help(ctx: Context<'_>, commands: &[CommandInfo]) -> Result<(), Error> {
-    let embed = create_help_embed(commands);
+    let embed = create_help_embed(commands, ctx.data());
     ctx.send(poise::CreateReply::default().embed(embed)).await?;
     Ok(())
 }
 
 /// Create the help embed that can be reused in different contexts
-pub fn create_help_embed(commands: &[CommandInfo]) -> CreateEmbed {
+pub fn create_help_embed(commands: &[CommandInfo], app_state: &AppState) -> CreateEmbed {
     let mut categories = std::collections::HashMap::new();
     for cmd in commands {
         categories.entry(cmd.category.clone()).or_insert_with(Vec::new).push(cmd);
@@ -111,7 +112,7 @@ pub fn create_help_embed(commands: &[CommandInfo]) -> CreateEmbed {
     let mut embed = CreateEmbed::new()
         .title("✍️ command list")
         .description("`/help [category]` for more details")
-        .color(Color::BLITZ_BLUE);
+        .color(get_default_embed_color(app_state));
 
     for category in [
         CommandCategory::Core,
@@ -168,7 +169,7 @@ async fn show_category_help(ctx: Context<'_>, commands: &[CommandInfo], category
 
     let mut embed = CreateEmbed::new()
         .title(&format!("{} - details", category.as_str()))
-        .color(Color::DARK_BLUE);
+        .color(get_default_embed_color(ctx.data()));
 
     for cmd in &category_commands {
         let mut field_value = format!("**desc:** {}\n", cmd.description);

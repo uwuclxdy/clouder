@@ -1,4 +1,5 @@
 use crate::config::AppState;
+use crate::utils::get_default_embed_color;
 use poise::serenity_prelude as serenity;
 
 type Error = Box<dyn std::error::Error + Send + Sync>;
@@ -17,7 +18,7 @@ pub async fn selfroles(ctx: Context<'_>) -> Result<(), Error> {
             format!("{}/dashboard/{}/selfroles", base_url, guild_id),
             false,
         )
-        .color(serenity::Color::BLUE)
+        .color(get_default_embed_color(ctx.data()))
         .footer(serenity::CreateEmbedFooter::new("you need 'manage roles' permission to configure self-roles"));
 
     ctx.send(

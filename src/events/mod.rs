@@ -4,6 +4,54 @@ use crate::config::AppState;
 use crate::database::selfroles::{SelfRoleConfig, SelfRoleCooldown};
 use crate::serenity;
 
+/// Handle new messages - primarily for bot mention help responses
+/// When the bot is mentioned in any message, it responds with the help command output
+pub async fn handle_message_create(
+    ctx: &serenity::Context,
+    message: &serenity::Message,
+    _data: &AppState,
+) {
+    // Ignore messages from bots
+    if message.author.bot {
+        return;
+    }
+
+    // Get current user ID from HTTP instead of cache to avoid Send issues
+    let current_user = match ctx.http.get_current_user().await {
+        Ok(user) => user,
+        Err(e) => {
+            tracing::error!("Failed to get current user: {}", e);
+            return;
+        }
+    };
+
+    // Check if the bot is mentioned
+    if message.mentions.iter().any(|u| u.id == current_user.id) {
+        // Send help response using the reusable help command logic
+        if let Err(e) = send_help_as_message(ctx, message).await {
+            tracing::error!("Failed to send help message on mention: {}", e);
+        }
+    }
+}
+
+async fn send_help_as_message(
+    ctx: &serenity::Context,
+    message: &serenity::Message,
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    // Reuse the help command logic instead of duplicating it
+    let commands = crate::commands::help::get_all_commands();
+    let embed = crate::commands::help::create_help_embed(&commands);
+
+    message.channel_id.send_message(
+        &ctx.http, 
+        serenity::CreateMessage::new()
+            .embed(embed)
+            .reference_message(message)
+    ).await?;
+
+    Ok(())
+}
+
 pub async fn handle_interaction_create(
     ctx: &serenity::Context,
     interaction: &serenity::Interaction,

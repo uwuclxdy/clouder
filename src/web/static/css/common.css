@@ -64,7 +64,7 @@ body {
     margin: 0 4px;
 }
 
-.back-btn, .logout-btn {
+.logout-btn {
     background: rgba(255, 255, 255, 0.15);
     color: #ffffff;
     padding: 8px 16px;
@@ -77,7 +77,7 @@ body {
     font-weight: 500;
 }
 
-.back-btn:hover, .logout-btn:hover {
+.logout-btn:hover {
     background: rgba(255, 255, 255, 0.25);
     transform: translateY(-1px);
 }
@@ -163,7 +163,6 @@ input, textarea, select {
     box-sizing: border-box;
     appearance: none;
     -webkit-appearance: none;
-    -moz-appearance: none;
 }
 
 /* Custom dropdown arrow for select elements */

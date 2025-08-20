@@ -1,4 +1,4 @@
-# Bot Requirements: blushin-rs Discord Bot
+# Discord Bot Requirements
 
 ## **Core Architecture**
 - **Framework:** Serenity + Poise (not Twilight)

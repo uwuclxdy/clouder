@@ -52,6 +52,10 @@
    - All available Discord API user data in embed format
    - Defaults to command invoker if no mention
 
+**`/help`** - List of all commands and their descriptions
+   - Command prefix if configured in the server
+   - Command descriptions are in the code
+
 #### **API Integration Commands (with Pagination)**
 **`/hg-latest`** - Latest HuggingFace AI models
    - Source: `https://huggingface.co/api/models?sort=lastModified&limit=10`
@@ -68,6 +72,10 @@
     - Source: `https://github.com/isboyjc/github-trending-api`
     - Time period buttons: Daily, Weekly, Monthly
     - Pagination for results
+
+### **User facing text**
+- **In Discord:** mostly lowercase (except titles), short and a little bit silly at times :3
+- **Web Dashboard:** Properly capitalized, still short and concise
 
 ### **Event Handling**
 - **Message Interception:** For uwufy functionality using MESSAGE_CONTENT intent
@@ -129,31 +137,32 @@
 
 ## **Project Structure**
 ```
+migrations/ # database migrations
+└── ...
 src/
 ├── main.rs
 ├── .env
 ├── config.rs # everything configurable here - not spread out across mod files or anywhere else
-├── database/ # db related code
-│   ├── selfroles.rs
-│   └── ...
 ├── commands/ # all slash commands, organized in folders and files
-│   ├── selfroles.rs
-│   ├── custom/
+│   ├── custom/ # code for handling custom commands with configurable per-server prefixe
+│   └── ...
+├── database/ # db related code
 │   └── ...
 ├── events/ # event handlers
-│   ├── selfrole_interactions.rs
 │   └── ...
-├── tests/ # all tests here instead of anywhere else
+├── tests/ # all tests here and nowhere else
+│   └── ...
+├── utils/ # common methods used in multiple commands or other parts of code
 │   └── ...
 ├── web/ # web dashboard related code (use include_str!() macro for html and other static files in order to compile them into binary as well)
+│   ├── static/ # js and css here and NOT in .rs files
+│   ├── templates/ # html templates here
 │   └── ...
-├── external/ # external API interactions
-│   └── ...
-└── utils/ # common methods used in multiple commands or other parts of code
+└── external/ # external API interactions
     └── ...
 ```
 
-## **Structure on program start**
+## **Structure in production**
 - Auto-creates `data` folder, db file (if not exists) and tables on startup with `IF NOT EXISTS`
 ```
 ├── clouder.exe

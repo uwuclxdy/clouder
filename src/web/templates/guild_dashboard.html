@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <title>Dashboard - {{GUILD_NAME}}</title>
     <meta charset="UTF-8">
@@ -10,8 +10,20 @@
     </style>
 </head>
 <body>
-    <a href="/" class="back-btn">← Back to Servers</a>
-    <a href="/auth/logout" class="logout-btn">Logout</a>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <div class="navbar-left">
+                <div class="breadcrumb">
+                    <a href="/" class="breadcrumb-item">Dashboard</a>
+                    <span class="breadcrumb-separator">/</span>
+                    <span class="breadcrumb-item current">{{GUILD_NAME}}</span>
+                </div>
+            </div>
+            <div class="navbar-right">
+                <a href="/auth/logout" class="logout-btn">Logout</a>
+            </div>
+        </div>
+    </nav>
     <div class="container">
         <div class="header guild-header">
             <img src="{{GUILD_ICON}}" alt="{{GUILD_NAME}}" class="guild-icon">

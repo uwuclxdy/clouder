@@ -1,4 +1,4 @@
-// Self-roles management JavaScript
+// Self-roles management
 
 class SelfRoleManager {
     constructor(guildId, configId = null) {
@@ -7,12 +7,12 @@ class SelfRoleManager {
         this.channels = [];
         this.roles = [];
         this.isEditMode = configId !== null;
+        this.currentEmojiRoleId = null;
         
         this.initializeEventListeners();
     }
 
     initializeEventListeners() {
-        // Form input listeners
         const titleInput = document.getElementById('title');
         const bodyInput = document.getElementById('body');
         
@@ -22,13 +22,16 @@ class SelfRoleManager {
         const channelSelect = document.getElementById('channel');
         if (channelSelect) channelSelect.addEventListener('change', () => this.updateDeployButton());
         
-        // Selection type radio buttons
         const selectionTypeRadios = document.querySelectorAll('input[name="selection_type"]');
         selectionTypeRadios.forEach(radio => {
-            radio.addEventListener('change', () => this.updatePreview());
+            radio.addEventListener('change', () => {
+                this.updatePreview();
+                this.updateRadioGroupStyles();
+            });
         });
+        
+        this.updateRadioGroupStyles();
 
-        // Form submission
         const form = document.getElementById('selfRoleForm');
         if (form) {
             form.addEventListener('submit', (e) => this.handleFormSubmit(e));
@@ -53,7 +56,7 @@ class SelfRoleManager {
     async loadChannels() {
         try {
             const { data } = await apiRequest(`/api/guild/${this.guildId}/channels`);
-            this.channels = data.channels.filter(ch => ch.type === 0); // Text channels only
+            this.channels = data.channels.filter(ch => ch.type === 0);
 
             const channelSelect = document.getElementById('channel');
             channelSelect.innerHTML = '<option value="">Select a channel...</option>';
@@ -100,17 +103,56 @@ class SelfRoleManager {
     displayRoleLoadError(message) {
         const rolesList = document.getElementById('rolesList');
         rolesList.innerHTML = `
-            <div style="color: #ffcccb; padding: 15px; background: rgba(220, 53, 69, 0.2); border-radius: 8px; margin-bottom: 15px;">
-                <strong>⚠️ Error Loading Roles:</strong><br>
-                ${message}
-                <br><br>
-                <strong>Common solutions:</strong>
-                <ul style="margin: 10px 0;">
-                    <li>Ensure the bot is properly added to your server</li>
-                    <li>Make sure the bot has "Manage Roles" permission</li>
-                    <li>Check that the bot's role is above the roles you want to manage</li>
-                    <li>Try re-inviting the bot with proper permissions</li>
-                </ul>
+            <div class="text-center py-8">
+                <div class="text-red-600 mb-2">
+                    <svg class="mx-auto h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                              d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <p class="text-gray-600 mb-4">${escapeHtml(message)}</p>
+                <button onclick="location.reload()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
+                    Retry
+                </button>
+            </div>
+        `;
+    }
+
+    displayNoManageableRoles() {
+        const rolesList = document.getElementById('rolesList');
+        rolesList.innerHTML = `
+            <div class="text-center py-8">
+                <div class="text-yellow-600 mb-2">
+                    <svg class="mx-auto h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 18.5c-.77.833.192 2.5 1.732 2.5z"/>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">No manageable roles found</h3>
+                <p class="text-gray-600 mb-4">
+                    Bot lacks permission or no assignable roles exist.
+                </p>
+                <p class="text-sm text-gray-500">
+                    Ensure bot has "Manage Roles" permission and is positioned above target roles.
+                </p>
+            </div>
+        `;
+    }
+
+    displayNetworkError() {
+        const rolesList = document.getElementById('rolesList');
+        rolesList.innerHTML = `
+            <div class="text-center py-8">
+                <div class="text-red-600 mb-2">
+                    <svg class="mx-auto h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                              d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <p class="text-gray-600 mb-4">Failed to load roles. Check connection and retry.</p>
+                <button onclick="location.reload()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
+                    Retry
+                </button>
             </div>
         `;
     }
@@ -144,12 +186,119 @@ class SelfRoleManager {
     createRoleItem(role) {
         const roleItem = document.createElement('div');
         roleItem.className = 'role-item';
+        
         roleItem.innerHTML = `
-            <input type="checkbox" class="role-checkbox" data-role-id="${role.id}" onchange="selfRoleManager.updatePreview()">
-            <input type="text" class="emoji-input" placeholder="🎮" maxlength="2" onchange="selfRoleManager.updatePreview()">
-            <div class="role-name" style="color: #${role.color.toString(16).padStart(6, '0')}">${role.name}</div>
+            <input type="checkbox" class="role-checkbox" data-role-id="${role.id}" onchange="selfRoleManager.updatePreview(); selfRoleManager.updateRoleItemState(this)" onclick="event.stopPropagation()">
+            <div class="emoji-button" data-role-id="${role.id}">
+                <span class="emoji-text">🎮</span>
+            </div>
+            <div class="role-name">${role.name}</div>
+            <div class="role-color-indicator" style="background-color: #${role.color.toString(16).padStart(6, '0')}"></div>
         `;
+        
+        // Set up emoji button click handler
+        const emojiButton = roleItem.querySelector('.emoji-button');
+        emojiButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.openEmojiPicker(role.id);
+        });
+        
+        // Clickable role item
+        roleItem.addEventListener('click', (e) => {
+            if (!e.target.closest('.emoji-button')) {
+                this.addRippleEffect(roleItem);
+                
+                const checkbox = roleItem.querySelector('.role-checkbox');
+                checkbox.checked = !checkbox.checked;
+                this.updateRoleItemState(checkbox);
+                this.updatePreview();
+            }
+        });
+        
         return roleItem;
+    }
+
+    updateRoleItemState(checkbox) {
+        const roleItem = checkbox.closest('.role-item');
+        if (checkbox.checked) {
+            roleItem.classList.add('selected');
+        } else {
+            roleItem.classList.remove('selected');
+        }
+    }
+
+    addRippleEffect(element) {
+        element.classList.add('ripple');
+        setTimeout(() => {
+            element.classList.remove('ripple');
+        }, 300);
+    }
+
+    openEmojiPicker(roleId) {
+        this.currentEmojiRoleId = roleId;
+        
+        // Create modal if it doesn't exist
+        if (!document.getElementById('emojiPickerModal')) {
+            this.createEmojiPickerModal();
+        }
+        
+        const modal = document.getElementById('emojiPickerModal');
+        modal.classList.add('show');
+        
+        // Close on backdrop click
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                this.closeEmojiPicker();
+            }
+        });
+        
+        // Close on escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                this.closeEmojiPicker();
+            }
+        }, { once: true });
+    }
+
+    closeEmojiPicker() {
+        const modal = document.getElementById('emojiPickerModal');
+        if (modal) {
+            modal.classList.remove('show');
+        }
+    }
+
+    createEmojiPickerModal() {
+        const modal = document.createElement('div');
+        modal.id = 'emojiPickerModal';
+        modal.innerHTML = `
+            <div id="emojiPickerContent">
+                <emoji-picker></emoji-picker>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Set up emoji selection
+        setTimeout(() => {
+            const picker = modal.querySelector('emoji-picker');
+            if (picker) {
+                picker.addEventListener('emoji-click', (event) => {
+                    const emoji = event.detail.unicode;
+                    this.setRoleEmoji(this.currentEmojiRoleId, emoji);
+                    this.closeEmojiPicker();
+                });
+            }
+        }, 100);
+    }
+
+    setRoleEmoji(roleId, emoji) {
+        const emojiButton = document.querySelector(`[data-role-id="${roleId}"].emoji-button`);
+        if (emojiButton) {
+            const emojiText = emojiButton.querySelector('.emoji-text');
+            emojiText.textContent = emoji;
+            emojiButton.classList.add('has-emoji');
+            this.updatePreview();
+        }
     }
 
     updatePreview() {
@@ -166,8 +315,8 @@ class SelfRoleManager {
         checkboxes.forEach(checkbox => {
             const roleId = checkbox.dataset.roleId;
             const role = this.roles.find(r => r.id === roleId);
-            const emojiInput = checkbox.parentElement.querySelector('.emoji-input');
-            const emoji = emojiInput.value || '📝';
+            const emojiButton = checkbox.parentElement.querySelector('.emoji-button .emoji-text');
+            const emoji = emojiButton ? emojiButton.textContent : '📝';
 
             if (role) {
                 const button = document.createElement('button');
@@ -178,6 +327,18 @@ class SelfRoleManager {
         });
 
         this.updateDeployButton();
+    }
+
+    updateRadioGroupStyles() {
+        const radioGroups = document.querySelectorAll('.radio-group');
+        radioGroups.forEach(group => {
+            const radio = group.querySelector('input[type="radio"]');
+            if (radio.checked) {
+                group.classList.add('selected');
+            } else {
+                group.classList.remove('selected');
+            }
+        });
     }
 
     updateDeployButton() {
@@ -206,17 +367,17 @@ class SelfRoleManager {
                 const selectionTypeRadio = document.querySelector(`input[name="selection_type"][value="${config.selection_type}"]`);
                 if (selectionTypeRadio) selectionTypeRadio.checked = true;
 
-                // Mark roles as selected and set their emojis
+                // Set selected roles and emojis
                 config.roles.forEach(configRole => {
                     const checkbox = document.querySelector(`input[data-role-id="${configRole.role_id}"]`);
                     if (checkbox) {
                         checkbox.checked = true;
-                        const emojiInput = checkbox.parentElement.querySelector('.emoji-input');
-                        emojiInput.value = configRole.emoji;
+                        this.updateRoleItemState(checkbox);
+                        this.setRoleEmoji(configRole.role_id, configRole.emoji);
                     }
                 });
 
-                // Update the preview and deploy button
+                // Update preview
                 this.updatePreview();
             }
         } catch (error) {
@@ -240,7 +401,8 @@ class SelfRoleManager {
 
             document.querySelectorAll('.role-checkbox:checked').forEach(checkbox => {
                 const roleId = checkbox.dataset.roleId;
-                const emoji = checkbox.parentElement.querySelector('.emoji-input').value || '📝';
+                const emojiButton = checkbox.parentElement.querySelector('.emoji-button .emoji-text');
+                const emoji = emojiButton ? emojiButton.textContent : '📝';
                 selectedRoles.push({ role_id: roleId, emoji: emoji });
             });
 
@@ -288,8 +450,10 @@ async function loadMessages(guildId) {
         if (data.success && data.configs.length > 0) {
             messagesGrid.innerHTML = '';
 
-            data.configs.forEach(config => {
+            data.configs.forEach((config, index) => {
                 const messageCard = createMessageCard(config, guildId);
+                // Add staggered animation delay
+                messageCard.style.animationDelay = `${index * 0.1}s`;
                 messagesGrid.appendChild(messageCard);
             });
         } else {
@@ -306,19 +470,34 @@ function createMessageCard(config, guildId) {
     messageCard.className = 'message-card';
 
     const createdDate = new Date(config.created_at).toLocaleDateString();
+    const channelName = config.channel_name || 'Unknown Channel';
+
+    // Click to edit
+    messageCard.addEventListener('click', (e) => {
+        // Skip delete button clicks
+        if (!e.target.classList.contains('delete-btn')) {
+            window.location.href = `/dashboard/${guildId}/selfroles/edit/${config.id}`;
+        }
+    });
 
     messageCard.innerHTML = `
-        <div class="message-title">${config.title}</div>
-        <div class="message-body">${config.body}</div>
-        <div class="message-meta">
-            <span>Created: ${createdDate}</span>
-            <div>
-                <span class="role-count">${config.role_count} roles</span>
-                <span class="selection-type">${config.selection_type}</span>
+        <div class="message-badges">
+            <span class="role-count">${config.role_count} roles</span>
+            <span class="selection-type">${config.selection_type}</span>
+        </div>
+        <div class="message-card-content">
+            <div class="message-title">${config.title}</div>
+            <div class="message-body">${config.body}</div>
+            <div class="message-info">
+                <div class="message-channel">${channelName}</div>
+                <div class="message-meta">
+                    <div class="message-meta-left">
+                        <span>Created: ${createdDate}</span>
+                    </div>
+                </div>
             </div>
         </div>
         <div class="message-actions">
-            <a href="/dashboard/${guildId}/selfroles/edit/${config.id}" class="edit-btn">Edit</a>
             <button class="delete-btn" onclick="deleteMessage(event, ${config.id}, '${config.title.replace(/'/g, "\\'")}', '${guildId}')">Delete</button>
         </div>
     `;
@@ -329,6 +508,7 @@ function createMessageCard(config, guildId) {
 function displayNoMessages(messagesGrid, guildId) {
     messagesGrid.innerHTML = `
         <div class="no-messages">
+            <div style="font-size: 4em; margin-bottom: 20px; opacity: 0.6;">📝</div>
             <h3>No self-role messages yet</h3>
             <p>Create your first interactive role assignment message to get started!</p>
             <a href="/dashboard/${guildId}/selfroles/new" class="create-btn">+ Create First Message</a>
@@ -339,8 +519,10 @@ function displayNoMessages(messagesGrid, guildId) {
 function displayLoadError(messagesGrid) {
     messagesGrid.innerHTML = `
         <div class="no-messages">
+            <div style="font-size: 4em; margin-bottom: 20px; opacity: 0.6;">⚠️</div>
             <h3>Failed to load messages</h3>
             <p>There was an error loading your self-role messages. Please try refreshing the page.</p>
+            <button class="btn" onclick="location.reload()">Refresh Page</button>
         </div>
     `;
 }
@@ -348,24 +530,35 @@ function displayLoadError(messagesGrid) {
 async function deleteMessage(event, configId, title, guildId) {
     event.stopPropagation();
 
-    if (!confirm(`Are you sure you want to delete "${title}"? This will also remove the message from Discord and cannot be undone.`)) {
+    const confirmed = confirm(`⚠️ Delete "${title}"?\n\nThis will permanently remove:\n• The self-role message from Discord\n• All role assignment data\n• Cannot be undone\n\nAre you sure?`);
+    
+    if (!confirmed) {
         return;
     }
+
+    const deleteBtn = event.target;
+    const originalText = deleteBtn.textContent;
+    deleteBtn.textContent = 'Deleting...';
+    deleteBtn.disabled = true;
 
     try {
         const { data } = await apiRequest(`/api/selfroles/${guildId}/${configId}`, { method: 'DELETE' });
 
         if (data.success) {
             showMessage('Self-role message deleted successfully!', 'success');
-            await loadMessages(guildId); // Reload the messages list
+            await loadMessages(guildId); // Reload messages
         } else {
             throw new Error(data.message || 'Unknown error');
         }
     } catch (error) {
         console.error('Delete failed:', error);
         showMessage(error.message || 'Failed to delete self-role message. Please try again.', 'error');
+        
+        // Reset button state on error
+        deleteBtn.textContent = originalText;
+        deleteBtn.disabled = false;
     }
 }
 
-// Global variable for the current instance
+// Manager instance
 let selfRoleManager = null;

@@ -30,7 +30,7 @@ Create a template that generates the required meta tags for Discord compatibilit
 **Essential Meta Tags:**
 ```html
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta property="og:type" content="video.other">

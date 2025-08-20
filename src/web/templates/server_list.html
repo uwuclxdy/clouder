@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <title>Clouder Bot Dashboard</title>
     <meta charset="UTF-8">
@@ -10,14 +10,30 @@
     </style>
 </head>
 <body>
-    <a href="/auth/logout" class="logout-btn">Logout</a>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <div class="navbar-left">
+                <div class="breadcrumb">
+                    <span class="breadcrumb-item current">Dashboard</span>
+                </div>
+            </div>
+            <div class="navbar-right">
+                <a href="/auth/logout" class="logout-btn">Logout</a>
+            </div>
+        </div>
+    </nav>
     <div class="container">
-        <div class="header">
-            <h1>Clouder Bot Dashboard</h1>
-            <p>Select a server to configure self-roles</p>
-            <div class="user-info">
+        <div class="user-info">
+            <div class="user-info-left">
                 <img src="{{USER_AVATAR}}" alt="{{USER_NAME}}" class="user-avatar">
-                <span>Welcome, {{USER_NAME}}!</span>
+                <div>
+                    <h3 style="margin: 0; font-size: 1.2em; color: white;">Welcome, {{USER_NAME}}!</h3>
+                    <p style="margin: 5px 0 0 0; opacity: 0.8; color: white;">Select a server to configure self-roles</p>
+                </div>
+            </div>
+            <div class="user-info-right">
+                <h2>Your Servers</h2>
+                <p>Choose a server where you have manage roles permission</p>
             </div>
         </div>
         <div class="servers-grid">

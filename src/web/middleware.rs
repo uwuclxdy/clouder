@@ -65,10 +65,6 @@ impl SessionStore {
         let mut sessions = self.sessions.write().await;
         sessions.retain(|_, session| session.expires_at > now);
     }
-    
-    pub async fn session_count(&self) -> usize {
-        self.sessions.read().await.len()
-    }
 }
 
 impl Default for SessionStore {
@@ -77,7 +73,6 @@ impl Default for SessionStore {
     }
 }
 
-// Global session store instance
 lazy_static::lazy_static! {
     pub static ref GLOBAL_SESSION_STORE: SessionStore = SessionStore::new();
 }
@@ -88,7 +83,6 @@ pub async fn session_middleware(
     request: Request,
     next: Next,
 ) -> Result<Response, StatusCode> {
-    // Cleanup expired sessions periodically
     tokio::spawn(async {
         GLOBAL_SESSION_STORE.cleanup_expired().await;
     });

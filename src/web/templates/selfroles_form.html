@@ -1,20 +1,38 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Edit Self-Role Message - {{GUILD_NAME}}</title>
+    <title>{{PAGE_TITLE}} - {{GUILD_NAME}}</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         {{COMMON_CSS}}
         {{DASHBOARD_CSS}}
     </style>
+    <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.js"></script>
 </head>
 <body>
-    <a href="/dashboard/{{GUILD_ID}}/selfroles" class="back-btn">← Back to Self-Roles</a>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <div class="navbar-left">
+                <div class="breadcrumb">
+                    <a href="/" class="breadcrumb-item">Dashboard</a>
+                    <span class="breadcrumb-separator">/</span>
+                    <a href="/dashboard/{{GUILD_ID}}" class="breadcrumb-item">{{GUILD_NAME}}</a>
+                    <span class="breadcrumb-separator">/</span>
+                    <a href="/dashboard/{{GUILD_ID}}/selfroles" class="breadcrumb-item">Self-Roles</a>
+                    <span class="breadcrumb-separator">/</span>
+                    <span class="breadcrumb-item current">{{BREADCRUMB_CURRENT}}</span>
+                </div>
+            </div>
+            <div class="navbar-right">
+                <a href="/auth/logout" class="logout-btn">Logout</a>
+            </div>
+        </div>
+    </nav>
     <div class="container">
         <div class="header">
-            <h1>Edit Self-Role Message</h1>
-            <p>Edit interactive role assignment message for {{GUILD_NAME}}</p>
+            <h1>{{HEADER_TITLE}}</h1>
+            <p>{{HEADER_DESCRIPTION}} <span style="color: #667eea; font-weight: 500;">{{GUILD_NAME}}</span></p>
         </div>
         <div class="main-content">
             <div class="form-section">
@@ -41,11 +59,11 @@
                         <div class="selection-type">
                             <div class="radio-group">
                                 <input type="radio" id="multiple" name="selection_type" value="multiple" checked>
-                                <label for="multiple">Multiple Selection</label>
+                                <label for="multiple">Multiple roles</label>
                             </div>
                             <div class="radio-group">
                                 <input type="radio" id="radio" name="selection_type" value="radio">
-                                <label for="radio">Single Selection</label>
+                                <label for="radio">One role</label>
                             </div>
                         </div>
                     </div>
@@ -62,9 +80,6 @@
                         </div>
                     </div>
 
-                    <button type="submit" class="btn full-width" id="deployBtn" disabled>
-                        Update Self-Role Message
-                    </button>
                 </form>
             </div>
 
@@ -77,6 +92,9 @@
                 <div class="preview-buttons" id="previewButtons">
                     <!-- Buttons will be generated here -->
                 </div>
+                <button type="submit" class="btn full-width" id="deployBtn" disabled form="selfRoleForm" style="margin-top: 20px;">
+                    {{BUTTON_TEXT}}
+                </button>
             </div>
         </div>
     </div>
@@ -86,10 +104,10 @@
         {{SELFROLES_JS}}
 
         const guildId = '{{GUILD_ID}}';
-        const configId = '{{CONFIG_ID}}';
+        {{CONFIG_ID_SCRIPT}}
 
         document.addEventListener('DOMContentLoaded', async function() {
-            selfRoleManager = new SelfRoleManager(guildId, configId);
+            selfRoleManager = new SelfRoleManager(guildId{{CONFIG_ID_PARAM}});
             await selfRoleManager.init();
         });
     </script>

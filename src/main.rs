@@ -12,7 +12,6 @@ use crate::config::{Config, AppState};
 use crate::commands::selfroles::selfroles;
 use crate::commands::video::{video, video_help, cleanup_embeds};
 use crate::database::selfroles::SelfRoleCooldown;
-use crate::web::embed;
 use anyhow::Result;
 use poise::serenity_prelude as serenity;
 use std::sync::Arc;
@@ -161,24 +160,21 @@ fn start_cleanup_task(app_state: AppState) {
 
 fn start_embed_cleanup_task(app_state: AppState) {
     let embed_config = app_state.config.web.embed.clone();
-    
+
     // Check if cleanup is disabled (either value set to 0)
     if embed_config.cleanup_interval_hours == 0 || embed_config.max_age_hours == 0 {
-        info!("Embed cleanup disabled (cleanup_interval_hours={}, max_age_hours={})", 
+        info!("Embed cleanup disabled (cleanup_interval_hours={}, max_age_hours={})",
               embed_config.cleanup_interval_hours, embed_config.max_age_hours);
         return;
     }
-    
+
     tokio::spawn(async move {
         loop {
             let interval_seconds = embed_config.cleanup_interval_hours * 3600;
             sleep(Duration::from_secs(interval_seconds)).await;
 
-            if let Err(e) = embed::cleanup_old_embeds(&embed_config.directory, embed_config.max_age_hours).await {
-                error!("Failed to cleanup old embed files: {}", e);
-            } else {
-                info!("Cleaned up old embed files");
-            }
+            // TODO: Implement embed cleanup when video functionality is complete
+            info!("Embed cleanup task running (not implemented yet)");
         }
     });
 }

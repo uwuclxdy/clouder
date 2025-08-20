@@ -1,3 +1,6 @@
 /target
 /.env
 checklist.md
+/data/db.sqlite
+/data/db.sqlite-shm
+/data/db.sqlite-wal

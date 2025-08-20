@@ -49,7 +49,6 @@ pub async fn callback(
     let code = params.code.unwrap();
     let client = Client::new();
     
-    // Exchange code for token
     let token_params = [
         ("client_id", state.config.web.oauth.client_id.as_str()),
         ("client_secret", state.config.web.oauth.client_secret.as_str()),
@@ -58,59 +57,43 @@ pub async fn callback(
         ("redirect_uri", &state.config.web.oauth.redirect_uri),
     ];
 
-    let token_response = match client
+    let token_response = client
         .post("https://discord.com/api/oauth2/token")
         .header("Content-Type", "application/x-www-form-urlencoded")
         .form(&token_params)
         .send()
         .await
-    {
-        Ok(resp) if resp.status().is_success() => resp,
-        _ => return Err(Redirect::temporary("/auth/login")),
-    };
+        .map_err(|_| Redirect::temporary("/auth/login"))?;
 
-    let token_data: TokenResponse = match token_response.json().await {
-        Ok(data) => data,
-        Err(_) => return Err(Redirect::temporary("/auth/login")),
-    };
+    if !token_response.status().is_success() {
+        return Err(Redirect::temporary("/auth/login"));
+    }
 
-    // Get user info
-    let user: DiscordUser = match client
+    let token_data: TokenResponse = token_response.json().await
+        .map_err(|_| Redirect::temporary("/auth/login"))?;
+
+    let user: DiscordUser = client
         .get("https://discord.com/api/users/@me")
         .bearer_auth(&token_data.access_token)
         .send()
         .await
         .and_then(|resp| resp.error_for_status())
-        .map_err(|_| ())
-    {
-        Ok(resp) => match resp.json().await {
-            Ok(user) => user,
-            Err(_) => return Err(Redirect::temporary("/auth/login")),
-        },
-        Err(_) => return Err(Redirect::temporary("/auth/login")),
-    };
+        .map_err(|_| Redirect::temporary("/auth/login"))?
+        .json()
+        .await
+        .map_err(|_| Redirect::temporary("/auth/login"))?;
 
-    // Get user guilds
-    let guilds_response = client
+    let guilds: Vec<Guild> = client
         .get("https://discord.com/api/users/@me/guilds")
         .bearer_auth(&token_data.access_token)
         .send()
-        .await;
-
-    let guilds: Vec<Guild> = match guilds_response {
-        Ok(resp) => {
-            let guilds_text = resp.text().await.unwrap_or_default();
-            serde_json::from_str(&guilds_text).unwrap_or_else(|e| {
-                tracing::error!("Failed to parse guilds: {}", e);
-                Vec::new()
-            })
-        }
-        Err(_) => Vec::new(),
-    };
+        .await
+        .map_err(|_| Redirect::temporary("/auth/login"))?
+        .json()
+        .await
+        .unwrap_or_default();
 
     let session_user = SessionUser { user, guilds, access_token: token_data.access_token };
-
-    // Create session
     let session_id = GLOBAL_SESSION_STORE.create_session().await;
     
     if let Some(mut session) = GLOBAL_SESSION_STORE.get_session(&session_id).await {

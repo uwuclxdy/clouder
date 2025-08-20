@@ -1,7 +1,5 @@
 pub mod embed;
 
-// Utility functions for the bot
-
 #[allow(dead_code)]
 pub fn format_duration(seconds: u64) -> String {
     let days = seconds / 86400;
@@ -70,7 +68,7 @@ pub fn get_bot_role_positions(
 pub fn format_discord_timestamp(time: &str, style: char) -> String {
     let date_time = match chrono::DateTime::parse_from_rfc3339(time) {
         Ok(dt) => dt,
-        Err(_) => return "Invalid timestamp".to_string(),
+        Err(_) => return "invalid timestamp".to_string(),
     };
     let timestamp = date_time.timestamp();
     match style {

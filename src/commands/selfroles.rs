@@ -10,15 +10,15 @@ pub async fn selfroles(ctx: Context<'_>) -> Result<(), Error> {
     let guild_id = ctx.guild_id().unwrap().to_string();
 
     let embed = serenity::CreateEmbed::new()
-        .title("Self-Roles Configuration")
-        .description("Click the link below to configure self-roles for your server.")
+        .title("self-roles config")
+        .description("click the link below to configure self-roles for your server")
         .field(
-            "Web Dashboard",
+            "web dashboard",
             format!("{}/dashboard/{}/selfroles", base_url, guild_id),
             false,
         )
         .color(serenity::Color::BLUE)
-        .footer(serenity::CreateEmbedFooter::new("You need 'Manage Roles' permission to configure self-roles"));
+        .footer(serenity::CreateEmbedFooter::new("you need 'manage roles' permission to configure self-roles"));
 
     ctx.send(
         poise::CreateReply::default()

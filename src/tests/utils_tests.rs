@@ -144,7 +144,7 @@ mod tests {
         assert_eq!(format_discord_timestamp(test_time, 'X'), format!("<t:{}:f>", expected_timestamp));
         
         // Test invalid timestamp
-        assert_eq!(format_discord_timestamp("invalid-time", 'F'), "Invalid timestamp");
+        assert_eq!(format_discord_timestamp("invalid-time", 'F'), "invalid timestamp");
         
         // Test just that timezone formatting works, without strict timestamp checking
         let time_with_offset = "2025-08-19T16:05:00+02:00";

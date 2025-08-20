@@ -1,5 +1,13 @@
 pub mod embed;
 
+use serenity::all::Color;
+use crate::config::AppState;
+
+/// Get the default embed color from configuration
+pub fn get_default_embed_color(app_state: &AppState) -> Color {
+    Color::new(app_state.config.web.embed.default_color)
+}
+
 #[allow(dead_code)]
 pub fn format_duration(seconds: u64) -> String {
     let days = seconds / 86400;

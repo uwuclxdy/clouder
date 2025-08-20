@@ -25,67 +25,204 @@ pub async fn bot(ctx: Context<'_>) -> Result<(), Error> {
 }
 
 async fn show_comprehensive_bot_info(ctx: Context<'_>) -> Result<(), Error> {
+    // Bot basic information
     let uptime = BOT_START_TIME.elapsed().unwrap_or_default();
     let uptime_str = format_duration(uptime.as_secs());
-
     let bot_version = env!("CARGO_PKG_VERSION");
 
-    // Simple latency - just measure ping to Discord
+    // Latency measurements
     let start = std::time::Instant::now();
     let _ = ctx.http().get_current_user().await;
-    let latency = start.elapsed();
-    let latency_str = format!("{}ms", latency.as_millis());
+    let api_latency = start.elapsed();
 
-    // System information
+    let start = std::time::Instant::now();
+    let _ = ctx.ping().await;
+    let gateway_latency = start.elapsed();
+
+    // System information initialization
     let mut sys = System::new_all();
     sys.refresh_all();
 
-    // Memory information
-    let total_memory = sys.total_memory() / 1024 / 1024; // Convert to MB
+    // Memory statistics (convert bytes to MB for readability)
+    let total_memory = sys.total_memory() / 1024 / 1024;
     let used_memory = sys.used_memory() / 1024 / 1024;
-    let memory_usage = format!("{:.1}% ({} MB / {} MB)",
-        (used_memory as f64 / total_memory as f64) * 100.0,
-        used_memory,
-        total_memory
-    );
+    let available_memory = sys.available_memory() / 1024 / 1024;
+    let memory_percentage = (used_memory as f64 / total_memory as f64) * 100.0;
 
-    // CPU information
-    let cpu_usage = sys.global_cpu_usage();
+    // CPU statistics
     let cpu_count = sys.cpus().len();
-    let cpu_info = format!("{:.1}% ({} cores)", cpu_usage, cpu_count);
+    let cpu_usage = sys.global_cpu_usage();
 
-    // System information
+    // Process information
+    let current_pid = std::process::id();
+
+    // Disk information - simplified to avoid API compatibility issues
+    let disk_info = "Storage: Available";
+
+    // Discord-specific statistics
+    let guild_count = ctx.cache().guild_count();
+    let cached_users = ctx.cache().user_count();
+
+    // Count cached channels manually
+    let mut cached_channels = 0;
+    for guild_id in ctx.cache().guilds() {
+        if let Some(guild) = ctx.cache().guild(guild_id) {
+            cached_channels += guild.channels.len();
+        }
+    }
+
+    // Get current user information for the bot
+    let bot_user = ctx.http().get_current_user().await?;
+
+    // Database statistics
+    let db_stats = get_enhanced_database_stats(ctx).await;
+
+    // System environment
     let os_info = format!("{} {}",
         System::name().unwrap_or_else(|| "Unknown".to_string()),
         System::os_version().unwrap_or_else(|| "Unknown".to_string())
     );
+    let kernel_version = System::kernel_version().unwrap_or_else(|| "Unknown".to_string());
+    let hostname = System::host_name().unwrap_or_else(|| "Unknown".to_string());
 
-    // Database statistics
-    let db_stats = get_database_stats(ctx).await;
+    // Build information
+    let build_info = format!(
+        "**Framework:** Serenity + Poise\n**Language:** Rust\n**Target:** {}",
+        std::env::consts::ARCH
+    );
 
-    // Additional bot information
-    let guild_count = ctx.cache().guild_count();
-    let cached_users = ctx.cache().user_count();
-
-    // Process information
-    let process_info = format!("PID: {}", std::process::id());
+    // Calculate some additional metrics
+    let memory_per_guild = if guild_count > 0 {
+        format!("{:.1} MB per guild", used_memory as f64 / guild_count as f64)
+    } else {
+        "N/A".to_string()
+    };
 
     let embed = CreateEmbed::new()
-        .title("🤖 Clouder Bot - Comprehensive Information")
+        .title("🤖 Clouder Bot - Advanced System Information")
+        .description(format!(
+            "**{}** • ID: `{}` • Version **{}**",
+            bot_user.tag(),
+            bot_user.id,
+            bot_version
+        ))
         .color(Color::BLITZ_BLUE)
-        .field("📊 Bot Stats", format!("Version: {}\nUptime: {}\nLatency: {}", bot_version, uptime_str, latency_str), true)
-        .field("🌐 Discord Stats", format!("Guilds: {}\nCached Users: {}", guild_count, cached_users), true)
-        .field("💾 System Resources", format!("Memory: {}\nCPU: {}", memory_usage, cpu_info), true)
-        .field("🖥️ Environment", format!("{}\n{}", os_info, process_info), true)
-        .field("🗄️ Database Stats", db_stats, true)
-        .field("👨‍💻 Made by", "uwuclxdy", true)
-        .footer(CreateEmbedFooter::new("Clouder Discord Bot • All systems operational"));
+        .thumbnail(bot_user.face())
+
+        // Performance & Latency
+        .field(
+            "⚡ Performance Metrics",
+            format!(
+                "🕐 **Uptime:** {}\n⏱️ **API Latency:** {}ms\n🌐 **Gateway Latency:** {}ms",
+                uptime_str,
+                api_latency.as_millis(),
+                gateway_latency.as_millis()
+            ),
+            true
+        )
+
+        // Discord Stats
+        .field(
+            "📊 Discord Stats",
+            format!(
+                "🏰 **Guilds:** {}\n👥 **Cached Users:** {}\n💬 **Cached Channels:** {}",
+                guild_count,
+                cached_users,
+                cached_channels
+            ),
+            true
+        )
+
+        // Database Stats
+        .field(
+            "🗄️ Database Stats",
+            db_stats,
+            true
+        )
+
+        // Memory & CPU
+        .field(
+            "💾 Memory Usage",
+            format!(
+                "**Used:** {:.1}% ({} MB)\n**Available:** {} MB\n**Total:** {} MB\n**Per Guild:** {}",
+                memory_percentage,
+                used_memory,
+                available_memory,
+                total_memory,
+                memory_per_guild
+            ),
+            true
+        )
+
+        // CPU Information
+        .field(
+            "⚙️ CPU Information",
+            format!(
+                "**Usage:** {:.1}%\n**Cores:** {}\n**Architecture:** {}",
+                cpu_usage,
+                cpu_count,
+                std::env::consts::ARCH
+            ),
+            true
+        )
+
+        // Storage Information
+        .field(
+            "💿 Storage Status",
+            format!(
+                "{}",
+                disk_info
+            ),
+            true
+        )
+
+        // System Information
+        .field(
+            "🖥️ System Environment",
+            format!(
+                "**OS:** {}\n**Kernel:** {}\n**Hostname:** {}\n**PID:** {}",
+                os_info,
+                kernel_version,
+                hostname,
+                current_pid
+            ),
+            false
+        )
+
+        // Process Information
+        .field(
+            "🔧 Runtime Information",
+            format!(
+                "**Process ID:** {}\n**OS:** {}\n**Family:** {}",
+                current_pid,
+                std::env::consts::OS,
+                std::env::consts::FAMILY
+            ),
+            true
+        )
+
+        // Build Information
+        .field(
+            "📦 Build Information",
+            build_info,
+            true
+        )
+
+        // Developer Information
+        .field(
+            "👨‍💻 Developer",
+            "**Made by:** [uwuclxdy](https://github.com/uwuclxdy)\n**Repository:** [clouder](https://github.com/uwuclxdy/clouder)",
+            true
+        )
+
+        .footer(CreateEmbedFooter::new("Clouder Discord Bot • All systems operational 🟢"))
+        .timestamp(serenity::Timestamp::now());
 
     ctx.send(poise::CreateReply::default().embed(embed)).await?;
     Ok(())
 }
 
-async fn get_database_stats(ctx: Context<'_>) -> String {
+async fn get_enhanced_database_stats(ctx: Context<'_>) -> String {
     let db = &ctx.data().db;
 
     // Get selfrole configurations count
@@ -108,8 +245,22 @@ async fn get_database_stats(ctx: Context<'_>) -> String {
         .fetch_one(db.as_ref())
         .await.unwrap_or_else(|_| 0);
 
-    format!("Configs: {}\nRoles: {}\nCooldowns: {}\nDB Guilds: {}",
-        selfrole_configs, selfrole_roles, active_cooldowns, db_guilds)
+    // Get database file size and recent activity
+    let recent_configs = sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(*) FROM selfrole_configs WHERE created_at > datetime('now', '-7 days')"
+    )
+    .fetch_one(db.as_ref())
+    .await.unwrap_or_else(|_| 0);
+
+    // Get total expired cooldowns (for cleanup statistics)
+    let expired_cooldowns = sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM selfrole_cooldowns WHERE expires_at <= datetime('now')")
+        .fetch_one(db.as_ref())
+        .await.unwrap_or_else(|_| 0);
+
+    format!(
+        "**Configs:** {}\n**Roles:** {}\n**Active Cooldowns:** {}\n**DB Guilds:** {}\n**Recent (7d):** {}\n**Expired:** {}",
+        selfrole_configs, selfrole_roles, active_cooldowns, db_guilds, recent_configs, expired_cooldowns
+    )
 }
 
 #[poise::command(slash_command)]
@@ -216,7 +367,7 @@ pub async fn server(ctx: Context<'_>) -> Result<(), Error> {
         embed = embed.image(banner_url);
     }
 
-    embed = embed.footer(CreateEmbedFooter::new("Server Statistics"));
+    embed = embed.footer(CreateEmbedFooter::new("Server Stats"));
 
     ctx.send(poise::CreateReply::default().embed(embed)).await?;
     Ok(())

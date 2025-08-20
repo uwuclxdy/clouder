@@ -8,7 +8,7 @@ type Context<'a> = poise::Context<'a, AppState, Error>;
 pub async fn selfroles(ctx: Context<'_>) -> Result<(), Error> {
     let base_url = &ctx.data().config.web.base_url;
     let guild_id = ctx.guild_id().unwrap().to_string();
-    
+
     let embed = serenity::CreateEmbed::new()
         .title("Self-Roles Configuration")
         .description("Click the link below to configure self-roles for your server.")

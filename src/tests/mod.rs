@@ -6,6 +6,7 @@ pub mod commands_tests;
 pub mod utils_tests;
 pub mod session_extractor_tests;
 mod video_tests;
+pub mod about_tests;
 
 // Test utilities and common setup functions
 use crate::config::AppState;

@@ -9,7 +9,7 @@ use crate::serenity;
 pub async fn on_message(
     ctx: &serenity::Context,
     message: &serenity::Message,
-    _data: &AppState,
+    data: &AppState,
 ) {
     if message.author.bot {
         return;
@@ -24,7 +24,7 @@ pub async fn on_message(
     };
 
     if message.mentions.iter().any(|u| u.id == current_user.id) {
-        if let Err(e) = send_help_as_message(ctx, message).await {
+        if let Err(e) = send_help_as_message(ctx, message, data).await {
             tracing::error!("Failed to send help message on mention: {}", e);
         }
     }
@@ -33,9 +33,10 @@ pub async fn on_message(
 async fn send_help_as_message(
     ctx: &serenity::Context,
     message: &serenity::Message,
+    data: &AppState,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let commands = crate::commands::help::get_all_commands();
-    let embed = crate::commands::help::create_help_embed(&commands);
+    let embed = crate::commands::help::create_help_embed(&commands, data);
 
     message.channel_id.send_message(
         &ctx.http, 

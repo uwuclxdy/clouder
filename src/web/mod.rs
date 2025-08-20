@@ -1,4 +1,5 @@
 use crate::config::AppState;
+use crate::utils::get_default_embed_color;
 use axum::{
     extract::{Path, State},
     http::{StatusCode, HeaderMap, header},
@@ -143,7 +144,7 @@ async fn api_create_selfroles(
         }
     }
 
-    use serenity::all::{CreateEmbed, CreateMessage, CreateActionRow, CreateButton, ButtonStyle, Colour, CreateEmbedFooter};
+    use serenity::all::{CreateEmbed, CreateMessage, CreateActionRow, CreateButton, ButtonStyle, CreateEmbedFooter};
 
     let footer_text = match payload.selection_type.as_str() {
         "multiple" => "Multiple roles",
@@ -154,7 +155,7 @@ async fn api_create_selfroles(
     let embed = CreateEmbed::new()
         .title(&payload.title)
         .description(&payload.body)
-        .colour(Colour::from_rgb(102, 126, 234))
+        .colour(get_default_embed_color(&state))
         .footer(CreateEmbedFooter::new(footer_text));
 
     let mut action_rows = Vec::new();
@@ -248,7 +249,7 @@ async fn api_update_selfroles(
         let channel_id_u64: u64 = config.channel_id.parse().map_err(|_| StatusCode::BAD_REQUEST)?;
         let message_id_u64: u64 = message_id.parse().map_err(|_| StatusCode::BAD_REQUEST)?;
 
-        use serenity::all::{CreateEmbed, CreateActionRow, CreateButton, ButtonStyle, Colour, EditMessage, CreateEmbedFooter};
+        use serenity::all::{CreateEmbed, CreateActionRow, CreateButton, ButtonStyle, EditMessage, CreateEmbedFooter};
 
         let footer_text = match payload.selection_type.as_str() {
             "multiple" => "Multiple roles",
@@ -259,7 +260,7 @@ async fn api_update_selfroles(
         let embed = CreateEmbed::new()
             .title(&payload.title)
             .description(&payload.body)
-            .colour(Colour::from_rgb(102, 126, 234))
+            .colour(get_default_embed_color(&state))
             .footer(CreateEmbedFooter::new(footer_text));
 
         let mut action_rows = Vec::new();

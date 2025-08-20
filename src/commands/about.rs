@@ -1,7 +1,8 @@
 use crate::config::AppState;
+use crate::utils::get_default_embed_color;
 use anyhow::Result;
 use poise::serenity_prelude as serenity;
-use serenity::{CreateEmbed, Color, CreateEmbedFooter};
+use serenity::{CreateEmbed, CreateEmbedFooter};
 use std::time::SystemTime;
 use sysinfo::System;
 use lazy_static::lazy_static;
@@ -92,7 +93,7 @@ async fn show_comprehensive_bot_info(ctx: Context<'_>) -> Result<(), Error> {
             bot_user.id,
             bot_version
         ))
-        .color(Color::BLITZ_BLUE)
+        .color(get_default_embed_color(ctx.data()))
         .thumbnail(bot_user.face())
 
         .field(
@@ -307,7 +308,7 @@ pub async fn server(ctx: Context<'_>) -> Result<(), Error> {
 
     let mut embed = CreateEmbed::new()
         .title(&format!("📊 {} server info", full_guild.name))
-        .color(Color::PURPLE)
+        .color(get_default_embed_color(ctx.data()))
         .field("👥 members", member_count.to_string(), true)
         .field("💬 channels", format!("{} ({} text, {} voice)", total_channels, text_channels, voice_channels), true)
         .field("🎭 roles", role_count.to_string(), true)
@@ -355,7 +356,7 @@ pub async fn user(
 
     let mut embed = CreateEmbed::new()
         .title(&format!("👤 {} user info", target_user.tag()))
-        .color(Color::BLUE)
+        .color(get_default_embed_color(ctx.data()))
         .field("🏷️ user id", target_user.id.to_string(), true)
         .field("📅 account created", account_age, false);
 

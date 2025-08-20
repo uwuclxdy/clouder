@@ -184,6 +184,18 @@ src/
 - Per-server settings stored in database
 - Self-role configurations persisted across restarts
 
+## **Embed Colors**
+
+```
+use crate::utils::get_default_embed_color;
+
+// In commands with Context
+.color(get_default_embed_color(ctx.data()))
+
+// In web handlers with AppState
+.colour(get_default_embed_color(&state))
+```
+
 ## **Security Considerations**
 - Secure session token storage
 - Input validation for custom commands and self-role configurations

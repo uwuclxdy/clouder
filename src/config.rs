@@ -34,6 +34,7 @@ pub struct EmbedConfig {
     pub directory: String,
     pub max_age_hours: u64,
     pub cleanup_interval_hours: u64,
+    pub default_color: u32,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -54,7 +55,7 @@ impl Config {
         if let Err(e) = dotenv() {
             warn!("Could not load .env file: {}. Continuing with system environment variables.", e);
         }
-        
+
         // Try to get Discord token
         let discord_token = match env::var("DISCORD_TOKEN") {
             Ok(token) => token,
@@ -63,7 +64,7 @@ impl Config {
                 return Err(anyhow::anyhow!("DISCORD_TOKEN environment variable not set"));
             }
         };
-        
+
         // Try to get application ID
         let application_id = match env::var("DISCORD_APPLICATION_ID") {
             Ok(id_str) => match id_str.parse::<u64>() {
@@ -78,7 +79,7 @@ impl Config {
                 return Err(anyhow::anyhow!("DISCORD_APPLICATION_ID environment variable not set"));
             }
         };
-        
+
         // Try to get OAuth credentials
         let oauth_client_id = match env::var("DISCORD_CLIENT_ID") {
             Ok(id) => id,
@@ -87,7 +88,7 @@ impl Config {
                 return Err(anyhow::anyhow!("DISCORD_CLIENT_ID environment variable not set"));
             }
         };
-        
+
         let oauth_client_secret = match env::var("DISCORD_CLIENT_SECRET") {
             Ok(secret) => secret,
             Err(_) => {
@@ -95,7 +96,7 @@ impl Config {
                 return Err(anyhow::anyhow!("DISCORD_CLIENT_SECRET environment variable not set"));
             }
         };
-        
+
         // Optional configuration with defaults and error logging
         let base_url = match env::var("BASE_URL") {
             Ok(url) => {
@@ -107,7 +108,7 @@ impl Config {
                 "http://localhost:3000".to_string()
             }
         };
-        
+
         let host = match env::var("HOST") {
             Ok(host) => {
                 info!("Using custom HOST: {}", host);
@@ -118,7 +119,7 @@ impl Config {
                 "127.0.0.1".to_string()
             }
         };
-        
+
         let port = match env::var("PORT") {
             Ok(port_str) => match port_str.parse::<u16>() {
                 Ok(port) => {
@@ -135,7 +136,7 @@ impl Config {
                 3000
             }
         };
-        
+
         // Optional database URL
         let database_url = match env::var("DATABASE_URL") {
             Ok(url) => {
@@ -147,7 +148,7 @@ impl Config {
                 "data/db.sqlite".to_string()
             }
         };
-        
+
         // Optional embed configuration
         let embed_directory = match env::var("EMBED_DIRECTORY") {
             Ok(dir) => {
@@ -159,7 +160,7 @@ impl Config {
                 "embed_files".to_string()
             }
         };
-        
+
         let embed_max_age_hours = match env::var("EMBED_MAX_AGE_HOURS") {
             Ok(hours_str) => match hours_str.parse::<u64>() {
                 Ok(hours) => {
@@ -180,7 +181,7 @@ impl Config {
                 24
             }
         };
-        
+
         let embed_cleanup_interval_hours = match env::var("EMBED_CLEANUP_INTERVAL_HOURS") {
             Ok(hours_str) => match hours_str.parse::<u64>() {
                 Ok(hours) => {
@@ -201,9 +202,36 @@ impl Config {
                 6
             }
         };
-        
+
+        let embed_default_color = match env::var("EMBED_DEFAULT_COLOR") {
+            Ok(color_str) => {
+                // Support both hex format (#RRGGBB or 0xRRGGBB) and decimal
+                let color_str = color_str.trim();
+                let parsed_color = if color_str.starts_with('#') {
+                    u32::from_str_radix(&color_str[1..], 16)
+                } else if color_str.starts_with("0x") || color_str.starts_with("0X") {
+                    u32::from_str_radix(&color_str[2..], 16)
+                } else {
+                    color_str.parse::<u32>()
+                };
+
+                match parsed_color {
+                    Ok(color) => {
+                        info!("Using custom EMBED_DEFAULT_COLOR: {:#06X}", color);
+                        color
+                    },
+                    Err(_) => {
+                        0xFFFFFF
+                    }
+                }
+            },
+            Err(_) => {
+                0xFFFFFF
+            }
+        };
+
         let redirect_uri = format!("{}/auth/callback", base_url);
-        
+
         Ok(Config {
             discord: DiscordConfig {
                 token: discord_token,
@@ -222,6 +250,7 @@ impl Config {
                     directory: embed_directory,
                     max_age_hours: embed_max_age_hours,
                     cleanup_interval_hours: embed_cleanup_interval_hours,
+                    default_color: embed_default_color,
                 },
             },
             database: DatabaseConfig {
@@ -229,7 +258,7 @@ impl Config {
             },
         })
     }
-    
+
     #[cfg(test)]
     pub fn test_config() -> Self {
         Self {
@@ -250,6 +279,7 @@ impl Config {
                     directory: "test_embed_files".to_string(),
                     max_age_hours: 24,
                     cleanup_interval_hours: 6,
+                    default_color: 0xFFFFFF,
                 },
             },
             database: DatabaseConfig {

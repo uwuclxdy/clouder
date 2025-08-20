@@ -59,3 +59,10 @@ function debounce(func, wait) {
         timeout = setTimeout(later, wait);
     };
 }
+
+// HTML escape function
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}

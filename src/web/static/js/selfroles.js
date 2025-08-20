@@ -103,56 +103,11 @@ class SelfRoleManager {
     displayRoleLoadError(message) {
         const rolesList = document.getElementById('rolesList');
         rolesList.innerHTML = `
-            <div class="text-center py-8">
-                <div class="text-red-600 mb-2">
-                    <svg class="mx-auto h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                              d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                </div>
-                <p class="text-gray-600 mb-4">${escapeHtml(message)}</p>
-                <button onclick="location.reload()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
-                    Retry
-                </button>
-            </div>
-        `;
-    }
-
-    displayNoManageableRoles() {
-        const rolesList = document.getElementById('rolesList');
-        rolesList.innerHTML = `
-            <div class="text-center py-8">
-                <div class="text-yellow-600 mb-2">
-                    <svg class="mx-auto h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 18.5c-.77.833.192 2.5 1.732 2.5z"/>
-                    </svg>
-                </div>
-                <h3 class="text-lg font-medium text-gray-900 mb-2">No manageable roles found</h3>
-                <p class="text-gray-600 mb-4">
-                    Bot lacks permission or no assignable roles exist.
-                </p>
-                <p class="text-sm text-gray-500">
-                    Ensure bot has "Manage Roles" permission and is positioned above target roles.
-                </p>
-            </div>
-        `;
-    }
-
-    displayNetworkError() {
-        const rolesList = document.getElementById('rolesList');
-        rolesList.innerHTML = `
-            <div class="text-center py-8">
-                <div class="text-red-600 mb-2">
-                    <svg class="mx-auto h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                              d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                </div>
-                <p class="text-gray-600 mb-4">Failed to load roles. Check connection and retry.</p>
-                <button onclick="location.reload()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
-                    Retry
-                </button>
+            <div style="color: #ffcccb; padding: 15px; background: rgba(220, 53, 69, 0.2); border-radius: 8px; margin-bottom: 15px;">
+                <strong>❌ Role Loading Error</strong><br>
+                ${escapeHtml(message)}
+                <br><br>
+                <button onclick="location.reload()" class="btn" style="margin-top: 10px;">Retry</button>
             </div>
         `;
     }
@@ -179,6 +134,8 @@ class SelfRoleManager {
             <div style="color: #ffcccb; padding: 15px; background: rgba(220, 53, 69, 0.2); border-radius: 8px;">
                 <strong>❌ Network Error</strong><br>
                 Failed to load roles due to a network error. Please check your connection and try again.
+                <br><br>
+                <button onclick="location.reload()" class="btn" style="margin-top: 10px;">Retry</button>
             </div>
         `;
     }

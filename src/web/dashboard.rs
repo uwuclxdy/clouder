@@ -22,33 +22,20 @@ pub async fn server_list(
             .map(|icon| format!("https://cdn.discordapp.com/icons/{}/{}.png", guild.id, icon))
             .unwrap_or_else(|| "https://cdn.discordapp.com/embed/avatars/0.png".to_string());
 
-        guilds_html.push_str(&format!(
-            r#"<div class="server-card" onclick="location.href='/dashboard/{}'">
-                <img src="{}" alt="{}" class="server-icon">
-                <div class="server-info">
-                    <h3>{}</h3>
-                    <p>{} permission</p>
-                </div>
-            </div>"#,
-            guild.id, icon_url, guild.name, guild.name,
-            if guild.owner { "Owner" } else { "Manage Roles" }
-        ));
+        let guild_card = include_str!("templates/partials/guild_card.html")
+            .replace("{{GUILD_ID}}", &guild.id)
+            .replace("{{ICON_URL}}", &icon_url)
+            .replace("{{GUILD_NAME}}", &guild.name)
+            .replace("{{PERMISSION_TEXT}}", if guild.owner { "Owner" } else { "Manage Roles" });
+        
+        guilds_html.push_str(&guild_card);
     }
 
     if guilds_html.is_empty() {
         guilds_html = if !user.guilds.is_empty() {
-            r#"<div class="no-servers">
-                <h3>No manageable servers found</h3>
-                <p>You need "Manage Roles" permission in a server to configure self-roles.</p>
-                <p><a href="https://discord.com/developers/applications" target="_blank">Invite the bot to your server</a></p>
-            </div>"#.to_string()
+            include_str!("templates/partials/no_manageable_servers.html").to_string()
         } else {
-            r#"<div class="no-servers">
-                <h3>Guilds could not be loaded</h3>
-                <p>There was an error loading your Discord servers. This might be a temporary issue.</p>
-                <p>You are successfully logged in as a user, but guild data couldn't be retrieved.</p>
-                <p><a href="/auth/logout">Logout and try again</a></p>
-            </div>"#.to_string()
+            include_str!("templates/partials/guild_load_error.html").to_string()
         };
     }
 
@@ -164,16 +151,14 @@ fn render_selfroles_form(
     guild_name: &str,
     config_id: Option<&str>,
 ) -> Result<Html<String>, Redirect> {
-    let (page_title, header_title, header_description, breadcrumb_current, button_text, config_id_script, config_id_param) = 
-        if let Some(config_id) = config_id {
+    let (page_title, header_title, header_description, breadcrumb_current, button_text) = 
+        if config_id.is_some() {
             (
                 "Edit Self-Role Message",
                 "Edit Self-Role Message", 
                 "Edit interactive role assignment message for",
                 "Edit",
-                "Update Self-Role Message",
-                format!("const configId = '{}';", config_id),
-                ", configId"
+                "Update Self-Role Message"
             )
         } else {
             (
@@ -181,9 +166,7 @@ fn render_selfroles_form(
                 "Create Self-Role Message",
                 "Create a new interactive role assignment message for", 
                 "Create",
-                "Deploy Self-Role Message",
-                "".to_string(),
-                ""
+                "Deploy Self-Role Message"
             )
         };
     
@@ -191,6 +174,7 @@ fn render_selfroles_form(
         .replace("{{COMMON_CSS}}", include_str!("static/css/common.css"))
         .replace("{{DASHBOARD_CSS}}", include_str!("static/css/dashboard.css"))
         .replace("{{COMMON_JS}}", include_str!("static/js/common.js"))
+        .replace("{{SELFROLES_CONFIG_JS}}", include_str!("static/js/selfroles_config.js"))
         .replace("{{SELFROLES_JS}}", include_str!("static/js/selfroles.js"))
         .replace("{{GUILD_NAME}}", guild_name)
         .replace("{{GUILD_ID}}", guild_id)
@@ -198,9 +182,7 @@ fn render_selfroles_form(
         .replace("{{HEADER_TITLE}}", header_title)
         .replace("{{HEADER_DESCRIPTION}}", header_description)
         .replace("{{BREADCRUMB_CURRENT}}", breadcrumb_current)
-        .replace("{{BUTTON_TEXT}}", button_text)
-        .replace("{{CONFIG_ID_SCRIPT}}", &config_id_script)
-        .replace("{{CONFIG_ID_PARAM}}", config_id_param);
+        .replace("{{BUTTON_TEXT}}", button_text);
 
     Ok(Html(template))
 }

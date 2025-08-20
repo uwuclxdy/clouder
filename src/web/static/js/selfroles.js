@@ -380,11 +380,7 @@ class SelfRoleManager {
             const { data } = await apiRequest(url, { method, body: JSON.stringify(payload) });
 
             if (data.success) {
-                const successMessage = this.isEditMode 
-                    ? 'Self-role message updated successfully!'
-                    : 'Self-role message deployed successfully!';
-                
-                showMessage(successMessage, 'success');
+                // Redirect to selfroles list on success
                 window.location.href = `/dashboard/${this.guildId}/selfroles`;
             } else {
                 throw new Error(data.message || 'Unknown error');
@@ -502,8 +498,8 @@ async function deleteMessage(event, configId, title, guildId) {
         const { data } = await apiRequest(`/api/selfroles/${guildId}/${configId}`, { method: 'DELETE' });
 
         if (data.success) {
-            showMessage('Self-role message deleted successfully!', 'success');
-            await loadMessages(guildId); // Reload messages
+            // Reload messages on successful deletion
+            await loadMessages(guildId);
         } else {
             throw new Error(data.message || 'Unknown error');
         }

@@ -5,18 +5,16 @@ use crate::database::selfroles::{SelfRoleConfig, SelfRoleCooldown};
 use crate::serenity;
 
 /// Handle new messages - primarily for bot mention help responses
-/// When the bot is mentioned in any message, it responds with the help command output
-pub async fn handle_message_create(
+/// Handle bot mentions with help responses.
+pub async fn on_message(
     ctx: &serenity::Context,
     message: &serenity::Message,
     _data: &AppState,
 ) {
-    // Ignore messages from bots
     if message.author.bot {
         return;
     }
 
-    // Get current user ID from HTTP instead of cache to avoid Send issues
     let current_user = match ctx.http.get_current_user().await {
         Ok(user) => user,
         Err(e) => {
@@ -25,9 +23,7 @@ pub async fn handle_message_create(
         }
     };
 
-    // Check if the bot is mentioned
     if message.mentions.iter().any(|u| u.id == current_user.id) {
-        // Send help response using the reusable help command logic
         if let Err(e) = send_help_as_message(ctx, message).await {
             tracing::error!("Failed to send help message on mention: {}", e);
         }
@@ -38,7 +34,6 @@ async fn send_help_as_message(
     ctx: &serenity::Context,
     message: &serenity::Message,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    // Reuse the help command logic instead of duplicating it
     let commands = crate::commands::help::get_all_commands();
     let embed = crate::commands::help::create_help_embed(&commands);
 
@@ -133,7 +128,7 @@ async fn handle_selfrole_interaction(ctx: &serenity::Context, interaction: &sere
                     &ctx.http,
                     CreateInteractionResponse::Message(
                         CreateInteractionResponseMessage::new()
-                            .content("⏰ You're doing that too quickly! Please wait a moment before trying again.")
+                            .content("⏰ you're doing that too quickly! please wait a moment before trying again.")
                             .ephemeral(true),
                     ),
                 )
@@ -153,7 +148,7 @@ async fn handle_selfrole_interaction(ctx: &serenity::Context, interaction: &sere
                     &ctx.http,
                     CreateInteractionResponse::Message(
                         CreateInteractionResponseMessage::new()
-                            .content("❌ An error occurred while processing your request. Please try again.")
+                            .content("❌ an error occurred while processing your request. please try again.")
                             .ephemeral(true),
                     ),
                 )
@@ -175,7 +170,7 @@ async fn handle_selfrole_interaction(ctx: &serenity::Context, interaction: &sere
                     &ctx.http,
                     CreateInteractionResponse::Message(
                         CreateInteractionResponseMessage::new()
-                            .content("❌ This self-role message is no longer valid.")
+                            .content("❌ this self-role message is no longer valid.")
                             .ephemeral(true),
                     ),
                 )
@@ -217,7 +212,7 @@ async fn handle_selfrole_interaction(ctx: &serenity::Context, interaction: &sere
                     &ctx.http,
                     CreateInteractionResponse::Message(
                         CreateInteractionResponseMessage::new()
-                            .content("❌ Failed to retrieve your member information.")
+                            .content("❌ failed to retrieve your member info.")
                             .ephemeral(true),
                     ),
                 )
@@ -239,7 +234,7 @@ async fn handle_selfrole_interaction(ctx: &serenity::Context, interaction: &sere
                     &ctx.http,
                     CreateInteractionResponse::Message(
                         CreateInteractionResponseMessage::new()
-                            .content("❌ Failed to retrieve server roles.")
+                            .content("❌ failed to retrieve server roles.")
                             .ephemeral(true),
                     ),
                 )
@@ -261,7 +256,7 @@ async fn handle_selfrole_interaction(ctx: &serenity::Context, interaction: &sere
                     &ctx.http,
                     CreateInteractionResponse::Message(
                         CreateInteractionResponseMessage::new()
-                            .content("❌ Bot permissions could not be verified.")
+                            .content("❌ bot permissions could not be verified.")
                             .ephemeral(true),
                     ),
                 )
@@ -286,7 +281,7 @@ async fn handle_selfrole_interaction(ctx: &serenity::Context, interaction: &sere
                     &ctx.http,
                     CreateInteractionResponse::Message(
                         CreateInteractionResponseMessage::new()
-                            .content("❌ The requested role no longer exists.")
+                            .content("❌ the requested role no longer exists.")
                             .ephemeral(true),
                     ),
                 )
@@ -307,7 +302,7 @@ async fn handle_selfrole_interaction(ctx: &serenity::Context, interaction: &sere
                 &ctx.http,
                 CreateInteractionResponse::Message(
                     CreateInteractionResponseMessage::new()
-                        .content(format!("❌ Cannot manage the role '{}' - it is higher than or equal to all of my roles in the hierarchy.", target_role.name))
+                        .content(format!("❌ cannot manage the role '{}' - it is higher than or equal to all of my roles in the hierarchy.", target_role.name))
                         .ephemeral(true),
                 ),
             )
@@ -329,7 +324,7 @@ async fn handle_selfrole_interaction(ctx: &serenity::Context, interaction: &sere
                         &ctx.http,
                         CreateInteractionResponse::Message(
                             CreateInteractionResponseMessage::new()
-                                .content("❌ An error occurred while processing your request.")
+                                .content("❌ an error occurred while processing your request.")
                                 .ephemeral(true),
                         ),
                     )
@@ -377,10 +372,10 @@ async fn handle_selfrole_interaction(ctx: &serenity::Context, interaction: &sere
             serenity::RoleId::new(role_id_u64),
             Some("Self-role removal"),
         ).await {
-            Ok(_) => ("removed", "➖", format!("Successfully removed the role '{}'!", target_role.name)),
+            Ok(_) => ("removed", "➖", format!("successfully removed the role '{}'!", target_role.name)),
             Err(e) => {
                 tracing::error!("Failed to remove role {} from user {}: {}", role_id_u64, interaction.user.id, e);
-                ("error", "❌", format!("Failed to remove the role '{}'. I might not have permission or the role might not exist anymore.", target_role.name))
+                ("error", "❌", format!("failed to remove the role '{}'. i might not have permission or the role might not exist anymore.", target_role.name))
             }
         }
     } else {
@@ -391,10 +386,10 @@ async fn handle_selfrole_interaction(ctx: &serenity::Context, interaction: &sere
             serenity::RoleId::new(role_id_u64),
             Some("Self-role assignment"),
         ).await {
-            Ok(_) => ("added", "✅", format!("Successfully assigned the role '{}'!", target_role.name)),
+            Ok(_) => ("added", "✅", format!("successfully assigned the role '{}'!", target_role.name)),
             Err(e) => {
                 tracing::error!("Failed to add role {} to user {}: {}", role_id_u64, interaction.user.id, e);
-                ("error", "❌", format!("Failed to assign the role '{}'. I might not have permission, or the role might be higher than my role in the hierarchy.", target_role.name))
+                ("error", "❌", format!("failed to assign the role '{}'. i might not have permission, or the role might be higher than my role in the hierarchy.", target_role.name))
             }
         }
     };

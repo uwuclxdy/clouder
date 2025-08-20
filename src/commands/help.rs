@@ -1,27 +1,4 @@
-//! # Help Command System
-//!
-//! ## Features
-//! - **Automatic Command Registration**: Simply add commands to `get_all_commands()`
-//! - **Category-based Organization**: Commands are grouped by logical categories
-//! - **Detailed Command Information**: Shows usage, permissions, and descriptions
-//! - **Autocomplete Support**: Category names have autocomplete in Discord
-//! - **Bot Mention Trigger**: Help is also shown when the bot is mentioned (reuses same logic)
-//! - **Future-proof Design**: Easy to add new commands and categories
-//! - **No Code Duplication**: Shared embed creation for both slash commands and mentions
-//!
-//! ## Adding New Commands
-//! To add a new command to the help system:
-//! 1. Add a `CommandInfo` entry to the `get_all_commands()` function
-//! 2. Choose the appropriate `CommandCategory`
-//! 3. Fill in name, description, usage, and permissions
-//! 4. The command will automatically appear in help listings
-//!
-//! ## Usage
-//! - `/help` - Shows all commands organized by category
-//! - `/help [category]` - Shows detailed help for a specific category
-//! - `@BotName` - Mention the bot to show help (same as `/help`)
-//!
-//! Categories: core, info, management, api, utility
+//! Help command system with automatic registration and category organization.
 
 use crate::config::AppState;
 use anyhow::Result;
@@ -31,7 +8,6 @@ use serenity::{CreateEmbed, Color, CreateEmbedFooter};
 type Error = Box<dyn std::error::Error + Send + Sync>;
 type Context<'a> = poise::Context<'a, AppState, Error>;
 
-// Command documentation structure for easy maintenance
 #[derive(Debug, Clone)]
 pub struct CommandInfo {
     pub name: String,
@@ -53,22 +29,15 @@ pub enum CommandCategory {
 impl CommandCategory {
     pub fn as_str(&self) -> &str {
         match self {
-            CommandCategory::Core => "🔧 Core",
-            CommandCategory::Info => "ℹ️ Information",
-            CommandCategory::ApiIntegration => "🌐 API Integration",
-            CommandCategory::Management => "⚙️ Management",
-            CommandCategory::Utility => "🛠️ Utility",
+            CommandCategory::Core => "🔧 core",
+            CommandCategory::Info => "ℹ️ info",
+            CommandCategory::ApiIntegration => "🌐 api stuff",
+            CommandCategory::Management => "⚙️ management",
+            CommandCategory::Utility => "🛠️ utility",
         }
     }
 }
 
-// Centralized command registry - add new commands here for automatic help inclusion
-//
-// To add a new command to the help system:
-// 1. Add a new CommandInfo entry to this function with appropriate details
-// 2. Choose the correct CommandCategory for your command
-// 3. The command will automatically appear in both general help and category-specific help
-// 4. No other changes needed - the help system is fully automatic
 pub fn get_all_commands() -> Vec<CommandInfo> {
     vec![
         CommandInfo {
@@ -78,8 +47,6 @@ pub fn get_all_commands() -> Vec<CommandInfo> {
             category: CommandCategory::Management,
             permissions: None,
         },
-
-        // Info Commands
         CommandInfo {
             name: "/about bot".to_string(),
             description: "show info about me and my server :3".to_string(),
@@ -89,7 +56,7 @@ pub fn get_all_commands() -> Vec<CommandInfo> {
         },
         CommandInfo {
             name: "/about server".to_string(),
-            description: "show info about this discord server".to_string(),
+            description: "show info about this server".to_string(),
             usage: Some("/about server".to_string()),
             category: CommandCategory::Info,
             permissions: None,
@@ -101,11 +68,9 @@ pub fn get_all_commands() -> Vec<CommandInfo> {
             category: CommandCategory::Info,
             permissions: None,
         },
-
-        // Management Commands - These will be added as they're implemented
         CommandInfo {
             name: "/video".to_string(),
-            description: "make any video playable on discord (tested on nextcloud host)".to_string(),
+            description: "make any video playable on discord (tested on nextcloud) :3".to_string(),
             usage: Some("/video".to_string()),
             category: CommandCategory::Utility,
             permissions: None,
@@ -138,7 +103,6 @@ async fn show_general_help(ctx: Context<'_>, commands: &[CommandInfo]) -> Result
 
 /// Create the help embed that can be reused in different contexts
 pub fn create_help_embed(commands: &[CommandInfo]) -> CreateEmbed {
-    // Group commands by category
     let mut categories = std::collections::HashMap::new();
     for cmd in commands {
         categories.entry(cmd.category.clone()).or_insert_with(Vec::new).push(cmd);
@@ -149,7 +113,6 @@ pub fn create_help_embed(commands: &[CommandInfo]) -> CreateEmbed {
         .description("`/help [category]` for more details")
         .color(Color::BLITZ_BLUE);
 
-    // Add each category as a field
     for category in [
         CommandCategory::Core,
         CommandCategory::Info,
@@ -175,7 +138,6 @@ pub fn create_help_embed(commands: &[CommandInfo]) -> CreateEmbed {
 }
 
 async fn show_category_help(ctx: Context<'_>, commands: &[CommandInfo], category_name: &str) -> Result<(), Error> {
-    // Find the matching category
     let category = match category_name.to_lowercase().as_str() {
         "core" => CommandCategory::Core,
         "info" | "information" => CommandCategory::Info,
@@ -184,7 +146,7 @@ async fn show_category_help(ctx: Context<'_>, commands: &[CommandInfo], category
         "utility" | "util" => CommandCategory::Utility,
         _ => {
             ctx.send(poise::CreateReply::default()
-                .content("❌ Invalid category! Available categories: `core`, `info`, `management`, `api`, `utility`")
+                .content("❌ invalid category! available: `core`, `info`, `management`, `api`, `utility`")
                 .ephemeral(true))
                 .await?;
             return Ok(());
@@ -208,7 +170,6 @@ async fn show_category_help(ctx: Context<'_>, commands: &[CommandInfo], category
         .title(&format!("{} - details", category.as_str()))
         .color(Color::DARK_BLUE);
 
-    // Add each command as a detailed field
     for cmd in &category_commands {
         let mut field_value = format!("**desc:** {}\n", cmd.description);
 
@@ -224,7 +185,7 @@ async fn show_category_help(ctx: Context<'_>, commands: &[CommandInfo], category
     }
 
     embed = embed.footer(CreateEmbedFooter::new(&format!(
-        "{} commands in {} category • Use /help for all categories",
+        "{} commands in {} category • use /help for all categories",
         category_commands.len(),
         category_name
     )));
@@ -245,7 +206,6 @@ async fn category_autocomplete(
         .map(|s| s.to_string())
 }
 
-// Utility function to truncate descriptions for the overview
 pub fn truncate_description(desc: &str, max_len: usize) -> String {
     if desc.len() <= max_len {
         desc.to_string()
@@ -254,7 +214,6 @@ pub fn truncate_description(desc: &str, max_len: usize) -> String {
     }
 }
 
-// Helper function to add new commands to the registry (for future use)
 #[allow(dead_code)]
 pub fn register_command(command: CommandInfo) -> Vec<CommandInfo> {
     let mut commands = get_all_commands();

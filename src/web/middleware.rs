@@ -40,30 +40,25 @@ impl SessionStore {
             expires_at: chrono::Utc::now() + chrono::Duration::hours(24),
         };
 
-        let mut sessions = self.sessions.write().await;
-        sessions.insert(session_id.clone(), session);
+        self.sessions.write().await.insert(session_id.clone(), session);
         session_id
     }
 
     pub async fn get_session(&self, session_id: &str) -> Option<Session> {
-        let sessions = self.sessions.read().await;
-        sessions.get(session_id).cloned()
+        self.sessions.read().await.get(session_id).cloned()
     }
 
     pub async fn update_session(&self, session_id: &str, session: Session) {
-        let mut sessions = self.sessions.write().await;
-        sessions.insert(session_id.to_string(), session);
+        self.sessions.write().await.insert(session_id.to_string(), session);
     }
 
     pub async fn delete_session(&self, session_id: &str) {
-        let mut sessions = self.sessions.write().await;
-        sessions.remove(session_id);
+        self.sessions.write().await.remove(session_id);
     }
 
     pub async fn cleanup_expired(&self) {
         let now = chrono::Utc::now();
-        let mut sessions = self.sessions.write().await;
-        sessions.retain(|_, session| session.expires_at > now);
+        self.sessions.write().await.retain(|_, session| session.expires_at > now);
     }
 }
 
@@ -86,7 +81,5 @@ pub async fn session_middleware(
     tokio::spawn(async {
         GLOBAL_SESSION_STORE.cleanup_expired().await;
     });
-
-    let response = next.run(request).await;
-    Ok(response)
+    Ok(next.run(request).await)
 }

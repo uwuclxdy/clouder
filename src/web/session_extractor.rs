@@ -4,18 +4,14 @@ use crate::web::{middleware::{GLOBAL_SESSION_STORE, SessionData}, models::Sessio
 pub async fn extract_session_data(headers: &HeaderMap) -> Result<SessionData, StatusCode> {
     let session_id = extract_session_id_from_headers(headers)?;
     
-    let session = match GLOBAL_SESSION_STORE.get_session(&session_id).await {
-        Some(session) => session,
-        None => return Err(StatusCode::UNAUTHORIZED),
-    };
+    let session = GLOBAL_SESSION_STORE.get_session(&session_id).await
+        .ok_or(StatusCode::UNAUTHORIZED)?;
 
-    // Check expiration
     if session.expires_at < chrono::Utc::now() {
         GLOBAL_SESSION_STORE.delete_session(&session_id).await;
         return Err(StatusCode::UNAUTHORIZED);
     }
 
-    // Extract user data
     let user_data = session
         .data
         .get("user")

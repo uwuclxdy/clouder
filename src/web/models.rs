@@ -87,25 +87,21 @@ pub struct AuthCallback {
 
 impl SessionUser {
     pub fn has_manage_roles_in_guild(&self, guild_id: &str) -> bool {
-        if let Some(guild) = self.guilds.iter().find(|g| g.id == guild_id) {
-            if guild.owner {
-                return true;
-            }
-            
-            let permissions = guild.permissions.parse::<u64>().unwrap_or(0);
-            const MANAGE_ROLES: u64 = 0x10000000;
-            (permissions & MANAGE_ROLES) != 0
-        } else {
-            false
-        }
+        self.guilds.iter()
+            .find(|g| g.id == guild_id)
+            .map(|guild| {
+                if guild.owner { return true; }
+                let permissions = guild.permissions.parse::<u64>().unwrap_or(0);
+                const MANAGE_ROLES: u64 = 0x10000000;
+                (permissions & MANAGE_ROLES) != 0
+            })
+            .unwrap_or(false)
     }
     
     pub fn get_manageable_guilds(&self) -> Vec<&Guild> {
         self.guilds.iter()
             .filter(|guild| {
-                if guild.owner {
-                    return true;
-                }
+                if guild.owner { return true; }
                 let permissions = guild.permissions.parse::<u64>().unwrap_or(0);
                 const MANAGE_ROLES: u64 = 0x10000000;
                 (permissions & MANAGE_ROLES) != 0

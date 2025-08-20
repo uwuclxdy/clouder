@@ -36,12 +36,10 @@ function setButtonLoading(button, loading, originalText) {
     }
 }
 
-// Show messages
-function showMessage(message, type = 'info') {
+// Show error messages
+function showMessage(message, type = 'error') {
     if (type === 'error') {
         alert('Error: ' + message);
-    } else if (type === 'success') {
-        alert('Success: ' + message);
     } else {
         alert(message);
     }

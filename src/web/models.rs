@@ -13,6 +13,20 @@ where
     }
 }
 
+fn deserialize_optional_permissions<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    use serde_json::Value;
+    let value = Value::deserialize(deserializer)?;
+    match value {
+        Value::Null => Ok(None),
+        Value::String(s) => Ok(Some(s)),
+        Value::Number(n) => Ok(Some(n.to_string())),
+        _ => Ok(None)
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DiscordUser {
     pub id: String,
@@ -40,7 +54,6 @@ pub struct Guild {
     pub features: Vec<String>,
     #[serde(default, deserialize_with = "deserialize_optional_permissions")]
     pub permissions_new: Option<String>,
-    // Additional optional fields that might be present
     #[serde(default)]
     pub banner: Option<String>,
     #[serde(default)]
@@ -55,20 +68,6 @@ pub struct Guild {
     pub approximate_member_count: Option<u64>,
     #[serde(default)]
     pub approximate_presence_count: Option<u64>,
-}
-
-fn deserialize_optional_permissions<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    use serde_json::Value;
-    let value = Value::deserialize(deserializer)?;
-    match value {
-        Value::Null => Ok(None),
-        Value::String(s) => Ok(Some(s)),
-        Value::Number(n) => Ok(Some(n.to_string())),
-        _ => Ok(None)
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -94,7 +93,7 @@ impl SessionUser {
             }
             
             let permissions = guild.permissions.parse::<u64>().unwrap_or(0);
-            const MANAGE_ROLES: u64 = 0x10000000; // 268435456
+            const MANAGE_ROLES: u64 = 0x10000000;
             (permissions & MANAGE_ROLES) != 0
         } else {
             false

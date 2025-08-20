@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <title>Self-Roles - {{GUILD_NAME}}</title>
     <meta charset="UTF-8">
@@ -10,12 +10,27 @@
     </style>
 </head>
 <body>
-    <a href="/dashboard/{{GUILD_ID}}" class="back-btn">← Back to Dashboard</a>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <div class="navbar-left">
+                <div class="breadcrumb">
+                    <a href="/" class="breadcrumb-item">Dashboard</a>
+                    <span class="breadcrumb-separator">/</span>
+                    <a href="/dashboard/{{GUILD_ID}}" class="breadcrumb-item">{{GUILD_NAME}}</a>
+                    <span class="breadcrumb-separator">/</span>
+                    <span class="breadcrumb-item current">Self-Roles</span>
+                </div>
+            </div>
+            <div class="navbar-right">
+                <a href="/auth/logout" class="logout-btn">Logout</a>
+            </div>
+        </div>
+    </nav>
     <div class="container">
         <div class="header selfroles-header">
             <div class="header-info">
                 <h1>Self-Roles Messages</h1>
-                <p>Manage interactive role assignment messages for {{GUILD_NAME}}</p>
+                <p>Manage interactive role assignment messages for <span style="color: #667eea; font-weight: 500;">{{GUILD_NAME}}</span></p>
             </div>
             <a href="/dashboard/{{GUILD_ID}}/selfroles/new" class="create-btn">+ Create New Message</a>
         </div>

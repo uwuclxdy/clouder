@@ -1,65 +1,118 @@
 /* Common styles shared across all pages */
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f0f23 100%);
     margin: 0;
-    padding: 20px;
+    padding: 0;
     min-height: 100vh;
+}
+
+.navbar {
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(20px);
+    padding: 15px 0;
+    margin-bottom: 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.navbar-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 20px;
+}
+
+.navbar-left {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.navbar-right {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #f0f0f0;
+    font-size: 14px;
+}
+
+.breadcrumb-item {
+    color: rgba(255, 255, 255, 0.9);
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.breadcrumb-item:hover {
+    color: #ffffff;
+}
+
+.breadcrumb-item.current {
+    color: #ffffff;
+    font-weight: 500;
+}
+
+.breadcrumb-separator {
+    color: rgba(255, 255, 255, 0.6);
+    margin: 0 4px;
+}
+
+.back-btn, .logout-btn {
+    background: rgba(255, 255, 255, 0.15);
+    color: #ffffff;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.back-btn:hover, .logout-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transform: translateY(-1px);
 }
 
 .container {
     max-width: 1200px;
     margin: 0 auto;
+    padding: 0 20px;
 }
 
 .header {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.4);
     backdrop-filter: blur(10px);
     border-radius: 15px;
     padding: 30px;
     margin-bottom: 30px;
-    color: white;
+    color: #f5f5f5;
 }
 
 .header h1 {
     margin: 0 0 10px 0;
     font-size: 2.2em;
     font-weight: 300;
+    color: #ffffff;
 }
 
 .header p {
     margin: 0;
-    opacity: 0.8;
-}
-
-.back-btn, .logout-btn {
-    position: absolute;
-    top: 20px;
-    background: rgba(255, 255, 255, 0.2);
-    color: white;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 25px;
-    cursor: pointer;
-    text-decoration: none;
-    transition: background 0.3s ease;
-}
-
-.back-btn {
-    left: 20px;
-}
-
-.logout-btn {
-    right: 20px;
-}
-
-.back-btn:hover, .logout-btn:hover {
-    background: rgba(255, 255, 255, 0.3);
+    opacity: 0.9;
+    color: #e0e0e0;
 }
 
 .btn {
-    background: linear-gradient(45deg, #667eea, #764ba2);
-    color: white;
+    background: linear-gradient(45deg, #4a5fc4, #5a3e8b);
+    color: #ffffff;
     padding: 15px 30px;
     border: none;
     border-radius: 8px;
@@ -84,30 +137,82 @@ body {
 
 .loading {
     text-align: center;
-    color: white;
+    color: #f0f0f0;
     padding: 40px;
     font-style: italic;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 0.6;
+    }
+    50% {
+        opacity: 1;
+    }
 }
 
 input, textarea, select {
     width: 100%;
-    padding: 12px;
-    border: 2px solid rgba(255, 255, 255, 0.2);
-    border-radius: 8px;
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
-    font-size: 14px;
+    padding: 15px;
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.3);
+    color: #f0f0f0;
+    font-size: 16px;
     box-sizing: border-box;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+}
+
+/* Custom dropdown arrow for select elements */
+select {
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f0f0f0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 15px center;
+    background-size: 18px;
+    padding-right: 45px;
+    cursor: pointer;
+    overflow: hidden;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* Internet Explorer 10+ */
+}
+
+/* Hide scrollbar for webkit browsers */
+select::-webkit-scrollbar {
+    display: none;
+}
+
+/* Style select options */
+select option {
+    background: rgba(0, 0, 0, 0.95);
+    color: #f0f0f0;
+    padding: 12px 15px;
+    font-size: 16px;
+    border-radius: 8px;
 }
 
 input::placeholder, textarea::placeholder {
-    color: rgba(255, 255, 255, 0.6);
+    color: rgba(255, 255, 255, 0.7);
 }
 
 input:focus, textarea:focus, select:focus {
     outline: none;
-    border-color: rgba(255, 255, 255, 0.5);
-    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.6);
+    background: rgba(0, 0, 0, 0.4);
+}
+
+select:hover {
+    border-color: rgba(255, 255, 255, 0.4);
+    background: rgba(0, 0, 0, 0.4);
+}
+
+/* Enhanced styling for disabled select elements */
+select:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background: rgba(0, 0, 0, 0.2);
 }
 
 .form-group {
@@ -119,5 +224,5 @@ label {
     margin-bottom: 8px;
     font-weight: 500;
     font-size: 0.95em;
-    color: white;
+    color: #f0f0f0;
 }

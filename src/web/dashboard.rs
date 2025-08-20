@@ -10,25 +10,17 @@ pub async fn server_list(
     headers: HeaderMap,
     State(_state): State<AppState>,
 ) -> Result<Html<String>, Redirect> {
-    let session = match extract_session_data(&headers).await {
-        Ok(session) => session,
-        Err(_) => return Err(Redirect::temporary("/auth/login")),
-    };
+    let session = extract_session_data(&headers).await
+        .map_err(|_| Redirect::temporary("/auth/login"))?;
 
-    let user = match session.1 {
-        Some(user) => user,
-        None => return Err(Redirect::temporary("/auth/login")),
-    };
-
+    let user = session.1.ok_or_else(|| Redirect::temporary("/auth/login"))?;
     let manageable_guilds = user.get_manageable_guilds();
 
     let mut guilds_html = String::new();
     for guild in manageable_guilds {
-        let icon_url = if let Some(icon) = &guild.icon {
-            format!("https://cdn.discordapp.com/icons/{}/{}.png", guild.id, icon)
-        } else {
-            "https://cdn.discordapp.com/embed/avatars/0.png".to_string()
-        };
+        let icon_url = guild.icon.as_ref()
+            .map(|icon| format!("https://cdn.discordapp.com/icons/{}/{}.png", guild.id, icon))
+            .unwrap_or_else(|| "https://cdn.discordapp.com/embed/avatars/0.png".to_string());
 
         guilds_html.push_str(&format!(
             r#"<div class="server-card" onclick="location.href='/dashboard/{}'">
@@ -44,8 +36,7 @@ pub async fn server_list(
     }
 
     if guilds_html.is_empty() {
-        let has_guilds = !user.guilds.is_empty();
-        guilds_html = if has_guilds {
+        guilds_html = if !user.guilds.is_empty() {
             r#"<div class="no-servers">
                 <h3>No manageable servers found</h3>
                 <p>You need "Manage Roles" permission in a server to configure self-roles.</p>
@@ -61,24 +52,18 @@ pub async fn server_list(
         };
     }
 
-    let user_avatar = if let Some(avatar) = &user.user.avatar {
-        format!("https://cdn.discordapp.com/avatars/{}/{}.png", user.user.id, avatar)
-    } else {
-        "https://cdn.discordapp.com/embed/avatars/0.png".to_string()
-    };
+    let user_avatar = user.user.avatar.as_ref()
+        .map(|avatar| format!("https://cdn.discordapp.com/avatars/{}/{}.png", user.user.id, avatar))
+        .unwrap_or_else(|| "https://cdn.discordapp.com/embed/avatars/0.png".to_string());
 
-    let common_css = include_str!("static/css/common.css");
-    let dashboard_css = include_str!("static/css/dashboard.css");
-    let template = include_str!("templates/server_list.html");
-    
-    let html = template
-        .replace("{{COMMON_CSS}}", common_css)
-        .replace("{{DASHBOARD_CSS}}", dashboard_css)
+    let template = include_str!("templates/server_list.html")
+        .replace("{{COMMON_CSS}}", include_str!("static/css/common.css"))
+        .replace("{{DASHBOARD_CSS}}", include_str!("static/css/dashboard.css"))
         .replace("{{USER_AVATAR}}", &user_avatar)
         .replace("{{USER_NAME}}", &user.user.username)
         .replace("{{GUILDS_HTML}}", &guilds_html);
 
-    Ok(Html(html))
+    Ok(Html(template))
 }
 
 pub async fn guild_dashboard(
@@ -86,15 +71,10 @@ pub async fn guild_dashboard(
     headers: HeaderMap,
     State(_state): State<AppState>,
 ) -> Result<Html<String>, Redirect> {
-    let session = match extract_session_data(&headers).await {
-        Ok(session) => session,
-        Err(_) => return Err(Redirect::temporary("/auth/login")),
-    };
+    let session = extract_session_data(&headers).await
+        .map_err(|_| Redirect::temporary("/auth/login"))?;
 
-    let user = match session.1 {
-        Some(user) => user,
-        None => return Err(Redirect::temporary("/auth/login")),
-    };
+    let user = session.1.ok_or_else(|| Redirect::temporary("/auth/login"))?;
 
     if !user.has_manage_roles_in_guild(&guild_id) {
         return Err(Redirect::temporary("/"));
@@ -102,24 +82,18 @@ pub async fn guild_dashboard(
 
     let guild = user.guilds.iter().find(|g| g.id == guild_id).unwrap();
 
-    let guild_icon = if let Some(icon) = &guild.icon {
-        format!("https://cdn.discordapp.com/icons/{}/{}.png", guild.id, icon)
-    } else {
-        "https://cdn.discordapp.com/embed/avatars/0.png".to_string()
-    };
+    let guild_icon = guild.icon.as_ref()
+        .map(|icon| format!("https://cdn.discordapp.com/icons/{}/{}.png", guild.id, icon))
+        .unwrap_or_else(|| "https://cdn.discordapp.com/embed/avatars/0.png".to_string());
 
-    let common_css = include_str!("static/css/common.css");
-    let dashboard_css = include_str!("static/css/dashboard.css");
-    let template = include_str!("templates/guild_dashboard.html");
-    
-    let html = template
-        .replace("{{COMMON_CSS}}", common_css)
-        .replace("{{DASHBOARD_CSS}}", dashboard_css)
+    let template = include_str!("templates/guild_dashboard.html")
+        .replace("{{COMMON_CSS}}", include_str!("static/css/common.css"))
+        .replace("{{DASHBOARD_CSS}}", include_str!("static/css/dashboard.css"))
         .replace("{{GUILD_NAME}}", &guild.name)
         .replace("{{GUILD_ICON}}", &guild_icon)
         .replace("{{GUILD_ID}}", &guild_id);
 
-    Ok(Html(html))
+    Ok(Html(template))
 }
 
 pub async fn selfroles_list(
@@ -127,15 +101,10 @@ pub async fn selfroles_list(
     headers: HeaderMap,
     State(_state): State<AppState>,
 ) -> Result<Html<String>, Redirect> {
-    let session = match extract_session_data(&headers).await {
-        Ok(session) => session,
-        Err(_) => return Err(Redirect::temporary("/auth/login")),
-    };
+    let session = extract_session_data(&headers).await
+        .map_err(|_| Redirect::temporary("/auth/login"))?;
 
-    let user = match session.1 {
-        Some(user) => user,
-        None => return Err(Redirect::temporary("/auth/login")),
-    };
+    let user = session.1.ok_or_else(|| Redirect::temporary("/auth/login"))?;
 
     if !user.has_manage_roles_in_guild(&guild_id) {
         return Err(Redirect::temporary("/"));
@@ -143,21 +112,15 @@ pub async fn selfroles_list(
 
     let guild = user.guilds.iter().find(|g| g.id == guild_id).unwrap();
 
-    let common_css = include_str!("static/css/common.css");
-    let dashboard_css = include_str!("static/css/dashboard.css");
-    let common_js = include_str!("static/js/common.js");
-    let selfroles_js = include_str!("static/js/selfroles.js");
-    let template = include_str!("templates/selfroles_list.html");
-    
-    let html = template
-        .replace("{{COMMON_CSS}}", common_css)
-        .replace("{{DASHBOARD_CSS}}", dashboard_css)
-        .replace("{{COMMON_JS}}", common_js)
-        .replace("{{SELFROLES_JS}}", selfroles_js)
+    let template = include_str!("templates/selfroles_list.html")
+        .replace("{{COMMON_CSS}}", include_str!("static/css/common.css"))
+        .replace("{{DASHBOARD_CSS}}", include_str!("static/css/dashboard.css"))
+        .replace("{{COMMON_JS}}", include_str!("static/js/common.js"))
+        .replace("{{SELFROLES_JS}}", include_str!("static/js/selfroles.js"))
         .replace("{{GUILD_NAME}}", &guild.name)
         .replace("{{GUILD_ID}}", &guild_id);
 
-    Ok(Html(html))
+    Ok(Html(template))
 }
 
 pub async fn selfroles_create(
@@ -165,15 +128,10 @@ pub async fn selfroles_create(
     headers: HeaderMap,
     State(_state): State<AppState>,
 ) -> Result<Html<String>, Redirect> {
-    let session = match extract_session_data(&headers).await {
-        Ok(session) => session,
-        Err(_) => return Err(Redirect::temporary("/auth/login")),
-    };
+    let session = extract_session_data(&headers).await
+        .map_err(|_| Redirect::temporary("/auth/login"))?;
 
-    let user = match session.1 {
-        Some(user) => user,
-        None => return Err(Redirect::temporary("/auth/login")),
-    };
+    let user = session.1.ok_or_else(|| Redirect::temporary("/auth/login"))?;
 
     if !user.has_manage_roles_in_guild(&guild_id) {
         return Err(Redirect::temporary("/"));
@@ -188,15 +146,10 @@ pub async fn selfroles_edit(
     headers: HeaderMap,
     State(_state): State<AppState>,
 ) -> Result<Html<String>, Redirect> {
-    let session = match extract_session_data(&headers).await {
-        Ok(session) => session,
-        Err(_) => return Err(Redirect::temporary("/auth/login")),
-    };
+    let session = extract_session_data(&headers).await
+        .map_err(|_| Redirect::temporary("/auth/login"))?;
 
-    let user = match session.1 {
-        Some(user) => user,
-        None => return Err(Redirect::temporary("/auth/login")),
-    };
+    let user = session.1.ok_or_else(|| Redirect::temporary("/auth/login"))?;
 
     if !user.has_manage_roles_in_guild(&guild_id) {
         return Err(Redirect::temporary("/"));
@@ -211,12 +164,6 @@ fn render_selfroles_form(
     guild_name: &str,
     config_id: Option<&str>,
 ) -> Result<Html<String>, Redirect> {
-    let common_css = include_str!("static/css/common.css");
-    let dashboard_css = include_str!("static/css/dashboard.css");
-    let common_js = include_str!("static/js/common.js");
-    let selfroles_js = include_str!("static/js/selfroles.js");
-    let template = include_str!("templates/selfroles_form.html");
-    
     let (page_title, header_title, header_description, breadcrumb_current, button_text, config_id_script, config_id_param) = 
         if let Some(config_id) = config_id {
             (
@@ -240,11 +187,11 @@ fn render_selfroles_form(
             )
         };
     
-    let html = template
-        .replace("{{COMMON_CSS}}", common_css)
-        .replace("{{DASHBOARD_CSS}}", dashboard_css)
-        .replace("{{COMMON_JS}}", common_js)
-        .replace("{{SELFROLES_JS}}", selfroles_js)
+    let template = include_str!("templates/selfroles_form.html")
+        .replace("{{COMMON_CSS}}", include_str!("static/css/common.css"))
+        .replace("{{DASHBOARD_CSS}}", include_str!("static/css/dashboard.css"))
+        .replace("{{COMMON_JS}}", include_str!("static/js/common.js"))
+        .replace("{{SELFROLES_JS}}", include_str!("static/js/selfroles.js"))
         .replace("{{GUILD_NAME}}", guild_name)
         .replace("{{GUILD_ID}}", guild_id)
         .replace("{{PAGE_TITLE}}", page_title)
@@ -255,5 +202,5 @@ fn render_selfroles_form(
         .replace("{{CONFIG_ID_SCRIPT}}", &config_id_script)
         .replace("{{CONFIG_ID_PARAM}}", config_id_param);
 
-    Ok(Html(html))
+    Ok(Html(template))
 }

@@ -127,7 +127,7 @@ async fn event_handler(
             events::handle_message_delete(ctx, channel_id, deleted_message_id, guild_id, data).await;
         }
         serenity::FullEvent::Message { new_message } => {
-            events::handle_message_create(ctx, new_message, data).await;
+            events::on_message(ctx, new_message, data).await;
         }
         _ => {}
     }

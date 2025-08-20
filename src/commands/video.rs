@@ -20,32 +20,26 @@ pub async fn video(
     #[description = "Video width in pixels (default: 1920)"] width: Option<u32>,
     #[description = "Video height in pixels (default: 1080)"] height: Option<u32>,
 ) -> Result<(), Error> {
-    // Defer response since file operations might take time
     ctx.defer().await?;
 
-    // Validate video URL
     let parsed_url = match validate_video_url(&url).await {
         Ok(url) => url,
         Err(e) => {
-            ctx.say(format!("❌ Invalid Video URL: {}", e)).await?;
+            ctx.say(format!("❌ invalid video url: {}", e)).await?;
             return Ok(());
         }
     };
 
-    // Extract or use provided title
     let video_title = title.unwrap_or_else(|| extract_video_title(&parsed_url));
 
-    // Use provided dimensions or defaults
     let video_width = width.unwrap_or(1920);
     let video_height = height.unwrap_or(1080);
 
-    // Validate dimensions
     if video_width < 100 || video_width > 4096 || video_height < 100 || video_height > 4096 {
-        ctx.say("❌ Invalid dimensions: Width and height must be between 100 and 4096 pixels").await?;
+        ctx.say("❌ invalid dimensions: width and height must be between 100 and 4096 pixels").await?;
         return Ok(());
     }
 
-    // Generate unique ID and HTML content
     let embed_id = generate_embed_id(12);
     let html_content = generate_embed_html(&url, &video_title, video_width, video_height);
 
@@ -53,18 +47,16 @@ pub async fn video(
     let embed_dir = &ctx.data().config.web.embed.directory;
     match save_embed_file(embed_dir, &embed_id, &html_content).await {
         Ok(_) => {
-            // Construct embed URL
             let base_url = &ctx.data().config.web.base_url;
             let embed_url = format!("{}/video/{}.html", base_url, embed_id);
 
-            // Send only the link without embeds
             ctx.say(embed_url).await?;
 
             info!("Created video embed {} for URL: {}", embed_id, url);
         }
         Err(e) => {
             error!("Failed to save embed file: {}", e);
-            ctx.say("❌ Failed to create embed file. Please try again later.").await?;
+            ctx.say("❌ failed to create embed file. please try again later.").await?;
         }
     }
 
@@ -130,19 +122,19 @@ pub async fn cleanup_embeds(ctx: Context<'_>) -> Result<(), Error> {
 
     // Check if cleanup is disabled
     if embed_config.max_age_hours == 0 {
-        ctx.say("ℹ️ Cleanup is disabled in the configuration (max_age_hours = 0)").await?;
+        ctx.say("ℹ️ cleanup is disabled in the configuration (max_age_hours = 0)").await?;
         return Ok(());
     }
 
     match cleanup_old_embeds(&embed_config.directory, embed_config.max_age_hours).await {
         Ok(cleaned_count) => {
-            ctx.say(format!("🧹 Cleanup complete: Successfully cleaned up {} old embed files (max age: {} hours)",
+            ctx.say(format!("🧹 cleanup complete: successfully cleaned up {} old embed files (max age: {} hours)",
                 cleaned_count, embed_config.max_age_hours)).await?;
             info!("Manual cleanup completed: {} files removed", cleaned_count);
         }
         Err(e) => {
             error!("Manual cleanup failed: {}", e);
-            ctx.say(format!("❌ Cleanup failed: {}", e)).await?;
+            ctx.say(format!("❌ cleanup failed: {}", e)).await?;
         }
     }
 

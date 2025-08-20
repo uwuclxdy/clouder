@@ -173,8 +173,22 @@ fn start_embed_cleanup_task(app_state: AppState) {
             let interval_seconds = embed_config.cleanup_interval_hours * 3600;
             sleep(Duration::from_secs(interval_seconds)).await;
 
-            // TODO: Implement embed cleanup when video functionality is complete
-            info!("Embed cleanup task running (not implemented yet)");
+            info!("Running automatic embed cleanup...");
+            match crate::utils::embed::cleanup_old_embeds(
+                &embed_config.directory, 
+                embed_config.max_age_hours
+            ).await {
+                Ok(cleaned_count) => {
+                    if cleaned_count > 0 {
+                        info!("Automatic cleanup completed: {} files removed", cleaned_count);
+                    } else {
+                        tracing::debug!("No old embed files to clean up");
+                    }
+                }
+                Err(e) => {
+                    error!("Automatic embed cleanup failed: {}", e);
+                }
+            }
         }
     });
 }

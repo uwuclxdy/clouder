@@ -1,3 +1,5 @@
+pub mod embed;
+
 // Utility functions for the bot
 
 #[allow(dead_code)]

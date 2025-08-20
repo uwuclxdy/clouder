@@ -74,8 +74,9 @@
     - Pagination for results
 
 ### **User facing text**
-- **In Discord:** mostly lowercase (except titles), short and a little bit silly at times :3
+- **In Discord:** mostly lowercase (titles and abbreviations like OS: capitalized), use short versions of words (Information → Info) short and a little bit silly at times :3
 - **Web Dashboard:** Properly capitalized, still short and concise
+- **Code comments:** Very concise, no unnecessary words, comments only where logic is not obvious
 
 ### **Event Handling**
 - **Message Interception:** For uwufy functionality using MESSAGE_CONTENT intent

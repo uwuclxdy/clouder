@@ -19,23 +19,8 @@ pub fn generate_preview_html(video_url: &str) -> String {
     let sanitized_url = sanitize_html_content(video_url);
 
     // todo: extract video dimensions from metadata of original file / url
-    format!(
-        "<!DOCTYPE html>
-<html lang=\"en\">
-<head>
-<meta name=\"viewport\" content=\"width=device-width\">
-<meta property=\"og:type\" content=\"video.other\">
-<meta property=\"og:video:url\" content=\"{}\">
-<meta property=\"og:video:type\" content=\"video/mp4\">
-<meta property=\"og:video:width\" content=\"1920\">
-<meta property=\"og:video:height\" content=\"1080\">
-</head>
-<body>
-<video controls=\"\" autoplay=\"\" name=\"media\"><source src=\"{}\" type=\"video/mp4\"></video>
-</body>
-</html>",
-        sanitized_url, sanitized_url
-    )
+    include_str!("../web/templates/video_preview.html")
+        .replace("{{VIDEO_URL}}", &sanitized_url)
 }
 
 /// Saves HTML content to a file in the embed directory

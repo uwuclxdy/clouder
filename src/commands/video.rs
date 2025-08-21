@@ -34,7 +34,7 @@ pub async fn video(
 
             let mut url_message = embed_url.clone();
             if title.is_some() {
-                url_message = format!("[fuc{sanitized_title}]({embed_url})");
+                url_message = format!("[{sanitized_title}]({embed_url})");
             }
 
             ctx.say(url_message).await?;

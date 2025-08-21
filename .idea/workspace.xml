@@ -1,0 +1,904 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="ALL" />
+  </component>
+  <component name="CargoProjects">
+    <cargoProject FILE="$PROJECT_DIR$/Cargo.toml">
+      <package file="$PROJECT_DIR$">
+        <enabledFeature name="default" />
+      </package>
+    </cargoProject>
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="ab878e5d-64e1-43c8-94f2-e11a97dec1c9" name="Changes" comment="refactor">
+      <change afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/EMBED_IMPLEMENTATION.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/tests/utils_tests.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/tests/utils_tests.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/tests/video_tests.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/tests/video_tests.rs" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="ChangesViewManager">
+    <option name="groupingKeys">
+      <option value="directory" />
+      <option value="repository" />
+    </option>
+  </component>
+  <component name="ExecutionTargetManager" SELECTED_TARGET="RsBuildProfile:dev" />
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Rust File" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;uwuclxdy&quot;
+  }
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/uwuclxdy/clouder.git&quot;,
+    &quot;accountId&quot;: &quot;12df91d4-8547-417d-b949-8c2cbd5ec114&quot;
+  }
+}</component>
+  <component name="MacroExpansionManager">
+    <option name="directoryName" value="MkqwPtHr" />
+  </component>
+  <component name="ProblemsViewState">
+    <option name="selectedTabId" value="CurrentFile" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 0
+}</component>
+  <component name="ProjectId" id="3011qF4VISWSn3id9VRGgFXeOPM" />
+  <component name="ProjectLevelVcsManager">
+    <ConfirmationsSetting value="2" id="Add" />
+  </component>
+  <component name="ProjectViewState">
+    <option name="autoscrollFromSource" value="true" />
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Cargo.Run clouder.executor": "Run",
+    "Cargo.Run.executor": "Run",
+    "Cargo.Test clouder.executor": "Run",
+    "Cargo.Test utils_tests::tests.executor": "Run",
+    "Cargo.Test video_tests::tests.executor": "Run",
+    "Cargo.Tests.executor": "Run",
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.rust.reset.selective.auto.import": "true",
+    "git-widget-placeholder": "master",
+    "junie.onboarding.icon.badge.shown": "true",
+    "last_opened_file_path": "/home/uwuclxdy/repos/clouder",
+    "node.js.detected.package.eslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "org.rust.cargo.project.model.PROJECT_DISCOVERY": "true",
+    "org.rust.cargo.project.model.impl.CargoExternalSystemProjectAware.subscribe.first.balloon": "",
+    "org.rust.first.attach.projects": "true",
+    "run.code.analysis.last.selected.profile": "pProject Default",
+    "settings.editor.selected.configurable": "preferences.pluginManager",
+    "to.speed.mode.migration.done": "true"
+  },
+  "keyToStringList": {
+    "DatabaseDriversLRU": [
+      "sqlite"
+    ]
+  }
+}]]></component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/src/tests/commands" />
+      <recent name="$PROJECT_DIR$/src/tests" />
+    </key>
+  </component>
+  <component name="RunManager" selected="Cargo.Run clouder">
+    <configuration name="Run clouder" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
+      <option name="buildProfileId" value="dev" />
+      <option name="command" value="run --package clouder --bin clouder" />
+      <option name="workingDirectory" value="file://$PROJECT_DIR$" />
+      <envs />
+      <option name="emulateTerminal" value="true" />
+      <option name="channel" value="DEFAULT" />
+      <option name="requiredFeatures" value="true" />
+      <option name="allFeatures" value="false" />
+      <option name="withSudo" value="false" />
+      <option name="buildTarget" value="REMOTE" />
+      <option name="backtrace" value="SHORT" />
+      <option name="isRedirectInput" value="false" />
+      <option name="redirectInputPath" value="" />
+      <method v="2">
+        <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="Test clouder" type="CargoCommandRunConfiguration" factoryName="Cargo Command">
+      <option name="buildProfileId" value="dev" />
+      <option name="command" value="test" />
+      <option name="workingDirectory" value="file://$PROJECT_DIR$" />
+      <envs />
+      <option name="emulateTerminal" value="true" />
+      <option name="channel" value="DEFAULT" />
+      <option name="requiredFeatures" value="true" />
+      <option name="allFeatures" value="true" />
+      <option name="withSudo" value="false" />
+      <option name="buildTarget" value="REMOTE" />
+      <option name="backtrace" value="SHORT" />
+      <option name="isRedirectInput" value="false" />
+      <option name="redirectInputPath" value="" />
+      <method v="2">
+        <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
+      </method>
+    </configuration>
+    <list>
+      <item itemvalue="Cargo.Test clouder" />
+      <item itemvalue="Cargo.Run clouder" />
+    </list>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Cargo.Run clouder" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="RustProjectSettings">
+    <option name="toolchainHomeDirectory" value="$USER_HOME$/.cargo/bin" />
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="ab878e5d-64e1-43c8-94f2-e11a97dec1c9" name="Changes" comment="" />
+      <created>1752780453142</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1752780453142</updated>
+      <workItem from="1752780454174" duration="27000" />
+      <workItem from="1752780495307" duration="166000" />
+      <workItem from="1752780669225" duration="2544000" />
+      <workItem from="1752845943925" duration="3884000" />
+      <workItem from="1753627889714" duration="546000" />
+      <workItem from="1753628446726" duration="69000" />
+      <workItem from="1753639722598" duration="3086000" />
+      <workItem from="1755544532601" duration="3329000" />
+      <workItem from="1755556538557" duration="609000" />
+      <workItem from="1755559081342" duration="5927000" />
+      <workItem from="1755599831536" duration="2874000" />
+      <workItem from="1755602887395" duration="8801000" />
+      <workItem from="1755613497761" duration="303000" />
+      <workItem from="1755613807844" duration="2593000" />
+      <workItem from="1755618144827" duration="6825000" />
+      <workItem from="1755624989766" duration="603000" />
+      <workItem from="1755637280425" duration="593000" />
+      <workItem from="1755637881551" duration="599000" />
+      <workItem from="1755638492477" duration="15662000" />
+      <workItem from="1755691144611" duration="1976000" />
+      <workItem from="1755693133555" duration="6889000" />
+      <workItem from="1755704997128" duration="686000" />
+      <workItem from="1755705690690" duration="127000" />
+      <workItem from="1755705824522" duration="5683000" />
+      <workItem from="1755720024807" duration="8643000" />
+      <workItem from="1755733810637" duration="2736000" />
+      <workItem from="1755779353953" duration="14313000" />
+    </task>
+    <task id="LOCAL-00001" summary="init">
+      <option name="closed" value="true" />
+      <created>1755607441165</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1755607441165</updated>
+    </task>
+    <task id="LOCAL-00002" summary="init">
+      <option name="closed" value="true" />
+      <created>1755607450719</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1755607450719</updated>
+    </task>
+    <task id="LOCAL-00003" summary="improved self roles">
+      <option name="closed" value="true" />
+      <created>1755612045098</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1755612045098</updated>
+    </task>
+    <task id="LOCAL-00004" summary="test coverage">
+      <option name="closed" value="true" />
+      <created>1755612053602</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1755612053602</updated>
+    </task>
+    <task id="LOCAL-00005" summary="refactor">
+      <option name="closed" value="true" />
+      <created>1755612917256</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1755612917256</updated>
+    </task>
+    <task id="LOCAL-00006" summary="further improve selfroles">
+      <option name="closed" value="true" />
+      <created>1755619136623</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1755619136623</updated>
+    </task>
+    <task id="LOCAL-00007" summary="expand test coverage">
+      <option name="closed" value="true" />
+      <created>1755621426910</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1755621426910</updated>
+    </task>
+    <task id="LOCAL-00008" summary="expand test coverage and code quality improvements">
+      <option name="closed" value="true" />
+      <created>1755624858693</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1755624858693</updated>
+    </task>
+    <task id="LOCAL-00009" summary="refactor">
+      <option name="closed" value="true" />
+      <created>1755637837757</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1755637837757</updated>
+    </task>
+    <task id="LOCAL-00010" summary="refactor">
+      <option name="closed" value="true" />
+      <created>1755637977187</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1755637977187</updated>
+    </task>
+    <task id="LOCAL-00011" summary="refactor">
+      <option name="closed" value="true" />
+      <created>1755638964500</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1755638964500</updated>
+    </task>
+    <task id="LOCAL-00012" summary="refactor">
+      <option name="closed" value="true" />
+      <created>1755639483734</created>
+      <option name="number" value="00012" />
+      <option name="presentableId" value="LOCAL-00012" />
+      <option name="project" value="LOCAL" />
+      <updated>1755639483734</updated>
+    </task>
+    <task id="LOCAL-00013" summary="refactor: separation of concerns between web components">
+      <option name="closed" value="true" />
+      <created>1755641613689</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1755641613689</updated>
+    </task>
+    <task id="LOCAL-00014" summary="remove redundant db structure from readme">
+      <option name="closed" value="true" />
+      <created>1755641880801</created>
+      <option name="number" value="00014" />
+      <option name="presentableId" value="LOCAL-00014" />
+      <option name="project" value="LOCAL" />
+      <updated>1755641880801</updated>
+    </task>
+    <task id="LOCAL-00015" summary="remove checklist">
+      <option name="closed" value="true" />
+      <created>1755642551782</created>
+      <option name="number" value="00015" />
+      <option name="presentableId" value="LOCAL-00015" />
+      <option name="project" value="LOCAL" />
+      <updated>1755642551782</updated>
+    </task>
+    <task id="LOCAL-00016" summary="MASSIVELY improve web dashboard">
+      <option name="closed" value="true" />
+      <created>1755655778200</created>
+      <option name="number" value="00016" />
+      <option name="presentableId" value="LOCAL-00016" />
+      <option name="project" value="LOCAL" />
+      <updated>1755655778200</updated>
+    </task>
+    <task id="LOCAL-00017" summary="refactor: cleanup">
+      <option name="closed" value="true" />
+      <created>1755656345352</created>
+      <option name="number" value="00017" />
+      <option name="presentableId" value="LOCAL-00017" />
+      <option name="project" value="LOCAL" />
+      <updated>1755656345352</updated>
+    </task>
+    <task id="LOCAL-00018" summary="show selection type in selfrole embed footer">
+      <option name="closed" value="true" />
+      <created>1755656730648</created>
+      <option name="number" value="00018" />
+      <option name="presentableId" value="LOCAL-00018" />
+      <option name="project" value="LOCAL" />
+      <updated>1755656730648</updated>
+    </task>
+    <task id="LOCAL-00019" summary="improve role card css">
+      <option name="closed" value="true" />
+      <created>1755691645723</created>
+      <option name="number" value="00019" />
+      <option name="presentableId" value="LOCAL-00019" />
+      <option name="project" value="LOCAL" />
+      <updated>1755691645723</updated>
+    </task>
+    <task id="LOCAL-00020" summary="next feature docs">
+      <option name="closed" value="true" />
+      <created>1755691860642</created>
+      <option name="number" value="00020" />
+      <option name="presentableId" value="LOCAL-00020" />
+      <option name="project" value="LOCAL" />
+      <updated>1755691860642</updated>
+    </task>
+    <task id="LOCAL-00021" summary="video command">
+      <option name="closed" value="true" />
+      <created>1755694307627</created>
+      <option name="number" value="00021" />
+      <option name="presentableId" value="LOCAL-00021" />
+      <option name="project" value="LOCAL" />
+      <updated>1755694307627</updated>
+    </task>
+    <task id="LOCAL-00022" summary="video command">
+      <option name="closed" value="true" />
+      <created>1755694334453</created>
+      <option name="number" value="00022" />
+      <option name="presentableId" value="LOCAL-00022" />
+      <option name="project" value="LOCAL" />
+      <updated>1755694334453</updated>
+    </task>
+    <task id="LOCAL-00023" summary="&quot;about&quot; commands + code quality improvements">
+      <option name="closed" value="true" />
+      <created>1755706328569</created>
+      <option name="number" value="00023" />
+      <option name="presentableId" value="LOCAL-00023" />
+      <option name="project" value="LOCAL" />
+      <updated>1755706328569</updated>
+    </task>
+    <task id="LOCAL-00024" summary="separate html and rust">
+      <option name="closed" value="true" />
+      <created>1755707004369</created>
+      <option name="number" value="00024" />
+      <option name="presentableId" value="LOCAL-00024" />
+      <option name="project" value="LOCAL" />
+      <updated>1755707004369</updated>
+    </task>
+    <task id="LOCAL-00025" summary="remove success messages from js and redirect instantly">
+      <option name="closed" value="true" />
+      <created>1755707185867</created>
+      <option name="number" value="00025" />
+      <option name="presentableId" value="LOCAL-00025" />
+      <option name="project" value="LOCAL" />
+      <updated>1755707185867</updated>
+    </task>
+    <task id="LOCAL-00026" summary="update docs">
+      <option name="closed" value="true" />
+      <created>1755707748517</created>
+      <option name="number" value="00026" />
+      <option name="presentableId" value="LOCAL-00026" />
+      <option name="project" value="LOCAL" />
+      <updated>1755707748517</updated>
+    </task>
+    <task id="LOCAL-00027" summary="update docs">
+      <option name="closed" value="true" />
+      <created>1755707831112</created>
+      <option name="number" value="00027" />
+      <option name="presentableId" value="LOCAL-00027" />
+      <option name="project" value="LOCAL" />
+      <updated>1755707831112</updated>
+    </task>
+    <task id="LOCAL-00028" summary="update docs">
+      <option name="closed" value="true" />
+      <created>1755707880038</created>
+      <option name="number" value="00028" />
+      <option name="presentableId" value="LOCAL-00028" />
+      <option name="project" value="LOCAL" />
+      <updated>1755707880038</updated>
+    </task>
+    <task id="LOCAL-00029" summary="update docs">
+      <option name="closed" value="true" />
+      <created>1755708851999</created>
+      <option name="number" value="00029" />
+      <option name="presentableId" value="LOCAL-00029" />
+      <option name="project" value="LOCAL" />
+      <updated>1755708851999</updated>
+    </task>
+    <task id="LOCAL-00030" summary="update docs">
+      <option name="closed" value="true" />
+      <created>1755709534837</created>
+      <option name="number" value="00030" />
+      <option name="presentableId" value="LOCAL-00030" />
+      <option name="project" value="LOCAL" />
+      <updated>1755709534837</updated>
+    </task>
+    <task id="LOCAL-00031" summary="add help command">
+      <option name="closed" value="true" />
+      <created>1755709539881</created>
+      <option name="number" value="00031" />
+      <option name="presentableId" value="LOCAL-00031" />
+      <option name="project" value="LOCAL" />
+      <updated>1755709539881</updated>
+    </task>
+    <task id="LOCAL-00032" summary="improve `/about bot` command">
+      <option name="closed" value="true" />
+      <created>1755709984054</created>
+      <option name="number" value="00032" />
+      <option name="presentableId" value="LOCAL-00032" />
+      <option name="project" value="LOCAL" />
+      <updated>1755709984054</updated>
+    </task>
+    <task id="LOCAL-00033" summary="update docs">
+      <option name="closed" value="true" />
+      <created>1755710157227</created>
+      <option name="number" value="00033" />
+      <option name="presentableId" value="LOCAL-00033" />
+      <option name="project" value="LOCAL" />
+      <updated>1755710157227</updated>
+    </task>
+    <task id="LOCAL-00034" summary="update docs">
+      <option name="closed" value="true" />
+      <created>1755711043138</created>
+      <option name="number" value="00034" />
+      <option name="presentableId" value="LOCAL-00034" />
+      <option name="project" value="LOCAL" />
+      <updated>1755711043138</updated>
+    </task>
+    <task id="LOCAL-00035" summary="update strings and comments">
+      <option name="closed" value="true" />
+      <created>1755722743299</created>
+      <option name="number" value="00035" />
+      <option name="presentableId" value="LOCAL-00035" />
+      <option name="project" value="LOCAL" />
+      <updated>1755722743299</updated>
+    </task>
+    <task id="LOCAL-00036" summary="make all embed colors globally configurable">
+      <option name="closed" value="true" />
+      <created>1755728203983</created>
+      <option name="number" value="00036" />
+      <option name="presentableId" value="LOCAL-00036" />
+      <option name="project" value="LOCAL" />
+      <updated>1755728203983</updated>
+    </task>
+    <task id="LOCAL-00037" summary="improve all /about commands">
+      <option name="closed" value="true" />
+      <created>1755736183700</created>
+      <option name="number" value="00037" />
+      <option name="presentableId" value="LOCAL-00037" />
+      <option name="project" value="LOCAL" />
+      <updated>1755736183700</updated>
+    </task>
+    <task id="LOCAL-00038" summary="add &quot;always @ users&quot; rule">
+      <option name="closed" value="true" />
+      <created>1755736276345</created>
+      <option name="number" value="00038" />
+      <option name="presentableId" value="LOCAL-00038" />
+      <option name="project" value="LOCAL" />
+      <updated>1755736276345</updated>
+    </task>
+    <task id="LOCAL-00039" summary="version bump">
+      <option name="closed" value="true" />
+      <created>1755736327743</created>
+      <option name="number" value="00039" />
+      <option name="presentableId" value="LOCAL-00039" />
+      <option name="project" value="LOCAL" />
+      <updated>1755736327743</updated>
+    </task>
+    <task id="LOCAL-00040" summary="update docs">
+      <option name="closed" value="true" />
+      <created>1755736499325</created>
+      <option name="number" value="00040" />
+      <option name="presentableId" value="LOCAL-00040" />
+      <option name="project" value="LOCAL" />
+      <updated>1755736499325</updated>
+    </task>
+    <task id="LOCAL-00041" summary="fix `/video` command">
+      <option name="closed" value="true" />
+      <created>1755792232546</created>
+      <option name="number" value="00041" />
+      <option name="presentableId" value="LOCAL-00041" />
+      <option name="project" value="LOCAL" />
+      <updated>1755792232546</updated>
+    </task>
+    <task id="LOCAL-00042" summary="remove video tests">
+      <option name="closed" value="true" />
+      <created>1755794111369</created>
+      <option name="number" value="00042" />
+      <option name="presentableId" value="LOCAL-00042" />
+      <option name="project" value="LOCAL" />
+      <updated>1755794111369</updated>
+    </task>
+    <task id="LOCAL-00043" summary="refactor">
+      <option name="closed" value="true" />
+      <created>1755794126320</created>
+      <option name="number" value="00043" />
+      <option name="presentableId" value="LOCAL-00043" />
+      <option name="project" value="LOCAL" />
+      <updated>1755794126320</updated>
+    </task>
+    <option name="localTasksCounter" value="44" />
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <option name="CHECK_NEW_TODO" value="false" />
+    <MESSAGE value="expand test coverage and code quality improvements" />
+    <MESSAGE value="add login and dashboard HTML templates, CSS styles, and self-roles management scripts" />
+    <MESSAGE value="refactor: separation of concerns between web components" />
+    <MESSAGE value="remove redundant db structure from readme" />
+    <MESSAGE value="remove checklist" />
+    <MESSAGE value="MASSIVELY improve web dashboard" />
+    <MESSAGE value="refactor: cleanup" />
+    <MESSAGE value="show selection type in selfrole embed footer" />
+    <MESSAGE value="improve role card css" />
+    <MESSAGE value="next feature docs" />
+    <MESSAGE value="video command" />
+    <MESSAGE value="&quot;about&quot; commands + code quality improvements" />
+    <MESSAGE value="separate html and rust" />
+    <MESSAGE value="remove success messages from js and redirect instantly" />
+    <MESSAGE value="add help command" />
+    <MESSAGE value="improve `/about bot` command" />
+    <MESSAGE value="update strings and comments" />
+    <MESSAGE value="make all embed colors globally configurable" />
+    <MESSAGE value="improve all /about commands" />
+    <MESSAGE value="add &quot;always @ users&quot; rule" />
+    <MESSAGE value="version bump" />
+    <MESSAGE value="update docs" />
+    <MESSAGE value="fix `/video` command" />
+    <MESSAGE value="remove video tests" />
+    <MESSAGE value="refactor" />
+    <option name="LAST_COMMIT_MESSAGE" value="refactor" />
+    <option name="OPTIMIZE_IMPORTS_BEFORE_PROJECT_COMMIT" value="true" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/src/web/mod.rs</url>
+          <line>105</line>
+          <option name="timeStamp" value="2" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/src/web/mod.rs</url>
+          <line>157</line>
+          <option name="timeStamp" value="3" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
+  </component>
+  <component name="com.gk646.codestats.settings.Save">
+    <option name="commitTimePoints">
+      <list>
+        <TimePoint>
+          <option name="timestamp" value="1755607441213" />
+          <option name="linesCode" value="3108" />
+          <option name="totalLines" value="7900" />
+          <option name="info" value="init" />
+        </TimePoint>
+        <TimePoint>
+          <option name="timestamp" value="1755607450730" />
+          <option name="linesCode" value="3079" />
+          <option name="totalLines" value="7900" />
+          <option name="info" value="init" />
+        </TimePoint>
+        <TimePoint>
+          <option name="timestamp" value="1755612045123" />
+          <option name="linesCode" value="6272" />
+          <option name="totalLines" value="12182" />
+          <option name="info" value="improved self roles" />
+        </TimePoint>
+        <TimePoint>
+          <option name="timestamp" value="1755612053724" />
+          <option name="linesCode" value="6272" />
+          <option name="totalLines" value="12182" />
+          <option name="info" value="test coverage" />
+        </TimePoint>
+        <TimePoint>
+          <option name="timestamp" value="1755612917268" />
+          <option name="linesCode" value="6432" />
+          <option name="totalLines" value="12350" />
+          <option name="info" value="refactor" />
+        </TimePoint>
+        <TimePoint>
+          <option name="timestamp" value="1755619136666" />
+          <option name="linesCode" value="5330" />
+          <option name="totalLines" value="10312" />
+          <option name="info" value="further improve selfroles" />
+        </TimePoint>
+        <TimePoint>
+          <option name="timestamp" value="1755621427004" />
+          <option name="linesCode" value="6296" />
+          <option name="totalLines" value="11702" />
+          <option name="info" value="expand test coverage" />
+        </TimePoint>
+        <TimePoint>
+          <option name="timestamp" value="1755624858767" />
+          <option name="linesCode" value="6449" />
+          <option name="totalLines" value="11960" />
+          <option name="info" value="expand test coverage and code quality improvements" />
+        </TimePoint>
+        <TimePoint>
+          <option name="timestamp" value="1755637837779" />
+          <option name="linesCode" value="6445" />
+          <option name="totalLines" value="11955" />
+          <option name="info" value="refactor" />
+        </TimePoint>
+        <TimePoint>
+          <option name="timestamp" value="1755637977213" />
+          <option name="linesCode" value="6241" />
+          <option name="totalLines" value="11690" />
+          <option name="info" value="refactor" />
+        </TimePoint>
+        <TimePoint>
+          <option name="timestamp" value="1755638964538" />
+          <option name="linesCode" value="6238" />
+          <option name="totalLines" value="11689" />
+          <option name="info" value="refactor" />
+        </TimePoint>
+        <TimePoint>
+          <option name="timestamp" value="1755639483754" />
+          <option name="linesCode" value="6009" />
+          <option name="totalLines" value="11445" />
+          <option name="info" value="refactor" />
+        </TimePoint>
+        <TimePoint>
+          <option name="timestamp" value="1755641613728" />
+          <option name="linesCode" value="5388" />
+          <option name="totalLines" value="11250" />
+          <option name="info" value="refactor: separation of concerns between web compo" />
+        </TimePoint>
+        <TimePoint>
+          <option name="timestamp" value="1755641880818" />
+          <option name="linesCode" value="5361" />
+          <option name="totalLines" value="11214" />
+          <option name="info" value="remove redundant db structure from readme" />
+        </TimePoint>
+        <TimePoint>
+          <option name="timestamp" value="1755642551812" />
+          <option name="linesCode" value="5293" />
+          <option name="totalLines" value="11115" />
+          <option name="info" value="remove checklist" />
+        </TimePoint>
+        <TimePoint>
+          <option name="timestamp" value="1755655778219" />
+          <option name="linesCode" value="5534" />
+          <option name="totalLines" value="11494" />
+          <option name="info" value="MASSIVELY improve web dashboard" />
+        </TimePoint>
+        <TimePoint>
+          <option name="timestamp" value="1755656345373" />
+          <option name="linesCode" value="5370" />
+          <option name="totalLines" value="11303" />
+          <option name="info" value="refactor: cleanup" />
+        </TimePoint>
+        <TimePoint>
+          <option name="timestamp" value="1755656730692" />
+          <option name="linesCode" value="5477" />
+          <option name="totalLines" value="11443" />
+          <option name="info" value="show selection type in selfrole embed footer" />
+        </TimePoint>
+        <TimePoint>
+          <option name="timestamp" value="1755691645754" />
+          <option name="linesCode" value="7026" />
+          <option name="totalLines" value="13693" />
+          <option name="info" value="improve role card css" />
+        </TimePoint>
+        <TimePoint>
+          <option name="timestamp" value="1755691860666" />
+          <option name="linesCode" value="5480" />
+          <option name="totalLines" value="11448" />
+          <option name="info" value="next feature docs" />
+        </TimePoint>
+        <TimePoint>
+          <option name="timestamp" value="1755694307658" />
+          <option name="linesCode" value="6445" />
+          <option name="totalLines" value="12755" />
+          <option name="info" value="video command" />
+        </TimePoint>
+        <TimePoint>
+          <option name="timestamp" value="1755694334466" />
+          <option name="linesCode" value="6445" />
+          <option name="totalLines" value="12757" />
+          <option name="info" value="video command" />
+        </TimePoint>
+        <TimePoint>
+          <option name="timestamp" value="1755706328598" />
+          <option name="linesCode" value="6816" />
+          <option name="totalLines" value="13360" />
+          <option name="info" value="&quot;about&quot; commands + code quality improvements" />
+        </TimePoint>
+        <TimePoint>
+          <option name="timestamp" value="1755707004389" />
+          <option name="linesCode" value="6800" />
+          <option name="totalLines" value="13403" />
+          <option name="info" value="separate html and rust" />
+        </TimePoint>
+        <TimePoint>
+          <option name="timestamp" value="1755707185909" />
+          <option name="linesCode" value="6793" />
+          <option name="totalLines" value="13407" />
+          <option name="info" value="remove success messages from js and redirect insta" />
+        </TimePoint>
+        <TimePoint>
+          <option name="timestamp" value="1755707748532" />
+          <option name="linesCode" value="7062" />
+          <option name="totalLines" value="13772" />
+          <option name="info" value="update docs" />
+        </TimePoint>
+        <TimePoint>
+          <option name="timestamp" value="1755707831122" />
+          <option name="linesCode" value="7147" />
+          <option name="totalLines" value="13880" />
+          <option name="info" value="" />
+        </TimePoint>
+        <TimePoint>
+          <option name="timestamp" value="1755707880049" />
+          <option name="linesCode" value="7138" />
+          <option name="totalLines" value="13870" />
+          <option name="info" value="" />
+        </TimePoint>
+        <TimePoint>
+          <option name="timestamp" value="1755708852021" />
+          <option name="linesCode" value="7087" />
+          <option name="totalLines" value="13815" />
+          <option name="info" value="update docs" />
+        </TimePoint>
+        <TimePoint>
+          <option name="timestamp" value="1755709534847" />
+          <option name="linesCode" value="7049" />
+          <option name="totalLines" value="13791" />
+          <option name="info" value="" />
+        </TimePoint>
+        <TimePoint>
+          <option name="timestamp" value="1755709539891" />
+          <option name="linesCode" value="7049" />
+          <option name="totalLines" value="13764" />
+          <option name="info" value="add help command" />
+        </TimePoint>
+        <TimePoint>
+          <option name="timestamp" value="1755709984069" />
+          <option name="linesCode" value="7164" />
+          <option name="totalLines" value="13915" />
+          <option name="info" value="improve `/about bot` command" />
+        </TimePoint>
+        <TimePoint>
+          <option name="timestamp" value="1755710157238" />
+          <option name="linesCode" value="7165" />
+          <option name="totalLines" value="13916" />
+          <option name="info" value="update docs" />
+        </TimePoint>
+        <TimePoint>
+          <option name="timestamp" value="1755711043149" />
+          <option name="linesCode" value="7165" />
+          <option name="totalLines" value="13918" />
+          <option name="info" value="" />
+        </TimePoint>
+        <TimePoint>
+          <option name="timestamp" value="1755722743343" />
+          <option name="linesCode" value="7232" />
+          <option name="totalLines" value="13870" />
+          <option name="info" value="update strings and comments" />
+        </TimePoint>
+        <TimePoint>
+          <option name="timestamp" value="1755728204067" />
+          <option name="linesCode" value="7274" />
+          <option name="totalLines" value="13927" />
+          <option name="info" value="make all embed colors globally configurable" />
+        </TimePoint>
+        <TimePoint>
+          <option name="timestamp" value="1755736183791" />
+          <option name="linesCode" value="7217" />
+          <option name="totalLines" value="13856" />
+          <option name="info" value="improve all /about commands" />
+        </TimePoint>
+        <TimePoint>
+          <option name="timestamp" value="1755736276426" />
+          <option name="linesCode" value="7217" />
+          <option name="totalLines" value="13856" />
+          <option name="info" value="add &quot;always @ users&quot; rule" />
+        </TimePoint>
+        <TimePoint>
+          <option name="timestamp" value="1755736327824" />
+          <option name="linesCode" value="7217" />
+          <option name="totalLines" value="13856" />
+          <option name="info" value="version bump" />
+        </TimePoint>
+        <TimePoint>
+          <option name="timestamp" value="1755736499339" />
+          <option name="linesCode" value="7218" />
+          <option name="totalLines" value="13857" />
+          <option name="info" value="update docs" />
+        </TimePoint>
+        <TimePoint>
+          <option name="timestamp" value="1755792232624" />
+          <option name="linesCode" value="6876" />
+          <option name="totalLines" value="13259" />
+          <option name="info" value="fix `/video` command" />
+        </TimePoint>
+        <TimePoint>
+          <option name="timestamp" value="1755794111391" />
+          <option name="linesCode" value="6876" />
+          <option name="totalLines" value="13251" />
+          <option name="info" value="remove video tests" />
+        </TimePoint>
+        <TimePoint>
+          <option name="timestamp" value="1755794126340" />
+          <option name="linesCode" value="6876" />
+          <option name="totalLines" value="13251" />
+          <option name="info" value="refactor" />
+        </TimePoint>
+      </list>
+    </option>
+    <option name="genericTimePoints">
+      <list>
+        <TimePoint>
+          <option name="timestamp" value="1755639483754" />
+          <option name="linesCode" value="6009" />
+          <option name="totalLines" value="11445" />
+          <option name="info" value="Aug 19, 2025" />
+        </TimePoint>
+        <TimePoint>
+          <option name="timestamp" value="1755656730692" />
+          <option name="linesCode" value="5477" />
+          <option name="totalLines" value="11443" />
+          <option name="info" value="Aug 20, 2025" />
+        </TimePoint>
+        <TimePoint>
+          <option name="timestamp" value="1755722743343" />
+          <option name="linesCode" value="7232" />
+          <option name="totalLines" value="13870" />
+          <option name="info" value="Aug 20, 2025" />
+        </TimePoint>
+        <TimePoint>
+          <option name="timestamp" value="1755736499339" />
+          <option name="linesCode" value="7218" />
+          <option name="totalLines" value="13857" />
+          <option name="info" value="Aug 21, 2025" />
+        </TimePoint>
+        <TimePoint>
+          <option name="timestamp" value="1755794126340" />
+          <option name="linesCode" value="6876" />
+          <option name="totalLines" value="13251" />
+          <option name="info" value="Aug 21, 2025" />
+        </TimePoint>
+      </list>
+    </option>
+  </component>
+</project>

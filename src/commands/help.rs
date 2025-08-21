@@ -76,6 +76,13 @@ pub fn get_all_commands() -> Vec<CommandInfo> {
             category: CommandCategory::Utility,
             permissions: None,
         },
+        CommandInfo {
+            name: "/purge".to_string(),
+            description: "purges messages from channel".to_string(),
+            usage: Some("/purge [number / message_id]".to_string()),
+            category: CommandCategory::Management,
+            permissions: Some("manage messages".to_string()),
+        },
     ]
 }
 

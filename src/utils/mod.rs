@@ -8,7 +8,6 @@ pub fn get_default_embed_color(app_state: &AppState) -> Color {
     Color::new(app_state.config.web.embed.default_color)
 }
 
-#[allow(dead_code)]
 pub fn format_duration(seconds: u64) -> String {
     let days = seconds / 86400;
     let hours = (seconds % 86400) / 3600;

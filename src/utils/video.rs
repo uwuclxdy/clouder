@@ -1,18 +1,8 @@
+use crate::utils::ensure_directory_exists;
 use anyhow::{anyhow, Result};
-use rand::distr::Alphanumeric;
-use rand::Rng;
 use std::path::PathBuf;
 use tokio::fs;
 use tracing::{error, info};
-
-/// Generates a random alphanumeric identifier for embed files
-pub fn generate_embed_id(length: usize) -> String {
-    rand::rng()
-        .sample_iter(&Alphanumeric)
-        .take(length)
-        .map(char::from)
-        .collect()
-}
 
 /// Sanitizes a string for safe use in HTML content
 pub fn sanitize_html_content(input: &str) -> String {
@@ -24,21 +14,8 @@ pub fn sanitize_html_content(input: &str) -> String {
         .replace('\'', "&#x27;")
 }
 
-/// Creates the embed directory if it doesn't exist
-pub async fn ensure_embed_directory(directory: &str) -> Result<PathBuf> {
-    let path = PathBuf::from(directory);
-
-    if !path.exists() {
-        info!("Creating embed directory: {}", directory);
-        fs::create_dir_all(&path).await
-            .map_err(|e| anyhow!("Failed to create embed directory '{}': {}", directory, e))?;
-    }
-
-    Ok(path)
-}
-
-/// Generates the HTML content for video embedding
-pub fn generate_embed_html(video_url: &str) -> String {
+/// Generates the HTML content for video preview
+pub fn generate_preview_html(video_url: &str) -> String {
     let sanitized_url = sanitize_html_content(video_url);
 
     // todo: extract video dimensions from metadata of original file / url
@@ -62,7 +39,7 @@ pub fn generate_embed_html(video_url: &str) -> String {
 }
 
 /// Saves HTML content to a file in the embed directory
-pub async fn save_embed_file(
+pub async fn save_video_preview(
     directory: &str,
     filename: &str,
     content: &str,
@@ -72,7 +49,7 @@ pub async fn save_embed_file(
         return Err(anyhow!("directory traversal attempt blocked"));
     }
 
-    let embed_dir = ensure_embed_directory(directory).await?;
+    let embed_dir = ensure_directory_exists(directory).await?;
     let file_path = embed_dir.join(format!("{}.html", filename));
 
     // Prevent directory traversal by canonicalizing and checking the resolved path
@@ -109,7 +86,7 @@ pub async fn save_embed_file(
 }
 
 /// Cleans up old embed files based on age
-pub async fn cleanup_old_embeds(directory: &str, max_age_hours: u64) -> Result<usize> {
+pub async fn clean_old_previews(directory: &str, max_age_hours: u64) -> Result<usize> {
     let embed_dir = PathBuf::from(directory);
 
     if !embed_dir.exists() {

@@ -179,7 +179,7 @@ fn start_embed_cleanup_task(app_state: AppState) {
             sleep(Duration::from_secs(interval_seconds)).await;
 
             info!("Running automatic embed cleanup...");
-            match utils::embed::cleanup_old_embeds(
+            match utils::video::clean_old_previews(
                 &embed_config.directory,
                 embed_config.max_age_hours
             ).await {

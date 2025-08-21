@@ -11,10 +11,10 @@
     </cargoProject>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="ab878e5d-64e1-43c8-94f2-e11a97dec1c9" name="Changes" comment="add docs for `/purge`">
+    <list default="true" id="ab878e5d-64e1-43c8-94f2-e11a97dec1c9" name="Changes" comment="add `/purge` in help message">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/commands/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/commands/mod.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/commands/help.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/commands/help.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/tests/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/tests/mod.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -113,7 +113,7 @@
       <recent name="$PROJECT_DIR$/src/tests" />
     </key>
   </component>
-  <component name="RunManager" selected="Cargo.Run clouder">
+  <component name="RunManager" selected="Cargo.Test purge_tests::tests">
     <configuration name="Run clouder" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
       <option name="buildProfileId" value="release" />
       <option name="command" value="run --package clouder --bin clouder" />
@@ -150,12 +150,32 @@
         <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
       </method>
     </configuration>
+    <configuration name="Test purge_tests::tests" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
+      <option name="buildProfileId" value="test" />
+      <option name="command" value="test --package clouder --bin clouder tests::purge_tests::tests" />
+      <option name="workingDirectory" value="file://$PROJECT_DIR$" />
+      <envs />
+      <option name="emulateTerminal" value="true" />
+      <option name="channel" value="DEFAULT" />
+      <option name="requiredFeatures" value="true" />
+      <option name="allFeatures" value="false" />
+      <option name="withSudo" value="false" />
+      <option name="buildTarget" value="REMOTE" />
+      <option name="backtrace" value="SHORT" />
+      <option name="isRedirectInput" value="false" />
+      <option name="redirectInputPath" value="" />
+      <method v="2">
+        <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
+      </method>
+    </configuration>
     <list>
       <item itemvalue="Cargo.Test clouder" />
+      <item itemvalue="Cargo.Test purge_tests::tests" />
       <item itemvalue="Cargo.Run clouder" />
     </list>
     <recent_temporary>
       <list>
+        <item itemvalue="Cargo.Test purge_tests::tests" />
         <item itemvalue="Cargo.Run clouder" />
       </list>
     </recent_temporary>
@@ -200,23 +220,7 @@
       <workItem from="1755812490914" duration="363000" />
       <workItem from="1755812863938" duration="305000" />
       <workItem from="1755813176731" duration="234000" />
-      <workItem from="1755813416584" duration="3036000" />
-    </task>
-    <task id="LOCAL-00003" summary="improved self roles">
-      <option name="closed" value="true" />
-      <created>1755612045098</created>
-      <option name="number" value="00003" />
-      <option name="presentableId" value="LOCAL-00003" />
-      <option name="project" value="LOCAL" />
-      <updated>1755612045098</updated>
-    </task>
-    <task id="LOCAL-00004" summary="test coverage">
-      <option name="closed" value="true" />
-      <created>1755612053602</created>
-      <option name="number" value="00004" />
-      <option name="presentableId" value="LOCAL-00004" />
-      <option name="project" value="LOCAL" />
-      <updated>1755612053602</updated>
+      <workItem from="1755813416584" duration="4491000" />
     </task>
     <task id="LOCAL-00005" summary="refactor">
       <option name="closed" value="true" />
@@ -594,7 +598,23 @@
       <option name="project" value="LOCAL" />
       <updated>1755814418268</updated>
     </task>
-    <option name="localTasksCounter" value="52" />
+    <task id="LOCAL-00052" summary="implement `/purge`">
+      <option name="closed" value="true" />
+      <created>1755818141248</created>
+      <option name="number" value="00052" />
+      <option name="presentableId" value="LOCAL-00052" />
+      <option name="project" value="LOCAL" />
+      <updated>1755818141248</updated>
+    </task>
+    <task id="LOCAL-00053" summary="add `/purge` in help message">
+      <option name="closed" value="true" />
+      <created>1755818958865</created>
+      <option name="number" value="00053" />
+      <option name="presentableId" value="LOCAL-00053" />
+      <option name="project" value="LOCAL" />
+      <updated>1755818958865</updated>
+    </task>
+    <option name="localTasksCounter" value="54" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -613,8 +633,6 @@
   </component>
   <component name="VcsManagerConfiguration">
     <option name="CHECK_NEW_TODO" value="false" />
-    <MESSAGE value="show selection type in selfrole embed footer" />
-    <MESSAGE value="improve role card css" />
     <MESSAGE value="next feature docs" />
     <MESSAGE value="video command" />
     <MESSAGE value="&quot;about&quot; commands + code quality improvements" />
@@ -638,7 +656,9 @@
     <MESSAGE value="refactor: use external HTML template for `/video`" />
     <MESSAGE value="style preview video html" />
     <MESSAGE value="add docs for `/purge`" />
-    <option name="LAST_COMMIT_MESSAGE" value="add docs for `/purge`" />
+    <MESSAGE value="implement `/purge`" />
+    <MESSAGE value="add `/purge` in help message" />
+    <option name="LAST_COMMIT_MESSAGE" value="add `/purge` in help message" />
     <option name="LAST_CHUNK_COMMIT_MESSAGE" value="version bump" />
     <option name="OPTIMIZE_IMPORTS_BEFORE_PROJECT_COMMIT" value="true" />
   </component>
@@ -967,6 +987,18 @@
           <option name="totalLines" value="13508" />
           <option name="info" value="add docs for `/purge`" />
         </TimePoint>
+        <TimePoint>
+          <option name="timestamp" value="1755818141270" />
+          <option name="linesCode" value="7157" />
+          <option name="totalLines" value="13632" />
+          <option name="info" value="implement `/purge`" />
+        </TimePoint>
+        <TimePoint>
+          <option name="timestamp" value="1755818958890" />
+          <option name="linesCode" value="7164" />
+          <option name="totalLines" value="13639" />
+          <option name="info" value="add `/purge` in help message" />
+        </TimePoint>
       </list>
     </option>
     <option name="genericTimePoints">
@@ -1002,9 +1034,9 @@
           <option name="info" value="Aug 21, 2025" />
         </TimePoint>
         <TimePoint>
-          <option name="timestamp" value="1755814418284" />
-          <option name="linesCode" value="7059" />
-          <option name="totalLines" value="13508" />
+          <option name="timestamp" value="1755818958890" />
+          <option name="linesCode" value="7164" />
+          <option name="totalLines" value="13639" />
           <option name="info" value="Aug 22, 2025" />
         </TimePoint>
       </list>

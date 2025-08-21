@@ -141,7 +141,7 @@ pub fn create_help_embed(commands: &[CommandInfo], app_state: &AppState) -> Crea
 
     let footer_text = &format!("version {}", env!("CARGO_PKG_VERSION")).to_string();
     embed = embed.footer(CreateEmbedFooter::new(footer_text));
-    
+
     embed
 }
 

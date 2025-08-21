@@ -10,7 +10,7 @@
 ## **Technical Stack**
 - **Discord:** Serenity + Poise for commands and event handling
 - **Web:** Axum for web dashboard
-- **DB:** SQLite with shared Arc<SqlitePool> in app state
+- **DB:** SQLite with shared Arc<SqlitePool> in-app state
 - **Auth:** Discord OAuth2 for web interface
 - **External APIs:** HuggingFace, GitHub Trending, System stats
 
@@ -40,6 +40,13 @@
    - Sends ephemeral message with link to bot's website for self-role configuration
    - Only visible to command invoker
    - Directs to web dashboard for setup and management
+
+**`/purge`** - purges messages from channel (Manage Messages permission)
+   - signature: `/purge [number / message_id]`
+   - if number is provided, deletes that many messages
+   - if message_id is provided, deletes all messages up to that one
+   - only deletes messages from the channel the command is invoked in
+   - ephemeral response with number of messages deleted
 
 #### **Info Commands**
 **`/about`** - Bot and system information

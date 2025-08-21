@@ -67,3 +67,10 @@ pub async fn create_test_app_state() -> AppState {
 
     AppState::new(config, db, cache, http)
 }
+
+// run all tests
+#[cfg(test)]
+mod tests {
+    // runs everything in this module
+
+}

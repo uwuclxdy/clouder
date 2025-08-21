@@ -1,7 +1,11 @@
-pub mod embed;
+pub mod video;
 
-use serenity::all::Color;
 use crate::config::AppState;
+use anyhow::anyhow;
+use serenity::all::Color;
+use std::path::PathBuf;
+use tokio::fs;
+use tracing::info;
 
 /// Get the default embed color from configuration
 pub fn get_default_embed_color(app_state: &AppState) -> Color {
@@ -23,14 +27,6 @@ pub fn format_duration(seconds: u64) -> String {
     } else {
         format!("{}s", seconds)
     }
-}
-
-#[allow(dead_code)]
-pub fn validate_role_hierarchy(
-    bot_highest_role_position: i16,
-    target_role_position: i16,
-) -> bool {
-    bot_highest_role_position > target_role_position
 }
 
 /// Check if the bot can manage a target role by checking if ANY of the bot's roles
@@ -88,4 +84,17 @@ pub fn format_discord_timestamp(time: &str, style: char) -> String {
         'R' => format!("<t:{}:R>", timestamp), // relative time
         _ => format!("<t:{}:f>", timestamp),   // default to brief format
     }
+}
+
+/// Creates a directory if it doesn't exist
+async fn ensure_directory_exists(directory: &str) -> anyhow::Result<PathBuf> {
+    let path = PathBuf::from(directory);
+
+    if !path.exists() {
+        info!("Creating directory: {}", directory);
+        fs::create_dir_all(&path).await
+            .map_err(|e| anyhow!("Failed to create directory '{}': {}", directory, e))?;
+    }
+
+    Ok(path)
 }

@@ -11,12 +11,10 @@
     </cargoProject>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="ab878e5d-64e1-43c8-94f2-e11a97dec1c9" name="Changes" comment="refactor">
-      <change afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.toml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/EMBED_IMPLEMENTATION.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/tests/utils_tests.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/tests/utils_tests.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/tests/video_tests.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/tests/video_tests.rs" afterDir="false" />
+    <list default="true" id="ab878e5d-64e1-43c8-94f2-e11a97dec1c9" name="Changes" comment="add docs for `/purge`">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/commands/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/commands/mod.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -29,7 +27,7 @@
       <option value="repository" />
     </option>
   </component>
-  <component name="ExecutionTargetManager" SELECTED_TARGET="RsBuildProfile:dev" />
+  <component name="ExecutionTargetManager" SELECTED_TARGET="RsBuildProfile:release" />
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
       <list>
@@ -55,8 +53,11 @@
   <component name="MacroExpansionManager">
     <option name="directoryName" value="MkqwPtHr" />
   </component>
+  <component name="NamedScopeManager">
+    <scope name="excluding tests" pattern="!file[clouder]:src/tests/*" />
+  </component>
   <component name="ProblemsViewState">
-    <option name="selectedTabId" value="CurrentFile" />
+    <option name="selectedTabId" value="AISelfReview" />
   </component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 0
@@ -70,50 +71,51 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "Cargo.Run clouder.executor": "Run",
-    "Cargo.Run.executor": "Run",
-    "Cargo.Test clouder.executor": "Run",
-    "Cargo.Test utils_tests::tests.executor": "Run",
-    "Cargo.Test video_tests::tests.executor": "Run",
-    "Cargo.Tests.executor": "Run",
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "RunOnceActivity.rust.reset.selective.auto.import": "true",
-    "git-widget-placeholder": "master",
-    "junie.onboarding.icon.badge.shown": "true",
-    "last_opened_file_path": "/home/uwuclxdy/repos/clouder",
-    "node.js.detected.package.eslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "org.rust.cargo.project.model.PROJECT_DISCOVERY": "true",
-    "org.rust.cargo.project.model.impl.CargoExternalSystemProjectAware.subscribe.first.balloon": "",
-    "org.rust.first.attach.projects": "true",
-    "run.code.analysis.last.selected.profile": "pProject Default",
-    "settings.editor.selected.configurable": "preferences.pluginManager",
-    "to.speed.mode.migration.done": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Cargo.Run clouder.executor&quot;: &quot;Run&quot;,
+    &quot;Cargo.Run.executor&quot;: &quot;Run&quot;,
+    &quot;Cargo.Test clouder.executor&quot;: &quot;Run&quot;,
+    &quot;Cargo.Test utils_tests::tests.executor&quot;: &quot;Run&quot;,
+    &quot;Cargo.Test video_tests::tests.executor&quot;: &quot;Run&quot;,
+    &quot;Cargo.Tests.executor&quot;: &quot;Run&quot;,
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.rust.reset.selective.auto.import&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
+    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/home/uwuclxdy/repos/clouder&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;org.rust.cargo.project.model.PROJECT_DISCOVERY&quot;: &quot;true&quot;,
+    &quot;org.rust.cargo.project.model.impl.CargoExternalSystemProjectAware.subscribe.first.balloon&quot;: &quot;&quot;,
+    &quot;org.rust.first.attach.projects&quot;: &quot;true&quot;,
+    &quot;run.code.analysis.last.selected.profile&quot;: &quot;pProject Default&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;,
+    &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;
   },
-  "keyToStringList": {
-    "DatabaseDriversLRU": [
-      "sqlite"
+  &quot;keyToStringList&quot;: {
+    &quot;DatabaseDriversLRU&quot;: [
+      &quot;sqlite&quot;
     ]
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/src/web/templates" />
       <recent name="$PROJECT_DIR$/src/tests/commands" />
       <recent name="$PROJECT_DIR$/src/tests" />
     </key>
   </component>
   <component name="RunManager" selected="Cargo.Run clouder">
     <configuration name="Run clouder" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
-      <option name="buildProfileId" value="dev" />
+      <option name="buildProfileId" value="release" />
       <option name="command" value="run --package clouder --bin clouder" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
       <envs />
@@ -194,23 +196,11 @@
       <workItem from="1755705824522" duration="5683000" />
       <workItem from="1755720024807" duration="8643000" />
       <workItem from="1755733810637" duration="2736000" />
-      <workItem from="1755779353953" duration="14313000" />
-    </task>
-    <task id="LOCAL-00001" summary="init">
-      <option name="closed" value="true" />
-      <created>1755607441165</created>
-      <option name="number" value="00001" />
-      <option name="presentableId" value="LOCAL-00001" />
-      <option name="project" value="LOCAL" />
-      <updated>1755607441165</updated>
-    </task>
-    <task id="LOCAL-00002" summary="init">
-      <option name="closed" value="true" />
-      <created>1755607450719</created>
-      <option name="number" value="00002" />
-      <option name="presentableId" value="LOCAL-00002" />
-      <option name="project" value="LOCAL" />
-      <updated>1755607450719</updated>
+      <workItem from="1755779353953" duration="17892000" />
+      <workItem from="1755812490914" duration="363000" />
+      <workItem from="1755812863938" duration="305000" />
+      <workItem from="1755813176731" duration="234000" />
+      <workItem from="1755813416584" duration="3036000" />
     </task>
     <task id="LOCAL-00003" summary="improved self roles">
       <option name="closed" value="true" />
@@ -540,7 +530,71 @@
       <option name="project" value="LOCAL" />
       <updated>1755794126320</updated>
     </task>
-    <option name="localTasksCounter" value="44" />
+    <task id="LOCAL-00044" summary="remove unneeded md">
+      <option name="closed" value="true" />
+      <created>1755796277175</created>
+      <option name="number" value="00044" />
+      <option name="presentableId" value="LOCAL-00044" />
+      <option name="project" value="LOCAL" />
+      <updated>1755796277175</updated>
+    </task>
+    <task id="LOCAL-00045" summary="cover `/video` with tests">
+      <option name="closed" value="true" />
+      <created>1755796288182</created>
+      <option name="number" value="00045" />
+      <option name="presentableId" value="LOCAL-00045" />
+      <option name="project" value="LOCAL" />
+      <updated>1755796288182</updated>
+    </task>
+    <task id="LOCAL-00046" summary="version bump">
+      <option name="closed" value="true" />
+      <created>1755796297984</created>
+      <option name="number" value="00046" />
+      <option name="presentableId" value="LOCAL-00046" />
+      <option name="project" value="LOCAL" />
+      <updated>1755796297984</updated>
+    </task>
+    <task id="LOCAL-00047" summary="refactor: external HTML template for `/video`">
+      <option name="closed" value="true" />
+      <created>1755813601820</created>
+      <option name="number" value="00047" />
+      <option name="presentableId" value="LOCAL-00047" />
+      <option name="project" value="LOCAL" />
+      <updated>1755813601820</updated>
+    </task>
+    <task id="LOCAL-00048" summary="refactor: external HTML template for `/video`">
+      <option name="closed" value="true" />
+      <created>1755813669169</created>
+      <option name="number" value="00048" />
+      <option name="presentableId" value="LOCAL-00048" />
+      <option name="project" value="LOCAL" />
+      <updated>1755813669169</updated>
+    </task>
+    <task id="LOCAL-00049" summary="refactor: use external HTML template for `/video`">
+      <option name="closed" value="true" />
+      <created>1755813854692</created>
+      <option name="number" value="00049" />
+      <option name="presentableId" value="LOCAL-00049" />
+      <option name="project" value="LOCAL" />
+      <updated>1755813854692</updated>
+    </task>
+    <task id="LOCAL-00050" summary="style preview video html">
+      <option name="closed" value="true" />
+      <created>1755814404880</created>
+      <option name="number" value="00050" />
+      <option name="presentableId" value="LOCAL-00050" />
+      <option name="project" value="LOCAL" />
+      <updated>1755814404880</updated>
+    </task>
+    <task id="LOCAL-00051" summary="add docs for `/purge`">
+      <option name="closed" value="true" />
+      <created>1755814418268</created>
+      <option name="number" value="00051" />
+      <option name="presentableId" value="LOCAL-00051" />
+      <option name="project" value="LOCAL" />
+      <updated>1755814418268</updated>
+    </task>
+    <option name="localTasksCounter" value="52" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -559,13 +613,6 @@
   </component>
   <component name="VcsManagerConfiguration">
     <option name="CHECK_NEW_TODO" value="false" />
-    <MESSAGE value="expand test coverage and code quality improvements" />
-    <MESSAGE value="add login and dashboard HTML templates, CSS styles, and self-roles management scripts" />
-    <MESSAGE value="refactor: separation of concerns between web components" />
-    <MESSAGE value="remove redundant db structure from readme" />
-    <MESSAGE value="remove checklist" />
-    <MESSAGE value="MASSIVELY improve web dashboard" />
-    <MESSAGE value="refactor: cleanup" />
     <MESSAGE value="show selection type in selfrole embed footer" />
     <MESSAGE value="improve role card css" />
     <MESSAGE value="next feature docs" />
@@ -579,12 +626,20 @@
     <MESSAGE value="make all embed colors globally configurable" />
     <MESSAGE value="improve all /about commands" />
     <MESSAGE value="add &quot;always @ users&quot; rule" />
-    <MESSAGE value="version bump" />
     <MESSAGE value="update docs" />
     <MESSAGE value="fix `/video` command" />
     <MESSAGE value="remove video tests" />
     <MESSAGE value="refactor" />
-    <option name="LAST_COMMIT_MESSAGE" value="refactor" />
+    <MESSAGE value="remove unneeded md" />
+    <MESSAGE value="cover `/video` with tests" />
+    <MESSAGE value="version bump" />
+    <MESSAGE value="refactor: HTML template for `/video`" />
+    <MESSAGE value="refactor: external HTML template for `/video`" />
+    <MESSAGE value="refactor: use external HTML template for `/video`" />
+    <MESSAGE value="style preview video html" />
+    <MESSAGE value="add docs for `/purge`" />
+    <option name="LAST_COMMIT_MESSAGE" value="add docs for `/purge`" />
+    <option name="LAST_CHUNK_COMMIT_MESSAGE" value="version bump" />
     <option name="OPTIMIZE_IMPORTS_BEFORE_PROJECT_COMMIT" value="true" />
   </component>
   <component name="XDebuggerManager">
@@ -864,6 +919,54 @@
           <option name="totalLines" value="13251" />
           <option name="info" value="refactor" />
         </TimePoint>
+        <TimePoint>
+          <option name="timestamp" value="1755796277252" />
+          <option name="linesCode" value="7035" />
+          <option name="totalLines" value="13482" />
+          <option name="info" value="remove unneeded md" />
+        </TimePoint>
+        <TimePoint>
+          <option name="timestamp" value="1755796288216" />
+          <option name="linesCode" value="7020" />
+          <option name="totalLines" value="13481" />
+          <option name="info" value="cover `/video` with tests" />
+        </TimePoint>
+        <TimePoint>
+          <option name="timestamp" value="1755796298049" />
+          <option name="linesCode" value="7022" />
+          <option name="totalLines" value="13481" />
+          <option name="info" value="version bump" />
+        </TimePoint>
+        <TimePoint>
+          <option name="timestamp" value="1755813601846" />
+          <option name="linesCode" value="7034" />
+          <option name="totalLines" value="13481" />
+          <option name="info" value="refactor: external HTML template for `/video`" />
+        </TimePoint>
+        <TimePoint>
+          <option name="timestamp" value="1755813669215" />
+          <option name="linesCode" value="7034" />
+          <option name="totalLines" value="13481" />
+          <option name="info" value="refactor: external HTML template for `/video`" />
+        </TimePoint>
+        <TimePoint>
+          <option name="timestamp" value="1755813854710" />
+          <option name="linesCode" value="7036" />
+          <option name="totalLines" value="13483" />
+          <option name="info" value="refactor: use external HTML template for `/video`" />
+        </TimePoint>
+        <TimePoint>
+          <option name="timestamp" value="1755814404901" />
+          <option name="linesCode" value="7059" />
+          <option name="totalLines" value="13535" />
+          <option name="info" value="style preview video html" />
+        </TimePoint>
+        <TimePoint>
+          <option name="timestamp" value="1755814418284" />
+          <option name="linesCode" value="7059" />
+          <option name="totalLines" value="13508" />
+          <option name="info" value="add docs for `/purge`" />
+        </TimePoint>
       </list>
     </option>
     <option name="genericTimePoints">
@@ -893,10 +996,16 @@
           <option name="info" value="Aug 21, 2025" />
         </TimePoint>
         <TimePoint>
-          <option name="timestamp" value="1755794126340" />
-          <option name="linesCode" value="6876" />
-          <option name="totalLines" value="13251" />
+          <option name="timestamp" value="1755796298049" />
+          <option name="linesCode" value="7022" />
+          <option name="totalLines" value="13481" />
           <option name="info" value="Aug 21, 2025" />
+        </TimePoint>
+        <TimePoint>
+          <option name="timestamp" value="1755814418284" />
+          <option name="linesCode" value="7059" />
+          <option name="totalLines" value="13508" />
+          <option name="info" value="Aug 22, 2025" />
         </TimePoint>
       </list>
     </option>

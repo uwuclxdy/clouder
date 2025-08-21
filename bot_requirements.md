@@ -26,8 +26,9 @@
    - Command: `/wysi timezone` to configure per-server
 
 **`/random`** - Random number between 100000 and 9999999 with website link
-   - Format: `https://uwuclxdy.to/g/[number]`
+   - Format: `https://nhentai.to/g/[number]`
    - Embed response
+   - help desc: "freaky link generator"
 
 **`/uwufy [mention]`** - Toggle uwufy mode (Manage Server permission)
    - Deletes user messages and replaces with uwufied text using their pfp/username

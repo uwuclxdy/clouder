@@ -74,7 +74,7 @@
     - Pagination for results
 
 ### **User facing text**
-- **In Discord:** mostly lowercase (titles and abbreviations like OS: capitalized), use short versions of words (Information → Info) short and a little bit silly at times :3
+- **In Discord:** mostly lowercase (titles and abbreviations like OS: capitalized), always mention users instead of saying their username, use short versions of words (Information → Info) short and a little bit silly at times :3
 - **Web Dashboard:** Properly capitalized, still short and concise
 - **Code comments:** Very concise, no unnecessary words, comments only where logic is not obvious
 
@@ -185,7 +185,6 @@ src/
 - Self-role configurations persisted across restarts
 
 ## **Embed Colors**
-
 ```
 use crate::utils::get_default_embed_color;
 

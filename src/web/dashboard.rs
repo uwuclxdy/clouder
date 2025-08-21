@@ -27,7 +27,7 @@ pub async fn server_list(
             .replace("{{ICON_URL}}", &icon_url)
             .replace("{{GUILD_NAME}}", &guild.name)
             .replace("{{PERMISSION_TEXT}}", if guild.owner { "Owner" } else { "Manage Roles" });
-        
+
         guilds_html.push_str(&guild_card);
     }
 
@@ -151,11 +151,11 @@ fn render_selfroles_form(
     guild_name: &str,
     config_id: Option<&str>,
 ) -> Result<Html<String>, Redirect> {
-    let (page_title, header_title, header_description, breadcrumb_current, button_text) = 
+    let (page_title, header_title, header_description, breadcrumb_current, button_text) =
         if config_id.is_some() {
             (
                 "Edit Self-Role Message",
-                "Edit Self-Role Message", 
+                "Edit Self-Role Message",
                 "Edit interactive role assignment message for",
                 "Edit",
                 "Update Self-Role Message"
@@ -164,12 +164,12 @@ fn render_selfroles_form(
             (
                 "Create Self-Role Message",
                 "Create Self-Role Message",
-                "Create a new interactive role assignment message for", 
+                "Create a new interactive role assignment message for",
                 "Create",
                 "Deploy Self-Role Message"
             )
         };
-    
+
     let template = include_str!("templates/selfroles_form.html")
         .replace("{{COMMON_CSS}}", include_str!("static/css/common.css"))
         .replace("{{DASHBOARD_CSS}}", include_str!("static/css/dashboard.css"))

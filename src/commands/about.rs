@@ -1,11 +1,11 @@
 use crate::config::AppState;
-use crate::utils::get_default_embed_color;
+use crate::utils::{format_duration, get_default_embed_color};
 use anyhow::Result;
+use lazy_static::lazy_static;
 use poise::serenity_prelude as serenity;
-use serenity::{CreateEmbed, CreateEmbedFooter};
+use serenity::CreateEmbed;
 use std::time::SystemTime;
 use sysinfo::System;
-use lazy_static::lazy_static;
 
 lazy_static! {
 pub static ref BOT_START_TIME: SystemTime = SystemTime::now();
@@ -21,11 +21,6 @@ pub async fn about(_ctx: Context<'_>) -> Result<(), Error> {
 
 #[poise::command(slash_command)]
 pub async fn bot(ctx: Context<'_>) -> Result<(), Error> {
-    show_comprehensive_bot_info(ctx).await?;
-    Ok(())
-}
-
-async fn show_comprehensive_bot_info(ctx: Context<'_>) -> Result<(), Error> {
     let uptime = BOT_START_TIME.elapsed().unwrap_or_default();
     let uptime_str = format_duration(uptime.as_secs());
     let bot_version = env!("CARGO_PKG_VERSION");
@@ -51,8 +46,6 @@ async fn show_comprehensive_bot_info(ctx: Context<'_>) -> Result<(), Error> {
 
     let current_pid = std::process::id();
 
-    let disk_info = "Storage: Available";
-
     let guild_count = ctx.cache().guild_count();
     let cached_users = ctx.cache().user_count();
 
@@ -65,141 +58,6 @@ async fn show_comprehensive_bot_info(ctx: Context<'_>) -> Result<(), Error> {
 
     let bot_user = ctx.http().get_current_user().await?;
 
-    let db_stats = get_enhanced_database_stats(ctx).await;
-
-    let os_info = format!("{} {}",
-        System::name().unwrap_or_else(|| "Unknown".to_string()),
-        System::os_version().unwrap_or_else(|| "Unknown".to_string())
-    );
-    let kernel_version = System::kernel_version().unwrap_or_else(|| "Unknown".to_string());
-    let hostname = System::host_name().unwrap_or_else(|| "Unknown".to_string());
-
-    let build_info = format!(
-        "**Framework:** Serenity + Poise\n**Language:** Rust\n**Target:** {}",
-        std::env::consts::ARCH
-    );
-
-    let memory_per_guild = if guild_count > 0 {
-        format!("{:.1} MB per guild", used_memory as f64 / guild_count as f64)
-    } else {
-        "N/A".to_string()
-    };
-
-    let embed = CreateEmbed::new()
-        .title("🤖 clouder bot - system info")
-        .description(format!(
-            "**{}** • id: `{}` • v**{}**",
-            bot_user.tag(),
-            bot_user.id,
-            bot_version
-        ))
-        .color(get_default_embed_color(ctx.data()))
-        .thumbnail(bot_user.face())
-
-        .field(
-            "⚡ performance stuff",
-            format!(
-                "🕐 **uptime:** {}\n⏱️ **api latency:** {}ms\n🌐 **gateway latency:** {}ms",
-                uptime_str,
-                api_latency.as_millis(),
-                gateway_latency.as_millis()
-            ),
-            true
-        )
-
-        .field(
-            "📊 discord stats",
-            format!(
-                "🏰 **guilds:** {}\n👥 **cached users:** {}\n💬 **cached channels:** {}",
-                guild_count,
-                cached_users,
-                cached_channels
-            ),
-            true
-        )
-
-        .field(
-            "🗄️ database stats",
-            db_stats,
-            true
-        )
-
-        .field(
-            "💾 memory usage",
-            format!(
-                "**used:** {:.1}% ({} mb)\n**available:** {} mb\n**total:** {} mb\n**per guild:** {}",
-                memory_percentage,
-                used_memory,
-                available_memory,
-                total_memory,
-                memory_per_guild
-            ),
-            true
-        )
-
-        .field(
-            "⚙️ cpu info",
-            format!(
-                "**usage:** {:.1}%\n**cores:** {}\n**arch:** {}",
-                cpu_usage,
-                cpu_count,
-                std::env::consts::ARCH
-            ),
-            true
-        )
-
-        .field(
-            "💿 storage status",
-            format!(
-                "{}",
-                disk_info
-            ),
-            true
-        )
-
-        .field(
-            "🖥️ system env",
-            format!(
-                "**os:** {}\n**kernel:** {}\n**hostname:** {}\n**pid:** {}",
-                os_info,
-                kernel_version,
-                hostname,
-                current_pid
-            ),
-            false
-        )
-
-        .field(
-            "🔧 runtime info",
-            format!(
-                "**process id:** {}\n**os:** {}\n**family:** {}",
-                current_pid,
-                std::env::consts::OS,
-                std::env::consts::FAMILY
-            ),
-            true
-        )
-
-        .field(
-            "📦 build info",
-            build_info,
-            true
-        )
-
-        .field(
-            "👨‍💻 developer",
-            "**made by:** [uwuclxdy](https://github.com/uwuclxdy)\n**repo:** [clouder](https://github.com/uwuclxdy/clouder)",
-            true
-        )
-
-        .footer(CreateEmbedFooter::new("clouder bot • all systems operational 🟢"))
-        .timestamp(serenity::Timestamp::now());
-
-    ctx.send(poise::CreateReply::default().embed(embed)).await?;
-    Ok(())
-}
-
-async fn get_enhanced_database_stats(ctx: Context<'_>) -> String {
     let db = &ctx.data().db;
 
     let selfrole_configs = sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM selfrole_configs")
@@ -221,17 +79,123 @@ async fn get_enhanced_database_stats(ctx: Context<'_>) -> String {
     let recent_configs = sqlx::query_scalar::<_, i64>(
         "SELECT COUNT(*) FROM selfrole_configs WHERE created_at > datetime('now', '-7 days')"
     )
-    .fetch_one(db.as_ref())
-    .await.unwrap_or_else(|_| 0);
+        .fetch_one(db.as_ref())
+        .await.unwrap_or_else(|_| 0);
 
     let expired_cooldowns = sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM selfrole_cooldowns WHERE expires_at <= datetime('now')")
         .fetch_one(db.as_ref())
         .await.unwrap_or_else(|_| 0);
 
-    format!(
-        "**configs:** {}\n**roles:** {}\n**active cooldowns:** {}\n**db guilds:** {}\n**recent (7d):** {}\n**expired:** {}",
+    let db_stats =  format!(
+        "configs: **`{}`**
+        roles: **`{}`**
+        active cooldowns: **`{}`**
+        servers: **`{}`**
+        recent (7d): **`{}`**
+        expired: **`{}`**",
         selfrole_configs, selfrole_roles, active_cooldowns, db_guilds, recent_configs, expired_cooldowns
-    )
+    );
+
+    let os_info = format!("{} {}",
+                          System::name().unwrap_or_else(|| "Unknown".to_string()),
+                          System::os_version().unwrap_or_else(|| "Unknown".to_string())
+    );
+    let kernel_version = System::kernel_version().unwrap_or_else(|| "Unknown".to_string());
+
+    let embed = CreateEmbed::new()
+        .title("🤖 system info")
+        .description(format!(
+            "<@{}> `{}`
+            v{}",
+            bot_user.id, bot_user.id, bot_version
+        ))
+        .color(get_default_embed_color(ctx.data()))
+        .thumbnail(bot_user.face())
+
+        .field(
+            "⚡ performance",
+            format!(
+                "uptime: **`{}`**
+                api: **`{}ms`**
+                gateway: **`{}ms`**",
+                uptime_str, api_latency.as_millis(), gateway_latency.as_millis()
+            ),
+            true
+        )
+
+        .field(
+            "📊 discord stats",
+            format!(
+                "servers: **`{}`**
+                **🗃️ cached:**
+                users: **`{}`**
+                channels: **`{}`**",
+                guild_count, cached_users, cached_channels
+            ),
+            true
+        )
+
+        .field(
+            "🗄️ database",
+            db_stats,
+            true
+        )
+
+        .field(
+            "⚙️ CPU",
+            format!(
+                "usage: **{:.1}%**
+                cores: **`{}`**
+                arch: **`{}`**",
+                cpu_usage, cpu_count, std::env::consts::ARCH
+            ),
+            true
+        )
+
+        .field(
+            "💾 memory",
+            format!(
+                "used: **{:.1}% ({}MB)**
+                free: **{:.3}MB**
+                total: **{:.3}MB**",
+                memory_percentage, used_memory, available_memory, total_memory
+            ),
+            true
+        )
+
+        .field(
+            "🖥️ system",
+            format!(
+                "**`{}`**
+                **`{}`**
+                bot pid: **`{}`**",
+                os_info, kernel_version, current_pid
+            ),
+            true
+        )
+
+        .field(
+            "📦 build info",
+            format!(
+                "**Rust** (Serenity + Poise)
+                arch: **`{}`**",
+                std::env::consts::ARCH
+            ),
+            true
+        )
+
+        .field(
+            "👨‍💻 vibecoder",
+            "the retard in question: **[uwuclxdy](https://github.com/uwuclxdy)**
+            ts bot is FOSS btw: **[clouder](https://github.com/uwuclxdy/clouder)**
+            **Claude 4 Sonnet <3**",
+            true
+        )
+
+        .timestamp(serenity::Timestamp::now());
+
+    ctx.send(poise::CreateReply::default().embed(embed)).await?;
+    Ok(())
 }
 
 #[poise::command(slash_command)]
@@ -293,33 +257,20 @@ pub async fn server(ctx: Context<'_>) -> Result<(), Error> {
     let boost_count = full_guild.premium_subscription_count.unwrap_or(0);
 
     let owner = match full_guild.owner_id.to_user(&ctx.http()).await {
-        Ok(user) => format!("{} ({})", user.tag(), user.id),
-        Err(_) => format!("Unknown ({})", full_guild.owner_id),
-    };
-
-    let features = if full_guild.features.is_empty() {
-        "None".to_string()
-    } else {
-        full_guild.features.iter()
-            .map(|f| format!("{:?}", f))
-            .collect::<Vec<_>>()
-            .join(", ")
+        Ok(user) => format!("<@{}> `{}`", user.id, user.id),
+        Err(_) => format!("unknown (`{}`)", full_guild.owner_id),
     };
 
     let mut embed = CreateEmbed::new()
-        .title(&format!("📊 {} server info", full_guild.name))
+        .title(&format!("📊 `{}` info", full_guild.name))
         .color(get_default_embed_color(ctx.data()))
-        .field("👥 members", member_count.to_string(), true)
-        .field("💬 channels", format!("{} ({} text, {} voice)", total_channels, text_channels, voice_channels), true)
-        .field("🎭 roles", role_count.to_string(), true)
+        .field("👥 members", format!("**`{member_count}`**"), true)
+        .field("💬 channels", format!("**`{total_channels}`** (**`{text_channels}`** text, **`{voice_channels}`** voice)"), true)
+        .field("🎭 roles", format!("**`{role_count}`**"), true)
         .field("👑 owner", owner, false)
-        .field("📅 created", created_timestamp, true)
-        .field("🚀 boost level", format!("level {} ({} boosts)", boost_level, boost_count), true)
-        .field("🏷️ server id", guild_id.to_string(), true);
-
-    if features != "None" {
-        embed = embed.field("✨ features", features, false);
-    }
+        .field("📅 created", created_timestamp, false)
+        .field("🚀 boost level", format!("boosts: **`{boost_count}`**\nlevel: **`{boost_level}`**"), true)
+        .field("🏷️ server id", format!("**`{guild_id}`**"), true);
 
     if let Some(icon_url) = full_guild.icon_url() {
         embed = embed.thumbnail(icon_url);
@@ -329,7 +280,7 @@ pub async fn server(ctx: Context<'_>) -> Result<(), Error> {
         embed = embed.image(banner_url);
     }
 
-    embed = embed.footer(CreateEmbedFooter::new("server stats"));
+    embed = embed.timestamp(serenity::Timestamp::now());
 
     ctx.send(poise::CreateReply::default().embed(embed)).await?;
     Ok(())
@@ -355,9 +306,10 @@ pub async fn user(
     let account_age = format!("<t:{}:F> (<t:{}:R>)", created_at.timestamp(), created_at.timestamp());
 
     let mut embed = CreateEmbed::new()
-        .title(&format!("👤 {} user info", target_user.tag()))
         .color(get_default_embed_color(ctx.data()))
-        .field("🏷️ user id", target_user.id.to_string(), true)
+        .title(&format!("👤 `{}` info", target_user.tag()))
+        .description(format!("<@{}> `{}`", target_user.id, target_user.id.to_string()))
+        .field("✍️ nickname", format!("**`{}`**", target_user.display_name().to_string()), true)
         .field("📅 account created", account_age, false);
 
     if target_user.bot {
@@ -367,12 +319,7 @@ pub async fn user(
     if let Some(member) = member_info {
         if let Some(joined_at) = member.joined_at {
             let join_info = format!("<t:{}:F> (<t:{}:R>)", joined_at.timestamp(), joined_at.timestamp());
-            embed = embed.field("📥 joined server", join_info, false);
-        }
-
-        let display_name = member.display_name().to_string();
-        if display_name != target_user.name {
-            embed = embed.field("📝 nickname", display_name, true);
+            embed = embed.field("📥 joined ts server", join_info, false);
         }
 
         // exclude @everyone
@@ -393,11 +340,11 @@ pub async fn user(
             } else {
                 roles.join(" ")
             };
-            embed = embed.field(&format!("🎭 Roles ({})", roles.len()), roles_text, false);
+            embed = embed.field(&format!("🎭 roles: `{}`", roles.len()), roles_text, false);
         }
 
         if member.premium_since.is_some() {
-            embed = embed.field("💎 boosting", "yes", true);
+            embed = embed.field("💎 boosting", format!("since <t:{}:R>", member.premium_since.unwrap().timestamp()), true);
         }
     }
 
@@ -409,25 +356,8 @@ pub async fn user(
         }
     }
 
-    embed = embed.footer(CreateEmbedFooter::new("user info"));
+    embed = embed.timestamp(serenity::Timestamp::now());
 
     ctx.send(poise::CreateReply::default().embed(embed)).await?;
     Ok(())
-}
-
-pub fn format_duration(seconds: u64) -> String {
-    let days = seconds / 86400;
-    let hours = (seconds % 86400) / 3600;
-    let minutes = (seconds % 3600) / 60;
-    let secs = seconds % 60;
-
-    if days > 0 {
-        format!("{}d {}h {}m {}s", days, hours, minutes, secs)
-    } else if hours > 0 {
-        format!("{}h {}m {}s", hours, minutes, secs)
-    } else if minutes > 0 {
-        format!("{}m {}s", minutes, secs)
-    } else {
-        format!("{}s", secs)
-    }
 }

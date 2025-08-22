@@ -67,9 +67,6 @@
    - Command prefix if configured in the server
    - Command descriptions are in the code
 
-**`/video {video_link}`** - create video preview
-- Generates unique HTML files with Open Graph meta tags
-- Serves HTML files for video previews in Discord
 
 #### **API Integration Commands (with Pagination)**
 **`/hg-latest`** - Latest HuggingFace AI models

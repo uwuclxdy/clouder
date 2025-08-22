@@ -5,7 +5,6 @@ pub mod events_tests;
 pub mod commands_tests;
 pub mod utils_tests;
 pub mod session_extractor_tests;
-mod video_tests;
 pub mod about_tests;
 mod help_tests;
 mod purge_tests;

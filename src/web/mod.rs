@@ -2,17 +2,13 @@ use crate::config::AppState;
 use crate::utils::get_default_embed_color;
 use axum::{
     extract::{Path, State},
-    http::{header, HeaderMap, StatusCode},
-    response::{Html, IntoResponse, Response},
+    http::{HeaderMap, StatusCode},
     routing::{get, put},
     Json, Router,
 };
 use serde::{Deserialize, Serialize};
 use serenity::all::{GuildId, Http, Member};
 use session_extractor::extract_session_data;
-use std::path::PathBuf;
-use tokio::fs;
-use tracing::warn;
 
 pub mod auth;
 pub mod dashboard;
@@ -36,7 +32,6 @@ pub fn create_router(app_state: AppState) -> Router {
         .route("/dashboard/{guild_id}/selfroles", get(dashboard::selfroles_list))
         .route("/dashboard/{guild_id}/selfroles/new", get(dashboard::selfroles_create))
         .route("/dashboard/{guild_id}/selfroles/edit/{config_id}", get(dashboard::selfroles_edit))
-        .route("/video/{filename}", get(serve_video_embed))
         .route("/api/user/settings", put(api_update_user_settings))
         .route("/api/selfroles/{guild_id}", get(api_get_selfroles).post(api_create_selfroles))
         .route("/api/selfroles/{guild_id}/{config_id}", get(api_get_selfrole_config).put(api_update_selfroles).delete(api_delete_selfroles))
@@ -513,43 +508,4 @@ async fn api_update_user_settings(
         "success": true,
         "message": "Settings saved successfully"
     })))
-}
-
-async fn serve_video_embed(
-    State(state): State<AppState>,
-    Path(filename): Path<String>,
-) -> Result<Response, StatusCode> {
-    if filename.contains("..") || filename.contains('/') || filename.contains('\\') {
-        warn!("Blocked potential directory traversal attempt: {}", filename);
-        return Err(StatusCode::BAD_REQUEST);
-    }
-
-    let filename = if filename.ends_with(".html") {
-        filename
-    } else {
-        format!("{}.html", filename)
-    };
-
-    let embed_dir = PathBuf::from(&state.config.web.embed.directory);
-    let file_path = embed_dir.join(&filename);
-
-    let content = match fs::read_to_string(&file_path).await {
-        Ok(content) => content,
-        Err(e) => {
-            warn!("Failed to read embed file '{}': {}", file_path.display(), e);
-            return Err(StatusCode::NOT_FOUND);
-        }
-    };
-
-    let mut response = Html(content).into_response();
-    let headers = response.headers_mut();
-
-    // Add CORS headers for Discord compatibility
-    headers.insert(header::ACCESS_CONTROL_ALLOW_ORIGIN, "*".parse().unwrap());
-    headers.insert(header::ACCESS_CONTROL_ALLOW_METHODS, "GET, OPTIONS".parse().unwrap());
-    headers.insert(header::ACCESS_CONTROL_ALLOW_HEADERS, "Content-Type".parse().unwrap());
-    headers.insert(header::CONTENT_TYPE, "text/html; charset=utf-8".parse().unwrap());
-    headers.insert(header::CACHE_CONTROL, "public, max-age=3600".parse().unwrap());
-
-    Ok(response)
 }

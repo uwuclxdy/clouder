@@ -27,22 +27,17 @@ type Error = Box<dyn std::error::Error + Send + Sync>;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    // Initialize tracing
     tracing_subscriber::fmt()
         .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
         .init();
 
     info!("Starting Clouder Discord Bot...");
 
-    // Load configuration
     let config = Arc::new(Config::from_env()?);
     info!("Configuration loaded successfully");
 
-    // Initialize database
     let db = database::initialize_database(&config.database.url).await?;
     info!("Database initialized successfully");
-
-    // Setup Discord client
     let token = config.discord.token.clone();
     let intents = serenity::GatewayIntents::GUILD_MESSAGES
         | serenity::GatewayIntents::GUILDS
@@ -67,7 +62,6 @@ async fn main() -> Result<()> {
             Box::pin(async move {
                 poise::builtins::register_globally(ctx, &framework.options().commands).await?;
 
-                // Create shared app state
                 let http = Arc::new(serenity::Http::new(&token));
                 let cache = Arc::new(serenity::all::Cache::new());
 
@@ -84,16 +78,13 @@ async fn main() -> Result<()> {
 
     let mut client = client;
 
-    // Get the app state from the framework data after setup
     let cache = client.cache.clone();
     let http = client.http.clone();
     let app_state = AppState::new(config.clone(), Arc::new(db), cache, http);
 
-    // Start cleanup tasks
     start_cleanup_task(app_state.clone());
     start_embed_cleanup_task(app_state.clone());
 
-    // Start web server
     let web_config = config.web.clone();
     let web_state = app_state.clone();
     tokio::spawn(async move {
@@ -102,7 +93,6 @@ async fn main() -> Result<()> {
         }
     });
 
-    // Start Discord client
     info!("Starting Discord client...");
     if let Err(e) = client.start().await {
         error!("Discord client error: {}", e);
@@ -153,7 +143,7 @@ async fn start_web_server(
 fn start_cleanup_task(app_state: AppState) {
     tokio::spawn(async move {
         loop {
-            sleep(Duration::from_secs(300)).await; // Run every 5 minutes
+            sleep(Duration::from_secs(300)).await;
 
             if let Err(e) = SelfRoleCooldown::cleanup_expired(&app_state.db).await {
                 error!("Failed to cleanup expired cooldowns: {}", e);
@@ -167,7 +157,6 @@ fn start_cleanup_task(app_state: AppState) {
 fn start_embed_cleanup_task(app_state: AppState) {
     let embed_config = app_state.config.web.embed.clone();
 
-    // Check if cleanup is disabled (either value set to 0)
     if embed_config.cleanup_interval_hours == 0 || embed_config.max_age_hours == 0 {
         info!("Embed cleanup disabled (cleanup_interval_hours={}, max_age_hours={})",
               embed_config.cleanup_interval_hours, embed_config.max_age_hours);

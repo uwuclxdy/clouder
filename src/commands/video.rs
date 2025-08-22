@@ -22,7 +22,6 @@ pub async fn video(
     let embed_id = rand::rng().sample_iter(&Alphanumeric).take(12).map(char::from).collect::<String>();
     let html_content = generate_preview_html(&url);
 
-    // Save HTML file
     let embed_dir = &ctx.data().config.web.embed.directory;
     match save_video_preview(embed_dir, &embed_id, &html_content).await {
         Ok(_) => {

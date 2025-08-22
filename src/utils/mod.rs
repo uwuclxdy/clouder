@@ -29,8 +29,6 @@ pub fn format_duration(seconds: u64) -> String {
     }
 }
 
-/// Check if the bot can manage a target role by checking if ANY of the bot's roles
-/// is higher than the target role in the hierarchy
 pub fn can_bot_manage_role(
     bot_role_positions: &[u16],
     target_role_position: u16,
@@ -39,23 +37,18 @@ pub fn can_bot_manage_role(
         .any(|&bot_pos| bot_pos > target_role_position)
 }
 
-/// Check if a bot member can manage roles, considering admin permissions
 pub fn can_bot_manage_roles_in_guild(
     bot_member: &serenity::all::Member,
     guild_roles: &[serenity::all::Role],
 ) -> (bool, Vec<u16>) {
-    // Check if bot has administrator permission
     if bot_member.permissions.unwrap_or_default().administrator() {
-        return (true, vec![]); // Admin can manage all roles, return empty positions list
+        return (true, vec![]);
     }
-
-    // Get all bot role positions for hierarchy checking
     let bot_role_positions = get_bot_role_positions(bot_member, guild_roles);
 
     (false, bot_role_positions)
 }
 
-/// Get all role positions for a bot member based on their roles in the guild
 pub fn get_bot_role_positions(
     bot_member: &serenity::all::Member,
     guild_roles: &[serenity::all::Role],
@@ -75,18 +68,17 @@ pub fn format_discord_timestamp(time: &str, style: char) -> String {
     };
     let timestamp = date_time.timestamp();
     match style {
-        'F' => format!("<t:{}:F>", timestamp), // Tuesday, August 19, 2025 at 04:05:00 PM
-        'f' => format!("<t:{}:f>", timestamp), // August 19, 2025 at 04:05 PM
-        'D' => format!("<t:{}:D>", timestamp), // Tuesday, August 19, 2025
-        'd' => format!("<t:{}:d>", timestamp), // 08/19/2025
-        't' => format!("<t:{}:t>", timestamp), // 04:05 PM
-        'T' => format!("<t:{}:T>", timestamp), // 04:05:00 PM
-        'R' => format!("<t:{}:R>", timestamp), // relative time
-        _ => format!("<t:{}:f>", timestamp),   // default to brief format
+        'F' => format!("<t:{}:F>", timestamp),
+        'f' => format!("<t:{}:f>", timestamp),
+        'D' => format!("<t:{}:D>", timestamp),
+        'd' => format!("<t:{}:d>", timestamp),
+        't' => format!("<t:{}:t>", timestamp),
+        'T' => format!("<t:{}:T>", timestamp),
+        'R' => format!("<t:{}:R>", timestamp),
+        _ => format!("<t:{}:f>", timestamp),
     }
 }
 
-/// Creates a directory if it doesn't exist
 async fn ensure_directory_exists(directory: &str) -> anyhow::Result<PathBuf> {
     let path = PathBuf::from(directory);
 

@@ -322,7 +322,6 @@ pub async fn user(
             embed = embed.field("📥 joined ts server", join_info, false);
         }
 
-        // exclude @everyone
         let roles: Vec<String> = member.roles
             .iter()
             .filter_map(|role_id| {

@@ -1,5 +1,3 @@
-//! Help command system with automatic registration and category organization.
-
 use crate::config::AppState;
 use crate::utils::get_default_embed_color;
 use anyhow::Result;
@@ -109,7 +107,6 @@ async fn show_general_help(ctx: Context<'_>, commands: &[CommandInfo]) -> Result
     Ok(())
 }
 
-/// Create the help embed that can be reused in different contexts
 pub fn create_help_embed(commands: &[CommandInfo], app_state: &AppState) -> CreateEmbed {
     let mut categories = std::collections::HashMap::new();
     for cmd in commands {

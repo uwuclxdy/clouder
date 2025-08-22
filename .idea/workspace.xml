@@ -11,9 +11,16 @@
     </cargoProject>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="ab878e5d-64e1-43c8-94f2-e11a97dec1c9" name="Changes" comment="document more features in requirements file">
-      <change afterPath="$PROJECT_DIR$/migrations/002_reminders.sql" afterDir="false" />
+    <list default="true" id="ab878e5d-64e1-43c8-94f2-e11a97dec1c9" name="Changes" comment="add db migration for reminders feature">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/web/dashboard.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/web/dashboard.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/web/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/web/mod.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/web/static/css/common.css" beforeDir="false" afterPath="$PROJECT_DIR$/src/web/static/css/common.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/web/static/css/dashboard.css" beforeDir="false" afterPath="$PROJECT_DIR$/src/web/static/css/dashboard.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/web/templates/guild_dashboard.html" beforeDir="false" afterPath="$PROJECT_DIR$/src/web/templates/guild_dashboard.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/web/templates/selfroles_form.html" beforeDir="false" afterPath="$PROJECT_DIR$/src/web/templates/selfroles_form.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/web/templates/selfroles_list.html" beforeDir="false" afterPath="$PROJECT_DIR$/src/web/templates/selfroles_list.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/web/templates/server_list.html" beforeDir="false" afterPath="$PROJECT_DIR$/src/web/templates/server_list.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -26,7 +33,7 @@
       <option value="repository" />
     </option>
   </component>
-  <component name="ExecutionTargetManager" SELECTED_TARGET="RsBuildProfile:release" />
+  <component name="ExecutionTargetManager" SELECTED_TARGET="RsBuildProfile:dev" />
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
       <list>
@@ -115,7 +122,7 @@
   </component>
   <component name="RunManager" selected="Cargo.Run clouder">
     <configuration name="Run clouder" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
-      <option name="buildProfileId" value="release" />
+      <option name="buildProfileId" value="dev" />
       <option name="command" value="run --package clouder --bin clouder" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
       <envs />
@@ -202,15 +209,7 @@
       <workItem from="1755813176731" duration="234000" />
       <workItem from="1755813416584" duration="7295000" />
       <workItem from="1755850801373" duration="4982000" />
-      <workItem from="1755858341874" duration="1063000" />
-    </task>
-    <task id="LOCAL-00011" summary="refactor">
-      <option name="closed" value="true" />
-      <created>1755638964500</created>
-      <option name="number" value="00011" />
-      <option name="presentableId" value="LOCAL-00011" />
-      <option name="project" value="LOCAL" />
-      <updated>1755638964500</updated>
+      <workItem from="1755858341874" duration="9937000" />
     </task>
     <task id="LOCAL-00012" summary="refactor">
       <option name="closed" value="true" />
@@ -596,7 +595,15 @@
       <option name="project" value="LOCAL" />
       <updated>1755859365487</updated>
     </task>
-    <option name="localTasksCounter" value="60" />
+    <task id="LOCAL-00060" summary="add db migration for reminders feature">
+      <option name="closed" value="true" />
+      <created>1755859421889</created>
+      <option name="number" value="00060" />
+      <option name="presentableId" value="LOCAL-00060" />
+      <option name="project" value="LOCAL" />
+      <updated>1755859421889</updated>
+    </task>
+    <option name="localTasksCounter" value="61" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -615,7 +622,6 @@
   </component>
   <component name="VcsManagerConfiguration">
     <option name="CHECK_NEW_TODO" value="false" />
-    <MESSAGE value="add help command" />
     <MESSAGE value="improve `/about bot` command" />
     <MESSAGE value="update strings and comments" />
     <MESSAGE value="make all embed colors globally configurable" />
@@ -640,7 +646,8 @@
     <MESSAGE value="version bump" />
     <MESSAGE value="remove redundant comments" />
     <MESSAGE value="document more features in requirements file" />
-    <option name="LAST_COMMIT_MESSAGE" value="document more features in requirements file" />
+    <MESSAGE value="add db migration for reminders feature" />
+    <option name="LAST_COMMIT_MESSAGE" value="add db migration for reminders feature" />
     <option name="OPTIMIZE_IMPORTS_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="REARRANGE_BEFORE_PROJECT_COMMIT" value="true" />
   </component>
@@ -649,12 +656,12 @@
       <breakpoints>
         <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
           <url>file://$PROJECT_DIR$/src/web/mod.rs</url>
-          <line>105</line>
+          <line>113</line>
           <option name="timeStamp" value="2" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
           <url>file://$PROJECT_DIR$/src/web/mod.rs</url>
-          <line>157</line>
+          <line>165</line>
           <option name="timeStamp" value="3" />
         </line-breakpoint>
       </breakpoints>
@@ -1017,6 +1024,12 @@
           <option name="totalLines" value="14262" />
           <option name="info" value="document more features in requirements file" />
         </TimePoint>
+        <TimePoint>
+          <option name="timestamp" value="1755859421909" />
+          <option name="linesCode" value="7756" />
+          <option name="totalLines" value="14262" />
+          <option name="info" value="add db migration for reminders feature" />
+        </TimePoint>
       </list>
     </option>
     <option name="genericTimePoints">
@@ -1058,7 +1071,7 @@
           <option name="info" value="Aug 22, 2025" />
         </TimePoint>
         <TimePoint>
-          <option name="timestamp" value="1755859365557" />
+          <option name="timestamp" value="1755859421909" />
           <option name="linesCode" value="7756" />
           <option name="totalLines" value="14262" />
           <option name="info" value="Aug 22, 2025" />

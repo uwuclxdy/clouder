@@ -796,3 +796,204 @@ textarea {
     opacity: 0.6;
     cursor: not-allowed;
 }
+
+/* User Settings Styles */
+.settings-content {
+    display: grid;
+    gap: 30px;
+    width: 100%;
+}
+
+.settings-section {
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(10px);
+    border-radius: 15px;
+    padding: 25px;
+    color: #f5f5f5;
+    width: 100%;
+    box-sizing: border-box;
+    margin-bottom: 0;
+}
+
+.settings-section h2 {
+    margin: 0 0 25px 0;
+    font-size: 1.8em;
+    font-weight: 500;
+    color: #ffffff;
+    border-bottom: 2px solid rgba(143, 164, 255, 0.3);
+    padding-bottom: 10px;
+}
+
+.setting-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.setting-item:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.setting-header {
+    flex: 1;
+}
+
+.setting-header h3 {
+    margin: 0 0 5px 0;
+    font-size: 1.2em;
+    font-weight: 500;
+    color: #ffffff;
+}
+
+.setting-header p {
+    margin: 0;
+    opacity: 0.8;
+    font-size: 0.9em;
+    color: #e0e0e0;
+}
+
+.setting-control {
+    min-width: 200px;
+    text-align: right;
+}
+
+.settings-select {
+    background: rgba(0, 0, 0, 0.3);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    padding: 10px 15px;
+    color: #ffffff;
+    font-size: 1em;
+    width: 100%;
+    max-width: 250px;
+}
+
+.settings-select:focus {
+    border-color: rgba(143, 164, 255, 0.6);
+    outline: none;
+}
+
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 60px;
+    height: 30px;
+    cursor: pointer;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255, 255, 255, 0.2);
+    transition: 0.4s;
+    border-radius: 30px;
+}
+
+.toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 22px;
+    width: 22px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: 0.4s;
+    border-radius: 50%;
+}
+
+input:checked + .toggle-slider {
+    background-color: #4a5fc4;
+}
+
+input:checked + .toggle-slider:before {
+    transform: translateX(30px);
+}
+
+.primary-btn {
+    background: linear-gradient(45deg, #4a5fc4, #5a3e8b);
+    color: #ffffff;
+    border: none;
+    padding: 15px 30px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1.1em;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-block;
+    min-width: 150px;
+}
+
+.primary-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(74, 95, 196, 0.3);
+}
+
+.primary-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.reminders-notice {
+    background: rgba(255, 193, 7, 0.1);
+    border: 1px solid rgba(255, 193, 7, 0.3);
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    color: #fff3cd;
+}
+
+.reminders-notice p {
+    margin: 0 0 10px 0;
+}
+
+.reminders-notice p:last-child {
+    margin-bottom: 0;
+}
+
+/* Reminders card states */
+.reminders-card {
+    transition: all 0.3s ease;
+}
+
+.reminders-card.disabled {
+    opacity: 0.4;
+    pointer-events: none;
+}
+
+.reminders-card.disabled h2,
+.reminders-card.disabled .reminders-notice {
+    opacity: 0.4;
+}
+
+/* Mobile settings styles */
+@media (max-width: 768px) {
+    .setting-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+
+    .setting-control {
+        width: 100%;
+        text-align: left;
+    }
+
+    .settings-select {
+        max-width: 100%;
+    }
+}

@@ -293,7 +293,7 @@ dependencies = [
 
 [[package]]
 name = "clouder"
-version = "0.1.2"
+version = "0.1.3"
 dependencies = [
  "anyhow",
  "axum",
@@ -310,10 +310,8 @@ dependencies = [
  "sysinfo",
  "tempfile",
  "tokio",
- "tower",
  "tracing",
  "tracing-subscriber",
- "url",
  "urlencoding",
  "uuid",
 ]

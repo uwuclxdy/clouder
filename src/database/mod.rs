@@ -26,11 +26,18 @@ pub async fn initialize_database(db_url: &str) -> Result<SqlitePool> {
 
 // sets up the database
 async fn run_migrations(pool: &SqlitePool) -> Result<()> {
-    let migration_content = include_str!("../../migrations/001_initial.sql");
-    for statement in migration_content.split(';') {
-        let statement = statement.trim();
-        if !statement.is_empty() {
-            sqlx::query(statement).execute(pool).await?;
+    let migrations = [
+        include_str!("../../migrations/001_initial.sql"),
+        include_str!("../../migrations/002_reminders.sql"),
+    ];
+
+    for (index, migration_content) in migrations.iter().enumerate() {
+        tracing::info!("Running migration {}", index + 1);
+        for statement in migration_content.split(';') {
+            let statement = statement.trim();
+            if !statement.is_empty() {
+                sqlx::query(statement).execute(pool).await?;
+            }
         }
     }
 

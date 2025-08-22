@@ -11,21 +11,9 @@
     </cargoProject>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="ab878e5d-64e1-43c8-94f2-e11a97dec1c9" name="Changes" comment="version bump">
+    <list default="true" id="ab878e5d-64e1-43c8-94f2-e11a97dec1c9" name="Changes" comment="document more features in requirements file">
+      <change afterPath="$PROJECT_DIR$/migrations/002_reminders.sql" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/commands/about.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/commands/about.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/commands/help.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/commands/help.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/commands/purge.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/commands/purge.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/commands/video.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/commands/video.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/config.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/config.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/database/selfroles.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/database/selfroles.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/events/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/events/mod.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/tests/config_tests.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/tests/config_tests.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/tests/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/tests/mod.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/utils/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/mod.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/utils/video.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/video.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/web/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/web/mod.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -213,23 +201,8 @@
       <workItem from="1755812863938" duration="305000" />
       <workItem from="1755813176731" duration="234000" />
       <workItem from="1755813416584" duration="7295000" />
-      <workItem from="1755850801373" duration="2886000" />
-    </task>
-    <task id="LOCAL-00009" summary="refactor">
-      <option name="closed" value="true" />
-      <created>1755637837757</created>
-      <option name="number" value="00009" />
-      <option name="presentableId" value="LOCAL-00009" />
-      <option name="project" value="LOCAL" />
-      <updated>1755637837757</updated>
-    </task>
-    <task id="LOCAL-00010" summary="refactor">
-      <option name="closed" value="true" />
-      <created>1755637977187</created>
-      <option name="number" value="00010" />
-      <option name="presentableId" value="LOCAL-00010" />
-      <option name="project" value="LOCAL" />
-      <updated>1755637977187</updated>
+      <workItem from="1755850801373" duration="4982000" />
+      <workItem from="1755858341874" duration="1063000" />
     </task>
     <task id="LOCAL-00011" summary="refactor">
       <option name="closed" value="true" />
@@ -607,7 +580,23 @@
       <option name="project" value="LOCAL" />
       <updated>1755821049577</updated>
     </task>
-    <option name="localTasksCounter" value="58" />
+    <task id="LOCAL-00058" summary="remove redundant comments">
+      <option name="closed" value="true" />
+      <created>1755856343257</created>
+      <option name="number" value="00058" />
+      <option name="presentableId" value="LOCAL-00058" />
+      <option name="project" value="LOCAL" />
+      <updated>1755856343257</updated>
+    </task>
+    <task id="LOCAL-00059" summary="document more features in requirements file">
+      <option name="closed" value="true" />
+      <created>1755859365487</created>
+      <option name="number" value="00059" />
+      <option name="presentableId" value="LOCAL-00059" />
+      <option name="project" value="LOCAL" />
+      <updated>1755859365487</updated>
+    </task>
+    <option name="localTasksCounter" value="60" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -626,8 +615,6 @@
   </component>
   <component name="VcsManagerConfiguration">
     <option name="CHECK_NEW_TODO" value="false" />
-    <MESSAGE value="separate html and rust" />
-    <MESSAGE value="remove success messages from js and redirect instantly" />
     <MESSAGE value="add help command" />
     <MESSAGE value="improve `/about bot` command" />
     <MESSAGE value="update strings and comments" />
@@ -651,8 +638,11 @@
     <MESSAGE value="fix" />
     <MESSAGE value="update video preview css" />
     <MESSAGE value="version bump" />
-    <option name="LAST_COMMIT_MESSAGE" value="version bump" />
+    <MESSAGE value="remove redundant comments" />
+    <MESSAGE value="document more features in requirements file" />
+    <option name="LAST_COMMIT_MESSAGE" value="document more features in requirements file" />
     <option name="OPTIMIZE_IMPORTS_BEFORE_PROJECT_COMMIT" value="true" />
+    <option name="REARRANGE_BEFORE_PROJECT_COMMIT" value="true" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -1015,6 +1005,18 @@
           <option name="totalLines" value="14223" />
           <option name="info" value="version bump" />
         </TimePoint>
+        <TimePoint>
+          <option name="timestamp" value="1755856343280" />
+          <option name="linesCode" value="7645" />
+          <option name="totalLines" value="14127" />
+          <option name="info" value="remove redundant comments" />
+        </TimePoint>
+        <TimePoint>
+          <option name="timestamp" value="1755859365557" />
+          <option name="linesCode" value="7756" />
+          <option name="totalLines" value="14262" />
+          <option name="info" value="document more features in requirements file" />
+        </TimePoint>
       </list>
     </option>
     <option name="genericTimePoints">
@@ -1050,9 +1052,15 @@
           <option name="info" value="Aug 21, 2025" />
         </TimePoint>
         <TimePoint>
-          <option name="timestamp" value="1755821049710" />
-          <option name="linesCode" value="7648" />
-          <option name="totalLines" value="14223" />
+          <option name="timestamp" value="1755856343280" />
+          <option name="linesCode" value="7645" />
+          <option name="totalLines" value="14127" />
+          <option name="info" value="Aug 22, 2025" />
+        </TimePoint>
+        <TimePoint>
+          <option name="timestamp" value="1755859365557" />
+          <option name="linesCode" value="7756" />
+          <option name="totalLines" value="14262" />
           <option name="info" value="Aug 22, 2025" />
         </TimePoint>
       </list>

@@ -31,10 +31,7 @@ pub struct WebConfig {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EmbedConfig {
-    pub directory: String,
-    pub max_age_hours: u64,
-    pub cleanup_interval_hours: u64,
-    pub default_color: u32,
+    pub default_color: u32
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -138,58 +135,6 @@ impl Config {
                 "data/db.sqlite".to_string()
             }
         };
-        let embed_directory = match env::var("EMBED_DIRECTORY") {
-            Ok(dir) => {
-                info!("Using custom EMBED_DIRECTORY: {}", dir);
-                dir
-            },
-            Err(_) => {
-                info!("EMBED_DIRECTORY not set, using default: embed_files");
-                "embed_files".to_string()
-            }
-        };
-
-        let embed_max_age_hours = match env::var("EMBED_MAX_AGE_HOURS") {
-            Ok(hours_str) => match hours_str.parse::<u64>() {
-                Ok(hours) => {
-                    if hours == 0 {
-                        info!("EMBED_MAX_AGE_HOURS set to 0 - embed cleanup disabled");
-                    } else {
-                        info!("Using custom EMBED_MAX_AGE_HOURS: {}", hours);
-                    }
-                    hours
-                },
-                Err(e) => {
-                    warn!("EMBED_MAX_AGE_HOURS '{}' has invalid format: {}. Using default: 24", hours_str, e);
-                    24
-                }
-            },
-            Err(_) => {
-                info!("EMBED_MAX_AGE_HOURS not set, using default: 24");
-                24
-            }
-        };
-
-        let embed_cleanup_interval_hours = match env::var("EMBED_CLEANUP_INTERVAL_HOURS") {
-            Ok(hours_str) => match hours_str.parse::<u64>() {
-                Ok(hours) => {
-                    if hours == 0 {
-                        info!("EMBED_CLEANUP_INTERVAL_HOURS set to 0 - embed cleanup disabled");
-                    } else {
-                        info!("Using custom EMBED_CLEANUP_INTERVAL_HOURS: {}", hours);
-                    }
-                    hours
-                },
-                Err(e) => {
-                    warn!("EMBED_CLEANUP_INTERVAL_HOURS '{}' has invalid format: {}. Using default: 6", hours_str, e);
-                    6
-                }
-            },
-            Err(_) => {
-                info!("EMBED_CLEANUP_INTERVAL_HOURS not set, using default: 6");
-                6
-            }
-        };
 
         let embed_default_color = match env::var("EMBED_DEFAULT_COLOR") {
             Ok(color_str) => {
@@ -234,10 +179,7 @@ impl Config {
                     redirect_uri,
                 },
                 embed: EmbedConfig {
-                    directory: embed_directory,
-                    max_age_hours: embed_max_age_hours,
-                    cleanup_interval_hours: embed_cleanup_interval_hours,
-                    default_color: embed_default_color,
+                    default_color: embed_default_color
                 },
             },
             database: DatabaseConfig {
@@ -263,10 +205,7 @@ impl Config {
                     redirect_uri: "http://localhost:3000/auth/callback".to_string(),
                 },
                 embed: EmbedConfig {
-                    directory: "test_embed_files".to_string(),
-                    max_age_hours: 24,
-                    cleanup_interval_hours: 6,
-                    default_color: 0xFFFFFF,
+                    default_color: 0xFFFFFF
                 },
             },
             database: DatabaseConfig {

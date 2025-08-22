@@ -12,7 +12,6 @@ use crate::commands::about::about;
 use crate::commands::help::help;
 use crate::commands::purge::purge;
 use crate::commands::selfroles::selfroles;
-use crate::commands::video::video;
 use crate::config::{AppState, Config};
 use crate::database::selfroles::SelfRoleCooldown;
 use anyhow::Result;
@@ -49,7 +48,7 @@ async fn main() -> Result<()> {
 
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
-            commands: vec![selfroles(), video(), about(), help(), purge()],
+            commands: vec![selfroles(), about(), help(), purge()],
             event_handler: |ctx, event, framework, data| {
                 Box::pin(event_handler(ctx, event, framework, data))
             },
@@ -83,7 +82,6 @@ async fn main() -> Result<()> {
     let app_state = AppState::new(config.clone(), Arc::new(db), cache, http);
 
     start_cleanup_task(app_state.clone());
-    start_embed_cleanup_task(app_state.clone());
 
     let web_config = config.web.clone();
     let web_state = app_state.clone();
@@ -149,40 +147,6 @@ fn start_cleanup_task(app_state: AppState) {
                 error!("Failed to cleanup expired cooldowns: {}", e);
             } else {
                 tracing::debug!("Cleaned up expired cooldowns");
-            }
-        }
-    });
-}
-
-fn start_embed_cleanup_task(app_state: AppState) {
-    let embed_config = app_state.config.web.embed.clone();
-
-    if embed_config.cleanup_interval_hours == 0 || embed_config.max_age_hours == 0 {
-        info!("Embed cleanup disabled (cleanup_interval_hours={}, max_age_hours={})",
-              embed_config.cleanup_interval_hours, embed_config.max_age_hours);
-        return;
-    }
-
-    tokio::spawn(async move {
-        loop {
-            let interval_seconds = embed_config.cleanup_interval_hours * 3600;
-            sleep(Duration::from_secs(interval_seconds)).await;
-
-            info!("Running automatic embed cleanup...");
-            match utils::video::clean_old_previews(
-                &embed_config.directory,
-                embed_config.max_age_hours
-            ).await {
-                Ok(cleaned_count) => {
-                    if cleaned_count > 0 {
-                        info!("Automatic cleanup completed: {} files removed", cleaned_count);
-                    } else {
-                        tracing::debug!("No old embed files to clean up");
-                    }
-                }
-                Err(e) => {
-                    error!("Automatic embed cleanup failed: {}", e);
-                }
             }
         }
     });

@@ -68,13 +68,6 @@ pub fn get_all_commands() -> Vec<CommandInfo> {
             permissions: None,
         },
         CommandInfo {
-            name: "/video".to_string(),
-            description: "make any video playable on discord (tested on nextcloud) :3".to_string(),
-            usage: Some("/video".to_string()),
-            category: CommandCategory::Utility,
-            permissions: None,
-        },
-        CommandInfo {
             name: "/purge".to_string(),
             description: "purges messages from channel".to_string(),
             usage: Some("/purge [number / message_id]".to_string()),

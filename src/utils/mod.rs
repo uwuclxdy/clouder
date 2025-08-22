@@ -1,11 +1,5 @@
-pub mod video;
-
 use crate::config::AppState;
-use anyhow::anyhow;
 use serenity::all::Color;
-use std::path::PathBuf;
-use tokio::fs;
-use tracing::info;
 
 /// Get the default embed color from configuration
 pub fn get_default_embed_color(app_state: &AppState) -> Color {
@@ -77,16 +71,4 @@ pub fn format_discord_timestamp(time: &str, style: char) -> String {
         'R' => format!("<t:{}:R>", timestamp),
         _ => format!("<t:{}:f>", timestamp),
     }
-}
-
-async fn ensure_directory_exists(directory: &str) -> anyhow::Result<PathBuf> {
-    let path = PathBuf::from(directory);
-
-    if !path.exists() {
-        info!("Creating directory: {}", directory);
-        fs::create_dir_all(&path).await
-            .map_err(|e| anyhow!("Failed to create directory '{}': {}", directory, e))?;
-    }
-
-    Ok(path)
 }

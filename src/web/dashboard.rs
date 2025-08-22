@@ -451,6 +451,7 @@ fn render_selfroles_form(
 }
 
 // Placeholder functions for future dashboard features
+#[allow(dead_code)]
 pub async fn custom_commands(
     Path(guild_id): Path<String>,
     headers: HeaderMap,
@@ -469,6 +470,7 @@ pub async fn custom_commands(
     Err(Redirect::temporary(&format!("/dashboard/{}", guild_id)))
 }
 
+#[allow(dead_code)]
 pub async fn server_settings(
     Path(guild_id): Path<String>,
     headers: HeaderMap,

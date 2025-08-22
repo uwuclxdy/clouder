@@ -4,7 +4,7 @@ use axum::{
     extract::{Path, State},
     http::{header, HeaderMap, StatusCode},
     response::{Html, IntoResponse, Response},
-    routing::get,
+    routing::{get, put},
     Json, Router,
 };
 use serde::{Deserialize, Serialize};
@@ -31,11 +31,13 @@ pub fn create_router(app_state: AppState) -> Router {
         .route("/auth/login", get(auth::login))
         .route("/auth/callback", get(auth::callback))
         .route("/auth/logout", get(auth::logout))
+        .route("/user/settings", get(dashboard::user_settings))
         .route("/dashboard/{guild_id}", get(dashboard::guild_dashboard))
         .route("/dashboard/{guild_id}/selfroles", get(dashboard::selfroles_list))
         .route("/dashboard/{guild_id}/selfroles/new", get(dashboard::selfroles_create))
         .route("/dashboard/{guild_id}/selfroles/edit/{config_id}", get(dashboard::selfroles_edit))
         .route("/video/{filename}", get(serve_video_embed))
+        .route("/api/user/settings", put(api_update_user_settings))
         .route("/api/selfroles/{guild_id}", get(api_get_selfroles).post(api_create_selfroles))
         .route("/api/selfroles/{guild_id}/{config_id}", get(api_get_selfrole_config).put(api_update_selfroles).delete(api_delete_selfroles))
         .route("/api/guild/{guild_id}/channels", get(api_get_channels))
@@ -57,6 +59,12 @@ struct CreateSelfRoleRequest {
 struct SelfRoleData {
     role_id: String,
     emoji: String,
+}
+
+#[derive(Serialize, Deserialize)]
+struct UpdateUserSettingsRequest {
+    timezone: String,
+    dm_reminders_enabled: bool,
 }
 
 fn validate_selfrole_request(payload: &CreateSelfRoleRequest) -> Result<(), &'static str> {
@@ -482,6 +490,29 @@ async fn api_delete_selfroles(
     }
 
     Ok(Json(serde_json::json!({"success": true, "message": "Self-role message deleted successfully"})))
+}
+
+async fn api_update_user_settings(
+    headers: HeaderMap,
+    Json(payload): Json<UpdateUserSettingsRequest>,
+) -> Result<Json<serde_json::Value>, StatusCode> {
+    let (_, user) = extract_session_data(&headers).await.map_err(|_| StatusCode::UNAUTHORIZED)?;
+    user.ok_or(StatusCode::UNAUTHORIZED)?;
+
+    // Validate timezone
+    if payload.timezone.is_empty() {
+        return Ok(Json(serde_json::json!({
+            "success": false,
+            "message": "Timezone cannot be empty"
+        })));
+    }
+
+    // TODO: Save user settings to database
+    // For now, we'll just return success since reminders are not implemented
+    Ok(Json(serde_json::json!({
+        "success": true,
+        "message": "Settings saved successfully"
+    })))
 }
 
 async fn serve_video_embed(

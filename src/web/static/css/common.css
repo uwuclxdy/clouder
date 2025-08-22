@@ -30,6 +30,14 @@ body {
     gap: 15px;
 }
 
+.logo {
+    font-size: 1.3em;
+    font-weight: 600;
+    color: #ffffff;
+    text-decoration: none;
+    margin-right: 10px;
+}
+
 .navbar-right {
     display: flex;
     align-items: center;
@@ -79,6 +87,25 @@ body {
 
 .logout-btn:hover {
     background: rgba(255, 255, 255, 0.25);
+    transform: translateY(-1px);
+}
+
+.add-server-btn {
+    background: linear-gradient(45deg, #4a5fc4, #5a3e8b);
+    color: #ffffff;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.add-server-btn:hover {
+    background: linear-gradient(45deg, #5a6fd4, #6a4e9b);
+    color: #ffffff;
     transform: translateY(-1px);
 }
 

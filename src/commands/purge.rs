@@ -95,17 +95,15 @@ pub async fn purge(
         }
     };
     let embed = CreateEmbed::new()
-        .title("🗑️ messages purged")
-        .description(&format!("successfully deleted **`{}`** message{}",
+        .description(&format!("🗑️ deleted **`{}`** message{} >_<",
             deleted_count,
             if deleted_count == 1 { "" } else { "s" }
         ))
-        .color(get_default_embed_color(ctx.data()))
-        .timestamp(serenity::Timestamp::now());
+        .color(get_default_embed_color(ctx.data()));
 
     ctx.send(poise::CreateReply::default()
         .embed(embed)
-        .ephemeral(true))
+        .ephemeral(false))
         .await?;
 
     Ok(())

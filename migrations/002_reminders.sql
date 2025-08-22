@@ -107,3 +107,9 @@ CREATE INDEX IF NOT EXISTS idx_reminder_subscriptions_config ON reminder_subscri
 CREATE INDEX IF NOT EXISTS idx_reminder_logs_config ON reminder_logs(config_id);
 CREATE INDEX IF NOT EXISTS idx_reminder_logs_execution ON reminder_logs(execution_time);
 CREATE INDEX IF NOT EXISTS idx_reminder_ping_roles_config ON reminder_ping_roles(config_id);
+CREATE INDEX IF NOT EXISTS idx_reminder_ping_roles_role ON reminder_ping_roles(role_id);
+CREATE INDEX IF NOT EXISTS idx_guild_configs_guild ON guild_configs(guild_id);
+CREATE INDEX IF NOT EXISTS idx_user_settings_user ON user_settings(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_settings_timezone ON user_settings(timezone);
+CREATE INDEX IF NOT EXISTS idx_user_settings_dm_reminders ON user_settings(dm_reminders_enabled);
+CREATE INDEX IF NOT EXISTS idx_user_settings_created_at ON user_settings(created_at);

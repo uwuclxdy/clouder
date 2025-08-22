@@ -8,7 +8,7 @@ use axum::{
 
 pub async fn server_list(
     headers: HeaderMap,
-    State(_state): State<AppState>,
+    State(state): State<AppState>,
 ) -> Result<Html<String>, Redirect> {
     let session = extract_session_data(&headers).await
         .map_err(|_| Redirect::temporary("/auth/login"))?;
@@ -45,8 +45,8 @@ pub async fn server_list(
 
     // Generate Discord invite URL with Administrator permission
     let invite_url = format!(
-        "https://discord.com/oauth2/authorize?client_id={}&permissions=8&response_type=code&redirect_uri=http%3A%2F%2Fclouder.uwuclxdy.live%2Fauth%2Fcallback&integration_type=0&scope=bot",
-        _state.config.web.oauth.client_id
+        "https://discord.com/oauth2/authorize?client_id={}&permissions=8&response_type=code&redirect_uri={}&integration_type=0&scope=bot",
+        state.config.web.oauth.client_id, state.config.web.oauth.redirect_uri
     );
 
     let template = include_str!("templates/server_list.html")
@@ -75,8 +75,8 @@ pub async fn user_settings(
 
     // Generate Discord invite URL with Administrator permission
     let invite_url = format!(
-        "https://discord.com/api/oauth2/authorize?client_id={}&permissions=8&scope=bot%20applications.commands",
-        state.config.web.oauth.client_id
+        "https://discord.com/oauth2/authorize?client_id={}&permissions=8&response_type=code&redirect_uri={}&integration_type=0&scope=bot",
+        state.config.web.oauth.client_id, state.config.web.oauth.redirect_uri
     );
 
     // TODO: Load actual user settings from database

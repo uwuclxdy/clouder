@@ -2,13 +2,13 @@ use crate::config::AppState;
 use crate::utils::get_default_embed_color;
 use axum::{
     extract::{Path, State},
-    http::{StatusCode, HeaderMap, header},
-    response::{Html, Response, IntoResponse},
+    http::{header, HeaderMap, StatusCode},
+    response::{Html, IntoResponse, Response},
     routing::get,
     Json, Router,
 };
 use serde::{Deserialize, Serialize};
-use serenity::all::{Http, GuildId, Member};
+use serenity::all::{GuildId, Http, Member};
 use session_extractor::extract_session_data;
 use std::path::PathBuf;
 use tokio::fs;
@@ -144,7 +144,7 @@ async fn api_create_selfroles(
         }
     }
 
-    use serenity::all::{CreateEmbed, CreateMessage, CreateActionRow, CreateButton, ButtonStyle, CreateEmbedFooter};
+    use serenity::all::{ButtonStyle, CreateActionRow, CreateButton, CreateEmbed, CreateEmbedFooter, CreateMessage};
 
     let footer_text = match payload.selection_type.as_str() {
         "multiple" => "Multiple roles",
@@ -249,7 +249,7 @@ async fn api_update_selfroles(
         let channel_id_u64: u64 = config.channel_id.parse().map_err(|_| StatusCode::BAD_REQUEST)?;
         let message_id_u64: u64 = message_id.parse().map_err(|_| StatusCode::BAD_REQUEST)?;
 
-        use serenity::all::{CreateEmbed, CreateActionRow, CreateButton, ButtonStyle, EditMessage, CreateEmbedFooter};
+        use serenity::all::{ButtonStyle, CreateActionRow, CreateButton, CreateEmbed, CreateEmbedFooter, EditMessage};
 
         let footer_text = match payload.selection_type.as_str() {
             "multiple" => "Multiple roles",
@@ -484,29 +484,24 @@ async fn api_delete_selfroles(
     Ok(Json(serde_json::json!({"success": true, "message": "Self-role message deleted successfully"})))
 }
 
-/// Serves video embed HTML files with proper headers for Discord compatibility
 async fn serve_video_embed(
     State(state): State<AppState>,
     Path(filename): Path<String>,
 ) -> Result<Response, StatusCode> {
-    // Validate filename to prevent directory traversal
     if filename.contains("..") || filename.contains('/') || filename.contains('\\') {
         warn!("Blocked potential directory traversal attempt: {}", filename);
         return Err(StatusCode::BAD_REQUEST);
     }
 
-    // Ensure filename ends with .html
     let filename = if filename.ends_with(".html") {
         filename
     } else {
         format!("{}.html", filename)
     };
 
-    // Construct file path
     let embed_dir = PathBuf::from(&state.config.web.embed.directory);
     let file_path = embed_dir.join(&filename);
 
-    // Check if file exists and read it
     let content = match fs::read_to_string(&file_path).await {
         Ok(content) => content,
         Err(e) => {
@@ -515,7 +510,6 @@ async fn serve_video_embed(
         }
     };
 
-    // Create response with proper headers for Discord compatibility
     let mut response = Html(content).into_response();
     let headers = response.headers_mut();
 
@@ -523,11 +517,7 @@ async fn serve_video_embed(
     headers.insert(header::ACCESS_CONTROL_ALLOW_ORIGIN, "*".parse().unwrap());
     headers.insert(header::ACCESS_CONTROL_ALLOW_METHODS, "GET, OPTIONS".parse().unwrap());
     headers.insert(header::ACCESS_CONTROL_ALLOW_HEADERS, "Content-Type".parse().unwrap());
-
-    // Ensure proper content type
     headers.insert(header::CONTENT_TYPE, "text/html; charset=utf-8".parse().unwrap());
-
-    // Add cache headers (cache for 1 hour)
     headers.insert(header::CACHE_CONTROL, "public, max-age=3600".parse().unwrap());
 
     Ok(response)

@@ -10,7 +10,6 @@ pub mod about_tests;
 mod help_tests;
 mod purge_tests;
 
-// Test utilities and common setup functions
 use crate::config::AppState;
 use serenity::all::{Cache, Http};
 use sqlx::SqlitePool;
@@ -18,10 +17,8 @@ use std::sync::Arc;
 
 /// Create a test database for testing
 pub async fn create_test_db() -> SqlitePool {
-    // Use in-memory database for tests
     let pool = SqlitePool::connect("sqlite::memory:").await.unwrap();
 
-    // Run migrations manually instead of using sqlx::migrate!
     sqlx::query(r#"
         CREATE TABLE selfrole_configs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -67,11 +64,4 @@ pub async fn create_test_app_state() -> AppState {
     let http = Arc::new(Http::new("test_token"));
 
     AppState::new(config, db, cache, http)
-}
-
-// run all tests
-#[cfg(test)]
-mod tests {
-    // runs everything in this module
-
 }

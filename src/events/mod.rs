@@ -1,11 +1,10 @@
-use chrono::{Duration, Utc};
-use serenity::all::{CreateInteractionResponse, CreateInteractionResponseMessage};
 use crate::config::AppState;
 use crate::database::selfroles::{SelfRoleConfig, SelfRoleCooldown};
 use crate::serenity;
+use chrono::{Duration, Utc};
+use serenity::all::{CreateInteractionResponse, CreateInteractionResponseMessage};
 
-/// Handle new messages - primarily for bot mention help responses
-/// Handle bot mentions with help responses.
+/// Handle message events - primarily for bot mention help responses
 pub async fn on_message(
     ctx: &serenity::Context,
     message: &serenity::Message,
@@ -39,7 +38,7 @@ async fn send_help_as_message(
     let embed = crate::commands::help::create_help_embed(&commands, data);
 
     message.channel_id.send_message(
-        &ctx.http, 
+        &ctx.http,
         serenity::CreateMessage::new()
             .embed(embed)
             .reference_message(message)
@@ -70,11 +69,8 @@ pub async fn handle_message_delete(
 ) {
     let message_id_str = deleted_message_id.to_string();
 
-    // Check if this was a self-role message
     if let Ok(Some(config)) = SelfRoleConfig::get_by_message_id(&data.db, &message_id_str).await {
         tracing::info!("Self-role message deleted from Discord: {}, cleaning up database", message_id_str);
-
-        // Delete the configuration from database
         if let Err(e) = config.delete(&data.db).await {
             tracing::error!("Failed to delete self-role config after Discord message deletion: {}", e);
         } else {
@@ -95,7 +91,6 @@ async fn handle_component_interaction(
 
 async fn handle_selfrole_interaction(ctx: &serenity::Context, interaction: &serenity::ComponentInteraction, data: &AppState, )
 {
-    // Parse the custom_id: "selfrole_{config_id}_{role_id}"
     let parts: Vec<&str> = interaction.data.custom_id.split('_').collect();
     if parts.len() != 3 {
         tracing::error!("Invalid selfrole custom_id format: {}", interaction.data.custom_id);
@@ -120,10 +115,8 @@ async fn handle_selfrole_interaction(ctx: &serenity::Context, interaction: &sere
         }
     };
 
-    // Check cooldown
     match SelfRoleCooldown::check_cooldown(&data.db, &user_id, role_id, &guild_id).await {
         Ok(true) => {
-            // User is on cooldown
             if let Err(e) = interaction
                 .create_response(
                     &ctx.http,
@@ -139,9 +132,7 @@ async fn handle_selfrole_interaction(ctx: &serenity::Context, interaction: &sere
             }
             return;
         }
-        Ok(false) => {
-            // No cooldown, proceed
-        }
+        Ok(false) => {}
         Err(e) => {
             tracing::error!("Failed to check cooldown: {}", e);
             if let Err(e) = interaction
@@ -161,7 +152,6 @@ async fn handle_selfrole_interaction(ctx: &serenity::Context, interaction: &sere
         }
     }
 
-    // Get the self-role configuration
     let config = match SelfRoleConfig::get_by_message_id(&data.db, &interaction.message.id.to_string()).await {
         Ok(Some(config)) => config,
         Ok(None) => {
@@ -203,7 +193,6 @@ async fn handle_selfrole_interaction(ctx: &serenity::Context, interaction: &sere
         }
     };
 
-    // Get the member to check current roles
     let member = match ctx.http.get_member(guild_id_u64.into(), interaction.user.id).await {
         Ok(member) => member,
         Err(e) => {
@@ -225,7 +214,6 @@ async fn handle_selfrole_interaction(ctx: &serenity::Context, interaction: &sere
         }
     };
 
-    // Validate role hierarchy before attempting role assignment
     let guild_roles = match ctx.http.get_guild_roles(guild_id_u64.into()).await {
         Ok(roles) => roles,
         Err(e) => {
@@ -247,7 +235,6 @@ async fn handle_selfrole_interaction(ctx: &serenity::Context, interaction: &sere
         }
     };
 
-    // Get bot's member info to check role hierarchy
     let bot_member = match crate::web::get_bot_member_info(&ctx.http, guild_id_u64.into()).await {
         Ok(member) => member,
         Err(e) => {
@@ -269,10 +256,8 @@ async fn handle_selfrole_interaction(ctx: &serenity::Context, interaction: &sere
         }
     };
 
-    // Get all bot role positions
     let bot_role_positions = crate::utils::get_bot_role_positions(&bot_member, &guild_roles);
 
-    // Find the target role and validate hierarchy
     let target_role = match guild_roles.iter().find(|r| r.id.get() == role_id_u64) {
         Some(role) => role,
         None => {
@@ -294,7 +279,6 @@ async fn handle_selfrole_interaction(ctx: &serenity::Context, interaction: &sere
         }
     };
 
-    // Validate role hierarchy
     if !crate::utils::can_bot_manage_role(&bot_role_positions, target_role.position) {
         tracing::warn!("Role hierarchy validation failed: bot positions {:?} vs target role '{}' position {}",
                       bot_role_positions, target_role.name, target_role.position);

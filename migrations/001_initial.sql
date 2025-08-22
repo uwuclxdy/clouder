@@ -1,5 +1,5 @@
 -- Initial schema for self-roles
-CREATE TABLE selfrole_configs (
+CREATE TABLE IF NOT EXISTS selfrole_configs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     guild_id TEXT NOT NULL,
     channel_id TEXT NOT NULL,
@@ -11,7 +11,7 @@ CREATE TABLE selfrole_configs (
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE selfrole_roles (
+CREATE TABLE IF NOT EXISTS selfrole_roles (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     config_id INTEGER NOT NULL,
     role_id TEXT NOT NULL,
@@ -19,7 +19,7 @@ CREATE TABLE selfrole_roles (
     FOREIGN KEY (config_id) REFERENCES selfrole_configs(id) ON DELETE CASCADE
 );
 
-CREATE TABLE selfrole_cooldowns (
+CREATE TABLE IF NOT EXISTS selfrole_cooldowns (
     user_id TEXT NOT NULL,
     role_id TEXT NOT NULL,
     guild_id TEXT NOT NULL,

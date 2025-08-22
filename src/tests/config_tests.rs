@@ -1,8 +1,8 @@
 #[cfg(test)]
 mod tests {
-    use crate::config::{Config, AppState};
-    use std::sync::Arc;
+    use crate::config::{AppState, Config};
     use serenity;
+    use std::sync::Arc;
 
     #[test]
     fn test_config_creation() {
@@ -54,12 +54,10 @@ mod tests {
     fn test_config_serialization() {
         let config = Config::test_config();
         
-        // Test that config can be serialized to JSON
         let json = serde_json::to_string(&config).expect("Config should serialize to JSON");
         assert!(json.contains("test_token"));
         assert!(json.contains("test_client_id"));
         
-        // Test that config can be deserialized from JSON
         let deserialized: Config = serde_json::from_str(&json).expect("Config should deserialize from JSON");
         assert_eq!(deserialized.discord.token, config.discord.token);
         assert_eq!(deserialized.web.oauth.client_id, config.web.oauth.client_id);

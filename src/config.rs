@@ -1,11 +1,11 @@
 use anyhow::Result;
 use dotenvy::dotenv;
 use serde::{Deserialize, Serialize};
+use serenity::all::{Cache, Http};
+use sqlx::SqlitePool;
 use std::env;
 use std::sync::Arc;
-use sqlx::SqlitePool;
-use serenity::{all::{Cache, Http}};
-use tracing::{warn, error, info};
+use tracing::{error, info, warn};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
@@ -51,12 +51,10 @@ pub struct DatabaseConfig {
 
 impl Config {
     pub fn from_env() -> Result<Self, anyhow::Error> {
-        // Load .env file if available, but don't fail if it's missing
         if let Err(e) = dotenv() {
             warn!("Could not load .env file: {}. Continuing with system environment variables.", e);
         }
 
-        // Try to get Discord token
         let discord_token = match env::var("DISCORD_TOKEN") {
             Ok(token) => token,
             Err(_) => {
@@ -64,8 +62,6 @@ impl Config {
                 return Err(anyhow::anyhow!("DISCORD_TOKEN environment variable not set"));
             }
         };
-
-        // Try to get application ID
         let application_id = match env::var("DISCORD_APPLICATION_ID") {
             Ok(id_str) => match id_str.parse::<u64>() {
                 Ok(id) => id,
@@ -79,8 +75,6 @@ impl Config {
                 return Err(anyhow::anyhow!("DISCORD_APPLICATION_ID environment variable not set"));
             }
         };
-
-        // Try to get OAuth credentials
         let oauth_client_id = match env::var("DISCORD_CLIENT_ID") {
             Ok(id) => id,
             Err(_) => {
@@ -96,8 +90,6 @@ impl Config {
                 return Err(anyhow::anyhow!("DISCORD_CLIENT_SECRET environment variable not set"));
             }
         };
-
-        // Optional configuration with defaults and error logging
         let base_url = match env::var("BASE_URL") {
             Ok(url) => {
                 info!("Using custom BASE_URL: {}", url);
@@ -136,8 +128,6 @@ impl Config {
                 3000
             }
         };
-
-        // Optional database URL
         let database_url = match env::var("DATABASE_URL") {
             Ok(url) => {
                 info!("Using custom DATABASE_URL: {}", url);
@@ -148,8 +138,6 @@ impl Config {
                 "data/db.sqlite".to_string()
             }
         };
-
-        // Optional embed configuration
         let embed_directory = match env::var("EMBED_DIRECTORY") {
             Ok(dir) => {
                 info!("Using custom EMBED_DIRECTORY: {}", dir);
@@ -205,7 +193,6 @@ impl Config {
 
         let embed_default_color = match env::var("EMBED_DEFAULT_COLOR") {
             Ok(color_str) => {
-                // Support both hex format (#RRGGBB or 0xRRGGBB) and decimal
                 let color_str = color_str.trim();
                 let parsed_color = if color_str.starts_with('#') {
                     u32::from_str_radix(&color_str[1..], 16)

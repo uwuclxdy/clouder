@@ -22,9 +22,7 @@ pub async fn purge(
 ) -> Result<(), Error> {
     let channel_id = ctx.channel_id();
 
-    // Parse input as either number or message ID
     let messages_to_delete = if let Ok(count) = amount_or_id.parse::<u8>() {
-        // Delete last N messages
         if count == 0 || count > 100 {
             ctx.send(poise::CreateReply::default()
                 .content("❌ number must be between 1 and 100!")
@@ -39,10 +37,7 @@ pub async fn purge(
 
         messages
     } else if let Ok(message_id) = amount_or_id.parse::<u64>() {
-        // Delete messages up to specific message ID
         let target_id = MessageId::new(message_id);
-
-        // Get messages after the target message
         let messages = channel_id
             .messages(&ctx.http(), serenity::GetMessages::new().after(target_id).limit(100))
             .await?;
@@ -64,9 +59,7 @@ pub async fn purge(
         return Ok(());
     }
 
-    // Delete messages
     let deleted_count = if messages_to_delete.len() == 1 {
-        // Single message deletion
         match messages_to_delete[0].delete(&ctx.http()).await {
             Ok(_) => 1,
             Err(e) => {
@@ -78,13 +71,11 @@ pub async fn purge(
             }
         }
     } else {
-        // Bulk deletion (only works for messages < 14 days old)
         let message_ids: Vec<MessageId> = messages_to_delete.iter().map(|m| m.id).collect();
 
         match channel_id.delete_messages(&ctx.http(), &message_ids).await {
             Ok(_) => message_ids.len(),
             Err(e) => {
-                // Fallback to individual deletion if bulk fails
                 let mut success_count = 0;
                 for message in &messages_to_delete {
                     if message.delete(&ctx.http()).await.is_ok() {
@@ -103,8 +94,6 @@ pub async fn purge(
             }
         }
     };
-
-    // Send success response
     let embed = CreateEmbed::new()
         .title("🗑️ messages purged")
         .description(&format!("successfully deleted **`{}`** message{}",

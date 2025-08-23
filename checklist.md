@@ -52,6 +52,21 @@
   - [x] Add `embed_color` (INTEGER)
   - [x] Add timestamps
 
+### Welcome/Goodbye System Tables [ ]
+- [ ] `welcome_goodbye_configs` table
+  - [ ] Add `guild_id` (TEXT PRIMARY KEY)
+  - [ ] Add `welcome_enabled` (BOOLEAN DEFAULT FALSE)
+  - [ ] Add `goodbye_enabled` (BOOLEAN DEFAULT FALSE)
+  - [ ] Add `welcome_channel_id` (TEXT)
+  - [ ] Add `goodbye_channel_id` (TEXT)
+  - [ ] Add `welcome_message_type` (TEXT DEFAULT 'embed' CHECK('embed', 'text'))
+  - [ ] Add `goodbye_message_type` (TEXT DEFAULT 'embed' CHECK('embed', 'text'))
+  - [ ] Add `welcome_message_content` (TEXT)
+  - [ ] Add `goodbye_message_content` (TEXT)
+  - [ ] Add welcome embed fields (title, description, color, footer, thumbnail, image, timestamp)
+  - [ ] Add goodbye embed fields (title, description, color, footer, thumbnail, image, timestamp)
+  - [ ] Add `created_at`, `updated_at` timestamps
+
 ### Additional Tables (Future) [ ]
 - [ ] `uwufy_toggles` table
   - [ ] Add `guild_id` (TEXT)
@@ -81,6 +96,49 @@
 - [x] Update `src/database/mod.rs`
   - [x] Export new modules
   - [x] Add migration runner for 002_reminders.sql
+- [ ] Create `src/database/welcome_goodbye.rs`
+  - [ ] `WelcomeGoodbyeConfig` struct
+  - [ ] CRUD operations for welcome/goodbye configs
+  - [ ] Message formatting with placeholders
+  - [ ] Embed building utilities
+
+---
+
+## **Event Handling System**
+
+### Message Interception for Uwufy [ ]
+- [ ] Create `src/events/message_handler.rs`
+- [ ] Implement MESSAGE_CONTENT intent handling
+- [ ] Message processing pipeline
+- [ ] Webhook creation for uwufied messages
+- [ ] Handle permission errors
+
+### Member Events for Welcome/Goodbye [ ]
+- [ ] Create `src/events/member_events.rs`
+- [ ] Implement GUILD_MEMBER_ADD handler
+  - [ ] Fetch welcome configuration
+  - [ ] Process message placeholders
+  - [ ] Send welcome message to configured channel
+  - [ ] Handle permission errors gracefully
+- [ ] Implement GUILD_MEMBER_REMOVE handler
+  - [ ] Fetch goodbye configuration
+  - [ ] Process message placeholders
+  - [ ] Send goodbye message to configured channel
+  - [ ] Handle permission errors gracefully
+
+### Button Interactions [ ]
+- [x] Self-role button interactions (already implemented)
+- [ ] Test reminder button handlers
+- [ ] Subscription button handlers
+- [ ] Welcome/goodbye test message handlers
+- [ ] HuggingFace pagination buttons
+- [ ] GitHub trending time period buttons
+- [ ] GitHub trending pagination buttons
+
+### Component Interactions [ ]
+- [ ] Create unified component handler
+- [ ] Route based on custom_id prefix
+- [ ] Handle expired interactions
 
 ---
 
@@ -172,7 +230,6 @@
 
 #### `/help` - Already Implemented [x]
 - [x] Lists all commands with descriptions
-
 
 ### API Integration Commands
 
@@ -273,6 +330,41 @@
   - [ ] Test button handlers
   - [ ] Form validation
 
+### Welcome/Goodbye Configuration Page [ ]
+- [ ] Create `src/web/templates/welcome_goodbye_config.html`
+  - [ ] Welcome message section
+    - [ ] Enable/disable toggle
+    - [ ] Channel selector
+    - [ ] Message type toggle (embed/text)
+    - [ ] Message content editor with placeholder hints
+    - [ ] Embed builder (if embed type)
+    - [ ] Live preview with placeholder examples
+    - [ ] "Test Welcome" button
+  - [ ] Goodbye message section
+    - [ ] Enable/disable toggle
+    - [ ] Channel selector
+    - [ ] Message type toggle (embed/text)
+    - [ ] Message content editor with placeholder hints
+    - [ ] Embed builder (if embed type)
+    - [ ] Live preview with placeholder examples
+    - [ ] "Test Goodbye" button
+  - [ ] Placeholder variable reference card
+    - [ ] List all available variables with descriptions
+    - [ ] Copy-to-clipboard functionality for each variable
+- [ ] Create `src/web/welcome_goodbye.rs`
+  - [ ] GET `/dashboard/{guild_id}/welcome-goodbye` - display config page
+  - [ ] POST `/api/welcome-goodbye/{guild_id}/config` - save configuration
+  - [ ] POST `/api/welcome-goodbye/{guild_id}/test/welcome` - send test welcome
+  - [ ] POST `/api/welcome-goodbye/{guild_id}/test/goodbye` - send test goodbye
+  - [ ] GET `/api/welcome-goodbye/{guild_id}/preview` - live preview generation
+- [ ] Create `src/web/static/js/welcome_goodbye_config.js`
+  - [ ] Message type toggle logic
+  - [ ] Embed builder UI
+  - [ ] Live preview functionality
+  - [ ] Placeholder insertion helpers
+  - [ ] Test button handlers
+  - [ ] Form validation
+
 ### User Subscription Management [ ]
 - [ ] Add subscription UI to reminders page
   - [ ] "Subscribe for DMs" button for each reminder
@@ -286,11 +378,14 @@
 ### Server Configuration Updates [ ]
 - [ ] Update `src/web/templates/guild_dashboard.html`
   - [ ] Add reminders section link
+  - [ ] Add welcome/goodbye section link
   - [ ] Show reminder summary/status
+  - [ ] Show welcome/goodbye configuration status
 - [ ] Update server config to include
   - [ ] Command prefix setting
   - [ ] Default embed color
   - [ ] Reminder counts/status
+  - [ ] Welcome/goodbye status indicators
 
 ### Read-Only Mode [ ]
 - [ ] Implement read-only view for non-administrators
@@ -306,30 +401,6 @@
 - [ ] Create custom commands UI (future)
 - [ ] Implement prefix-based commands
 - [ ] Role-based delegation (TODO)
-
----
-
-## **Event Handling System**
-
-### Message Interception for Uwufy [ ]
-- [ ] Create `src/events/message_handler.rs`
-- [ ] Implement MESSAGE_CONTENT intent handling
-- [ ] Message processing pipeline
-- [ ] Webhook creation for uwufied messages
-- [ ] Handle permission errors
-
-### Button Interactions [ ]
-- [x] Self-role button interactions (already implemented)
-- [ ] Test reminder button handlers
-- [ ] Subscription button handlers
-- [ ] HuggingFace pagination buttons
-- [ ] GitHub trending time period buttons
-- [ ] GitHub trending pagination buttons
-
-### Component Interactions [ ]
-- [ ] Create unified component handler
-- [ ] Route based on custom_id prefix
-- [ ] Handle expired interactions
 
 ---
 
@@ -385,6 +456,39 @@
 
 ---
 
+## **Utility Functions**
+
+### Text Processing [ ]
+- [ ] Create `src/utils/uwufy.rs`
+  - [ ] `uwufy_text()` implementation
+  - [ ] Character replacement logic
+  - [ ] Unicode handling
+
+### Time/Date Utilities [ ]
+- [ ] Create `src/utils/time.rs`
+  - [ ] Timezone parsing and validation
+  - [ ] Next trigger calculation
+  - [ ] Discord timestamp formatting
+  - [ ] Friday detection
+  - [ ] 7:27 AM/PM calculation
+
+### Welcome/Goodbye Message Utilities [ ]
+- [ ] Create `src/utils/welcome_goodbye.rs`
+  - [ ] Placeholder replacement function
+  - [ ] Message formatting helpers
+  - [ ] Embed building utilities
+  - [ ] Member count calculation
+  - [ ] Join date formatting
+
+### Reminder Utilities [ ]
+- [ ] Create `src/utils/reminders.rs`
+  - [ ] Message formatting helpers
+  - [ ] Embed builders
+  - [ ] Role mention formatting
+  - [ ] DM sending helpers
+
+---
+
 ## **Security & Validation**
 
 ### Input Validation [ ]
@@ -394,6 +498,9 @@
 - [ ] Validate channel permissions
 - [ ] Sanitize message content
 - [ ] Validate embed data structure
+- [ ] Validate welcome/goodbye message content
+- [ ] Validate placeholder usage
+- [ ] Validate embed URLs and dimensions
 
 ### Permission Checking [ ]
 - [ ] Administrator permission for config writes
@@ -401,16 +508,16 @@
 - [ ] Bot permissions for channels
 - [ ] Bot role hierarchy for pinging
 - [ ] DM permissions for users
+- [ ] Send message permissions for welcome/goodbye channels
 
 ### Error Handling [ ]
 - [ ] Handle blocked DMs gracefully
 - [ ] Handle deleted channels/roles
 - [ ] Handle missing permissions
 - [ ] Log all reminder failures
+- [ ] Log welcome/goodbye message failures
 - [ ] User-friendly error messages
-
----
-
+- [ ] Handle member join/leave event errors
 
 ---
 
@@ -429,6 +536,11 @@
 - [ ] Test `src/tests/user_settings_tests.rs`
   - [ ] Timezone validation
   - [ ] Subscription management
+- [ ] Test `src/tests/welcome_goodbye_tests.rs`
+  - [ ] Placeholder replacement functionality
+  - [ ] Message formatting
+  - [ ] Embed building
+  - [ ] Member count accuracy
 - [ ] Test uwufy functionality
 - [ ] Test API integrations
 
@@ -438,36 +550,8 @@
 - [ ] Permission checking
 - [ ] Dashboard functionality
 - [ ] Scheduler integration
-
----
-
-## **Utility Functions**
-
-### Text Processing [ ]
-- [ ] Create `src/utils/uwufy.rs`
-    - [ ] `uwufy_text()` implementation
-    - [ ] Character replacement logic
-    - [ ] Unicode handling
-
-### Time/Date Utilities [ ]
-- [ ] Create `src/utils/time.rs`
-  - [ ] Timezone parsing and validation
-  - [ ] Next trigger calculation
-  - [ ] Discord timestamp formatting
-  - [ ] Friday detection
-  - [ ] 7:27 AM/PM calculation
-
-### Text Processing [ ]
-- [ ] Create `src/utils/uwufy.rs`
-  - [ ] Text transformation logic
-  - [ ] Unicode handling
-
-### Reminder Utilities [ ]
-- [ ] Create `src/utils/reminders.rs`
-  - [ ] Message formatting helpers
-  - [ ] Embed builders
-  - [ ] Role mention formatting
-  - [ ] DM sending helpers
+- [ ] Welcome/goodbye message flow
+- [ ] Member join/leave event handling
 
 ---
 
@@ -477,10 +561,12 @@
 - [ ] Implement API response caching
 - [ ] Cache user settings
 - [ ] Cache guild configurations
+- [ ] Cache welcome/goodbye configurations
 - [ ] Scheduled cache cleanup
 
 ### Database Optimization [ ]
 - [ ] Add indexes for reminder queries
+- [ ] Add indexes for welcome/goodbye config lookups
 - [ ] Optimize subscription lookups
 - [ ] Clean up old reminder logs
 - [ ] Connection pool tuning
@@ -499,6 +585,7 @@
 - [ ] Update README.md with full feature list
 - [ ] Document timezone format
 - [ ] Document reminder types
+- [ ] Document welcome/goodbye placeholder variables
 - [ ] API setup instructions
 
 ---
@@ -510,13 +597,18 @@
 - [ ] Giphy API full integration
 - [ ] Reminder templates
 - [ ] Bulk subscription management
+- [ ] Advanced welcome/goodbye message templates
 
 ### Medium Priority [ ]
 - [ ] Reminder analytics dashboard
 - [ ] Advanced scheduling options
+- [ ] Welcome/goodbye message statistics
+- [ ] Role-based welcome messages
 
 ### Low Priority [ ]
 - [ ] Advanced role conditions
 - [ ] Reminder categories/tags
+- [ ] Welcome message DM option
+- [ ] Advanced placeholder variables (user avatar, account age, etc.)
 
 ---

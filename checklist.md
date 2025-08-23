@@ -52,20 +52,20 @@
   - [x] Add `embed_color` (INTEGER)
   - [x] Add timestamps
 
-### Welcome/Goodbye System Tables [ ]
-- [ ] `welcome_goodbye_configs` table
-  - [ ] Add `guild_id` (TEXT PRIMARY KEY)
-  - [ ] Add `welcome_enabled` (BOOLEAN DEFAULT FALSE)
-  - [ ] Add `goodbye_enabled` (BOOLEAN DEFAULT FALSE)
-  - [ ] Add `welcome_channel_id` (TEXT)
-  - [ ] Add `goodbye_channel_id` (TEXT)
-  - [ ] Add `welcome_message_type` (TEXT DEFAULT 'embed' CHECK('embed', 'text'))
-  - [ ] Add `goodbye_message_type` (TEXT DEFAULT 'embed' CHECK('embed', 'text'))
-  - [ ] Add `welcome_message_content` (TEXT)
-  - [ ] Add `goodbye_message_content` (TEXT)
-  - [ ] Add welcome embed fields (title, description, color, footer, thumbnail, image, timestamp)
-  - [ ] Add goodbye embed fields (title, description, color, footer, thumbnail, image, timestamp)
-  - [ ] Add `created_at`, `updated_at` timestamps
+### Welcome/Goodbye System Tables [x]
+- [x] `welcome_goodbye_configs` table
+  - [x] Add `guild_id` (TEXT PRIMARY KEY)
+  - [x] Add `welcome_enabled` (BOOLEAN DEFAULT FALSE)
+  - [x] Add `goodbye_enabled` (BOOLEAN DEFAULT FALSE)
+  - [x] Add `welcome_channel_id` (TEXT)
+  - [x] Add `goodbye_channel_id` (TEXT)
+  - [x] Add `welcome_message_type` (TEXT DEFAULT 'embed' CHECK('embed', 'text'))
+  - [x] Add `goodbye_message_type` (TEXT DEFAULT 'embed' CHECK('embed', 'text'))
+  - [x] Add `welcome_message_content` (TEXT)
+  - [x] Add `goodbye_message_content` (TEXT)
+  - [x] Add welcome embed fields (title, description, color, footer, thumbnail, image, timestamp)
+  - [x] Add goodbye embed fields (title, description, color, footer, thumbnail, image, timestamp)
+  - [x] Add `created_at`, `updated_at` timestamps
 
 ### Additional Tables (Future) [ ]
 - [ ] `uwufy_toggles` table

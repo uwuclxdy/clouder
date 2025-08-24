@@ -1,6 +1,8 @@
 use crate::config::AppState;
 use serenity::all::Color;
 
+pub mod welcome_goodbye;
+
 /// Get the default embed color from configuration
 pub fn get_default_embed_color(app_state: &AppState) -> Color {
     Color::new(app_state.config.web.embed.default_color)

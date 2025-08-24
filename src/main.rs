@@ -40,7 +40,8 @@ async fn main() -> Result<()> {
     let token = config.discord.token.clone();
     let intents = serenity::GatewayIntents::GUILD_MESSAGES
         | serenity::GatewayIntents::GUILDS
-        | serenity::GatewayIntents::MESSAGE_CONTENT;
+        | serenity::GatewayIntents::MESSAGE_CONTENT
+        | serenity::GatewayIntents::GUILD_MEMBERS;
 
     let config_clone = config.clone();
     let db_clone = db.clone();
@@ -64,7 +65,14 @@ async fn main() -> Result<()> {
                 let http = Arc::new(serenity::Http::new(&token));
                 let cache = Arc::new(serenity::all::Cache::new());
 
-                let app_state = AppState::new(config, Arc::new(db), cache, http);
+                let app_state = AppState::new(config.clone(), Arc::new(db.clone()), cache, http);
+
+                // Store the database pool and app state in the context data for member events
+                {
+                    let mut data = ctx.data.write().await;
+                    data.insert::<events::member_events::Database>(Arc::new(db));
+                    data.insert::<events::member_events::AppStateKey>(Arc::new(app_state.clone()));
+                }
 
                 Ok(app_state)
             })
@@ -117,6 +125,12 @@ async fn event_handler(
         }
         serenity::FullEvent::Message { new_message } => {
             events::on_message(ctx, new_message, data).await;
+        }
+        serenity::FullEvent::GuildMemberAddition { new_member } => {
+            events::member_events::member_addition(ctx, &new_member.guild_id, new_member).await;
+        }
+        serenity::FullEvent::GuildMemberRemoval { guild_id, user, member_data_if_available } => {
+            events::member_events::member_removal(ctx, guild_id, user, member_data_if_available).await;
         }
         _ => {}
     }

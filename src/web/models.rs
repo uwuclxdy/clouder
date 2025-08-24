@@ -1,4 +1,4 @@
-use serde::{Deserialize, Serialize, Deserializer};
+use serde::{Deserialize, Deserializer, Serialize};
 
 fn deserialize_permissions<'de, D>(deserializer: D) -> Result<String, D::Error>
 where
@@ -94,6 +94,18 @@ impl SessionUser {
                 let permissions = guild.permissions.parse::<u64>().unwrap_or(0);
                 const MANAGE_ROLES: u64 = 0x10000000;
                 (permissions & MANAGE_ROLES) != 0
+            })
+            .unwrap_or(false)
+    }
+
+    pub fn has_administrator_in_guild(&self, guild_id: &str) -> bool {
+        self.guilds.iter()
+            .find(|g| g.id == guild_id)
+            .map(|guild| {
+                if guild.owner { return true; }
+                let permissions = guild.permissions.parse::<u64>().unwrap_or(0);
+                const ADMINISTRATOR: u64 = 0x8;
+                (permissions & ADMINISTRATOR) != 0
             })
             .unwrap_or(false)
     }

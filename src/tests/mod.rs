@@ -8,6 +8,7 @@ pub mod session_extractor_tests;
 pub mod about_tests;
 mod help_tests;
 mod purge_tests;
+mod welcome_goodbye_tests;
 
 use crate::config::AppState;
 use serenity::all::{Cache, Http};

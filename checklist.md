@@ -1,71 +1,22 @@
 # Clouder Discord Bot - Detailed Implementation Checklist
 
-## **Core Architecture** [x]
-- [x] Serenity + Poise framework setup
-- [x] Axum web server integration (same process)
-- [x] SQLite database with Arc<SqlitePool> sharing
-- [x] Rust project structure
-- [x] Bot name: `clouder`
+> subtasks of completed main tasks are redacted
 
 ---
 
 ## **Database Schema & Models**
 > **Note:** create only the tables needed for the functionality you are currently working on!
 
-### Current Tables [x]
+### Current Tables
 - [x] `selfrole_configs` table - stores self-role configuration metadata
 - [x] `selfrole_roles` table - stores role-emoji mappings for self-roles
 - [x] `selfrole_cooldowns` table - prevents role spam with cooldowns
 
 ### Reminders System Tables [x]
-- [x] `user_settings` table
-  - [x] Add `user_id` (TEXT PRIMARY KEY)
-  - [x] Add `timezone` (TEXT DEFAULT 'UTC')
-  - [x] Add `dm_reminders_enabled` (BOOLEAN DEFAULT TRUE)
-  - [x] Add `created_at`, `updated_at` timestamps
-- [x] `reminder_configs` table
-  - [x] Add `id` (INTEGER PRIMARY KEY)
-  - [x] Add `guild_id` (TEXT NOT NULL)
-  - [x] Add `reminder_type` (TEXT: 'wysi', 'femboy_friday', 'custom')
-  - [x] Add `enabled` (BOOLEAN)
-  - [x] Add `channel_id` (TEXT)
-  - [x] Add message configuration fields (type, content, embed data)
-  - [x] Add WYSI-specific times (morning/evening)
-  - [x] Add Femboy Friday trigger time
-  - [x] Add timezone field
-  - [x] Add tracking timestamps
-- [x] `reminder_ping_roles` table
-  - [x] Add `config_id` (INTEGER)
-  - [x] Add `role_id` (TEXT)
-  - [x] Add foreign key constraints
-- [x] `reminder_subscriptions` table
-  - [x] Add `user_id` (TEXT)
-  - [x] Add `config_id` (INTEGER)
-  - [x] Add `subscribed_at` timestamp
-- [x] `reminder_logs` table
-  - [x] Add execution tracking fields
-  - [x] Add status and error message fields
-  - [x] Add user notification count
-- [x] `guild_configs` table
-  - [x] Add `guild_id` (TEXT PRIMARY KEY)
-  - [x] Add `command_prefix` (TEXT DEFAULT '!')
-  - [x] Add `embed_color` (INTEGER)
-  - [x] Add timestamps
+- [x] done subtasks redacted
 
 ### Welcome/Goodbye System Tables [x]
-- [x] `welcome_goodbye_configs` table
-  - [x] Add `guild_id` (TEXT PRIMARY KEY)
-  - [x] Add `welcome_enabled` (BOOLEAN DEFAULT FALSE)
-  - [x] Add `goodbye_enabled` (BOOLEAN DEFAULT FALSE)
-  - [x] Add `welcome_channel_id` (TEXT)
-  - [x] Add `goodbye_channel_id` (TEXT)
-  - [x] Add `welcome_message_type` (TEXT DEFAULT 'embed' CHECK('embed', 'text'))
-  - [x] Add `goodbye_message_type` (TEXT DEFAULT 'embed' CHECK('embed', 'text'))
-  - [x] Add `welcome_message_content` (TEXT)
-  - [x] Add `goodbye_message_content` (TEXT)
-  - [x] Add welcome embed fields (title, description, color, footer, thumbnail, image, timestamp)
-  - [x] Add goodbye embed fields (title, description, color, footer, thumbnail, image, timestamp)
-  - [x] Add `created_at`, `updated_at` timestamps
+- [x] done subtasks redacted
 
 ### Additional Tables (Future) [ ]
 - [ ] `uwufy_toggles` table
@@ -80,27 +31,8 @@
 - [ ] `api_cache` table
   - [ ] Add caching for external API calls
 
-### Database Model Implementations [x]
-- [x] Create `src/database/reminders.rs`
-  - [x] `ReminderConfig` struct
-  - [x] CRUD operations for reminder configs
-  - [x] Methods for getting due reminders
-  - [x] Subscription management methods
-- [x] Create `src/database/user_settings.rs`
-  - [x] `UserSettings` struct
-  - [x] Get/update user timezone
-  - [x] Toggle DM reminders
-- [x] Create `src/database/guild_configs.rs`
-  - [x] `GuildConfig` struct
-  - [x] Get/update guild settings
-- [x] Update `src/database/mod.rs`
-  - [x] Export new modules
-  - [x] Add migration runner for 002_reminders.sql
-- [ ] Create `src/database/welcome_goodbye.rs`
-  - [ ] `WelcomeGoodbyeConfig` struct
-  - [ ] CRUD operations for welcome/goodbye configs
-  - [ ] Message formatting with placeholders
-  - [ ] Embed building utilities
+### Database Model Implementations (`src/database/*`) [x]
+- [x] done subtasks redacted
 
 ---
 
@@ -113,18 +45,8 @@
 - [ ] Webhook creation for uwufied messages
 - [ ] Handle permission errors
 
-### Member Events for Welcome/Goodbye [ ]
-- [ ] Create `src/events/member_events.rs`
-- [ ] Implement GUILD_MEMBER_ADD handler
-  - [ ] Fetch welcome configuration
-  - [ ] Process message placeholders
-  - [ ] Send welcome message to configured channel
-  - [ ] Handle permission errors gracefully
-- [ ] Implement GUILD_MEMBER_REMOVE handler
-  - [ ] Fetch goodbye configuration
-  - [ ] Process message placeholders
-  - [ ] Send goodbye message to configured channel
-  - [ ] Handle permission errors gracefully
+### Member Events for Welcome/Goodbye [x]
+- [x] done subtasks redacted
 
 ### Button Interactions [ ]
 - [x] Self-role button interactions (already implemented)
@@ -144,18 +66,8 @@
 
 ## **Scheduler System** [x]
 
-### Background Task Infrastructure [x]
-- [x] Create `src/scheduler/mod.rs`
-  - [x] Initialize tokio scheduler
-  - [x] Register reminder check task (runs every minute)
-  - [x] Error handling and retry logic
-- [x] Create `src/scheduler/reminders.rs`
-  - [x] `check_due_reminders()` function
-  - [x] `execute_reminder()` function
-  - [x] `send_to_channel()` function
-  - [x] `send_to_subscribers()` function
-  - [x] Handle timezone calculations
-  - [x] Log execution results
+### Background Task Infrastructure (`src/scheduler/*`) [x]
+- [x] done subtasks redacted
 
 ### Reminder Execution Logic [ ]
 - [ ] WYSI reminder execution
@@ -180,19 +92,7 @@
 ### Core Commands
 
 #### `/reminders` - View active reminders [x]
-- [x] Create `src/commands/reminders.rs`
-- [x] Implement server context response
-  - [x] Fetch all server reminders from database
-  - [x] Format as embed with channel destinations
-  - [x] Show schedule and enabled status
-  - [x] Show pinged roles
-- [x] Implement DM context response
-  - [x] Fetch user's subscribed reminders
-  - [x] Show source servers
-  - [x] Display user's timezone
-  - [x] Format as personal reminder list
-- [x] Make response ephemeral
-- [x] Register command in `src/main.rs`
+- [x] done subtasks redacted
 
 #### `/random` - Random Number Generator [ ]
 - [ ] Create `src/commands/random.rs`
@@ -215,20 +115,18 @@
   - [ ] `is_uwufy_enabled()` function
 - [ ] Register command in `src/main.rs`
 
-#### `/selfroles` - Already Implemented [x]
-- [x] Command exists and works
+#### `/selfroles` [x]
+- [x] done subtasks redacted
 
-#### `/purge` - Already Implemented [x]
-- [x] Purge messages functionality complete
+#### `/purge` [x]
+- [x] done subtasks redacted
 
 ### Info Commands
 
-#### `/about` - Already Implemented [x]
-- [x] Bot & system information
-- [x] Server statistics subcommand
-- [x] User statistics subcommand
+#### `/about` [x]
+- [x] done subtasks redacted
 
-#### `/help` - Already Implemented [x]
+#### `/help` [x]
 - [x] Lists all commands with descriptions
 
 ### API Integration Commands
@@ -330,40 +228,8 @@
   - [ ] Test button handlers
   - [ ] Form validation
 
-### Welcome/Goodbye Configuration Page [ ]
-- [ ] Create `src/web/templates/welcome_goodbye_config.html`
-  - [ ] Welcome message section
-    - [ ] Enable/disable toggle
-    - [ ] Channel selector
-    - [ ] Message type toggle (embed/text)
-    - [ ] Message content editor with placeholder hints
-    - [ ] Embed builder (if embed type)
-    - [ ] Live preview with placeholder examples
-    - [ ] "Test Welcome" button
-  - [ ] Goodbye message section
-    - [ ] Enable/disable toggle
-    - [ ] Channel selector
-    - [ ] Message type toggle (embed/text)
-    - [ ] Message content editor with placeholder hints
-    - [ ] Embed builder (if embed type)
-    - [ ] Live preview with placeholder examples
-    - [ ] "Test Goodbye" button
-  - [ ] Placeholder variable reference card
-    - [ ] List all available variables with descriptions
-    - [ ] Copy-to-clipboard functionality for each variable
-- [ ] Create `src/web/welcome_goodbye.rs`
-  - [ ] GET `/dashboard/{guild_id}/welcome-goodbye` - display config page
-  - [ ] POST `/api/welcome-goodbye/{guild_id}/config` - save configuration
-  - [ ] POST `/api/welcome-goodbye/{guild_id}/test/welcome` - send test welcome
-  - [ ] POST `/api/welcome-goodbye/{guild_id}/test/goodbye` - send test goodbye
-  - [ ] GET `/api/welcome-goodbye/{guild_id}/preview` - live preview generation
-- [ ] Create `src/web/static/js/welcome_goodbye_config.js`
-  - [ ] Message type toggle logic
-  - [ ] Embed builder UI
-  - [ ] Live preview functionality
-  - [ ] Placeholder insertion helpers
-  - [ ] Test button handlers
-  - [ ] Form validation
+### Welcome/Goodbye Configuration Page [x]
+- [x] done subtasks redacted
 
 ### User Subscription Management [ ]
 - [ ] Add subscription UI to reminders page
@@ -472,13 +338,8 @@
   - [ ] Friday detection
   - [ ] 7:27 AM/PM calculation
 
-### Welcome/Goodbye Message Utilities [ ]
-- [ ] Create `src/utils/welcome_goodbye.rs`
-  - [ ] Placeholder replacement function
-  - [ ] Message formatting helpers
-  - [ ] Embed building utilities
-  - [ ] Member count calculation
-  - [ ] Join date formatting
+### Welcome/Goodbye Message Utilities [x]
+- [x] done subtasks redacted
 
 ### Reminder Utilities [ ]
 - [ ] Create `src/utils/reminders.rs`

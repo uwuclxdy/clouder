@@ -3,7 +3,7 @@ use crate::utils::get_default_embed_color;
 use axum::{
     extract::{Path, State},
     http::{HeaderMap, StatusCode},
-    routing::{get, put},
+    routing::{get, post, put},
     Json, Router,
 };
 use serde::{Deserialize, Serialize};
@@ -15,6 +15,7 @@ pub mod dashboard;
 pub mod middleware;
 pub mod models;
 pub mod session_extractor;
+pub mod welcome_goodbye;
 
 pub async fn get_bot_member_info(http: &Http, guild_id: GuildId) -> Result<Member, Box<dyn std::error::Error + Send + Sync>> {
     let bot_user = http.get_current_user().await?;
@@ -32,11 +33,16 @@ pub fn create_router(app_state: AppState) -> Router {
         .route("/dashboard/{guild_id}/selfroles", get(dashboard::selfroles_list))
         .route("/dashboard/{guild_id}/selfroles/new", get(dashboard::selfroles_create))
         .route("/dashboard/{guild_id}/selfroles/edit/{config_id}", get(dashboard::selfroles_edit))
+        .route("/dashboard/{guild_id}/welcome-goodbye", get(welcome_goodbye::show_welcome_goodbye_config))
         .route("/api/user/settings", put(api_update_user_settings))
         .route("/api/selfroles/{guild_id}", get(api_get_selfroles).post(api_create_selfroles))
         .route("/api/selfroles/{guild_id}/{config_id}", get(api_get_selfrole_config).put(api_update_selfroles).delete(api_delete_selfroles))
         .route("/api/guild/{guild_id}/channels", get(api_get_channels))
         .route("/api/guild/{guild_id}/roles", get(api_get_roles))
+        .route("/api/welcome-goodbye/{guild_id}/config", post(welcome_goodbye::save_welcome_goodbye_config))
+        .route("/api/welcome-goodbye/{guild_id}/test/welcome", post(welcome_goodbye::send_test_welcome))
+        .route("/api/welcome-goodbye/{guild_id}/test/goodbye", post(welcome_goodbye::send_test_goodbye))
+        .route("/api/welcome-goodbye/{guild_id}/preview", post(welcome_goodbye::get_live_preview))
         .layer(axum::middleware::from_fn(middleware::session_middleware))
         .with_state(app_state)
 }

@@ -422,7 +422,7 @@ fn render_selfroles_form(
                 "Create Self-Role Message",
                 "Create a new interactive role assignment message for",
                 "Create",
-                "Deploy Self-Role Message"
+                "Create Self-Role Message"
             )
         };
 

@@ -4,6 +4,8 @@ use crate::serenity;
 use chrono::{Duration, Utc};
 use serenity::all::{CreateInteractionResponse, CreateInteractionResponseMessage, Mentionable};
 
+pub mod member_events;
+
 /// Handle message events - primarily for bot mention help responses
 pub async fn on_message(
     ctx: &serenity::Context,

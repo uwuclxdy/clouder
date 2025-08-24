@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Welcome & Goodbye Messages - {{GUILD_NAME}}</title>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <style>
+        {{COMMON_CSS}}
+        {{DASHBOARD_CSS}}
+
+        /* Welcome/Goodbye specific styles */
+        .config-grid {
+            display: grid;
+            gap: 25px;
+            margin-top: 20px;
+        }
+
+        .config-card {
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            color: #f5f5f5;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            transition: all 0.3s ease;
+        }
+
+        .config-card.disabled {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .config-card h2 {
+            margin: 0 0 20px 0;
+            font-size: 1.5em;
+            font-weight: 500;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .config-card h3 {
+            margin: 0 0 15px 0;
+            font-size: 1.2em;
+            font-weight: 500;
+            color: #ffffff;
+        }
+
+        .placeholder-item {
+            display: flex;
+            flex-direction: column;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            user-select: none;
+            position: relative;
+        }
+
+        .placeholder-item:hover {
+            background: rgba(0, 0, 0, 0.5);
+            border-color: rgba(143, 164, 255, 0.4);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .placeholder-item:active {
+            transform: translateY(0);
+        }
+
+        .placeholder-item::after {
+            content: "Click to copy";
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 0.7em;
+            color: rgba(255, 255, 255, 0.5);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .placeholder-item:hover::after {
+            opacity: 1;
+        }
+
+        .placeholder-item.copied::after {
+            content: "Copied!";
+            color: #4CAF50;
+            opacity: 1;
+        }
+
+        .copy-btn {
+            background: rgba(74, 95, 196, 0.8);
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8em;
+            transition: background 0.3s ease;
+        }
+
+        .copy-btn:hover {
+            background: rgba(74, 95, 196, 1);
+        }
+
+        .toggle-section {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .toggle-section h2 {
+            margin: 0;
+        }
+
+        .config-content {
+            display: none;
+            grid-gap: 20px;
+        }
+
+        .config-content.show {
+            display: grid;
+        }
+
+        .message-type-selector {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .type-option {
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            padding: 15px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s ease;
+            user-select: none;
+        }
+
+        .type-option.selected {
+            background: rgba(143, 164, 255, 0.3);
+            border-color: rgba(143, 164, 255, 0.6);
+        }
+
+        .type-option input {
+            display: none;
+        }
+
+        .embed-config {
+            display: none;
+            grid-gap: 15px;
+        }
+
+        .embed-config.show {
+            display: grid;
+        }
+
+        .text-config {
+            display: none;
+        }
+
+        .text-config.show {
+            display: block;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .form-row.single {
+            grid-template-columns: 1fr;
+        }
+
+        .color-input {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .color-picker {
+            width: 50px;
+            height: 40px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: border-color 0.3s ease;
+        }
+
+        .color-picker:hover {
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
+        .color-picker::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+
+        .color-picker::-webkit-color-swatch {
+            border: none;
+            border-radius: 4px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            margin-bottom: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            gap: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            user-select: none;
+        }
+
+        .checkbox-group:hover {
+            background: rgba(0, 0, 0, 0.4);
+            border-color: rgba(143, 164, 255, 0.3);
+        }
+
+        .checkbox-group.checked {
+            background: rgba(143, 164, 255, 0.15);
+            border-color: rgba(143, 164, 255, 0.5);
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+            margin: 0;
+            padding: 0;
+        }
+
+        .checkbox-group label {
+            margin: 0;
+            cursor: pointer;
+            font-weight: 500;
+            color: #f0f0f0;
+            flex: 1;
+        }
+
+        .checkbox-group.checked label {
+            color: #8fa4ff !important;
+            font-weight: 600;
+        }
+
+        .test-button {
+            background: rgba(40, 167, 69, 0.9);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            margin-top: 15px;
+            margin-right: 10px;
+        }
+
+        .test-button:hover {
+            background: rgba(40, 167, 69, 1);
+            transform: translateY(-1px);
+        }
+
+        .test-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .save-only-button {
+            background: rgba(74, 95, 196, 0.9);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            margin-top: 15px;
+        }
+
+        .save-only-button:hover {
+            background: rgba(74, 95, 196, 1);
+            transform: translateY(-1px);
+        }
+
+        .save-only-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .button-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .placeholder-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .placeholder-code {
+            font-family: 'Courier New', monospace;
+            font-size: 1.1em;
+            color: #a8c0ff;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .placeholder-desc {
+            color: #e0e0e0;
+            font-size: 0.9em;
+            line-height: 1.4;
+        }
+
+        .save-button {
+            background: linear-gradient(45deg, #4a5fc4, #5a3e8b);
+            color: #ffffff;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-top: 20px;
+            margin-bottom: 40px;
+        }
+
+        .save-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(74, 95, 196, 0.3);
+        }
+
+        .save-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .message-type-selector {
+                grid-template-columns: 1fr;
+            }
+
+            .placeholder-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .button-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .test-button, .save-only-button {
+                margin-right: 0;
+                margin-bottom: 10px;
+            }
+
+            .save-only-button {
+                margin-bottom: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <div class="navbar-left">
+                <div class="logo">clouder</div>
+                <div class="breadcrumb">
+                    <a class="breadcrumb-item" href="/">Dashboard</a>
+                    <span class="breadcrumb-separator">/</span>
+                    <a class="breadcrumb-item" href="/dashboard/{{GUILD_ID}}">{{GUILD_NAME}}</a>
+                    <span class="breadcrumb-separator">/</span>
+                    <span class="breadcrumb-item current">Welcome & Goodbye Messages</span>
+                </div>
+            </div>
+            <div class="navbar-right">
+                <a class="add-server-btn" href="{{INVITE_URL}}" target="_blank">Add to Server</a>
+                <a class="logout-btn" href="/user/settings" style="margin-right: 10px;">Settings</a>
+                <a class="logout-btn" href="/auth/logout">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="header guild-header">
+            <img alt="{{GUILD_NAME}}" class="guild-icon" src="{{GUILD_ICON}}">
+            <div class="header-info">
+                <h1>Welcome & Goodbye Messages</h1>
+                <p>Configure automated messages when members join or leave <span class="guild-name-highlight">{{GUILD_NAME}}</span></p>
+            </div>
+        </div>
+
+        <div class="config-grid">
+            <!-- 1. Placeholders Card -->
+            <div class="config-card">
+                <h2>📋 Available Placeholders</h2>
+                <p style="margin-bottom: 20px; color: #e0e0e0;">Use these placeholders in your messages to add dynamic content:</p>
+
+                <div class="placeholder-grid">
+                    <div class="placeholder-item" onclick="copyPlaceholder('{user}', this)">
+                        <div class="placeholder-code">{user}</div>
+                        <div class="placeholder-desc">Mentions the user (@username)</div>
+                    </div>
+
+                    <div class="placeholder-item" onclick="copyPlaceholder('{username}', this)">
+                        <div class="placeholder-code">{username}</div>
+                        <div class="placeholder-desc">Plain username without mention formatting</div>
+                    </div>
+
+                    <div class="placeholder-item" onclick="copyPlaceholder('{server}', this)">
+                        <div class="placeholder-code">{server}</div>
+                        <div class="placeholder-desc">Current server/guild name</div>
+                    </div>
+
+                    <div class="placeholder-item" onclick="copyPlaceholder('{member_count}', this)">
+                        <div class="placeholder-code">{member_count}</div>
+                        <div class="placeholder-desc">Current total member count</div>
+                    </div>
+
+                    <div class="placeholder-item" onclick="copyPlaceholder('{user_id}', this)">
+                        <div class="placeholder-code">{user_id}</div>
+                        <div class="placeholder-desc">User's Discord snowflake ID</div>
+                    </div>
+
+                    <div class="placeholder-item" onclick="copyPlaceholder('{join_date}', this)">
+                        <div class="placeholder-code">{join_date}</div>
+                        <div class="placeholder-desc">Account creation date</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. Welcome Messages Toggle -->
+            <div class="config-card">
+                <div class="toggle-section">
+                    <h2>👋 Welcome Messages</h2>
+                    <label class="toggle-switch">
+                        <input id="welcomeEnabled" onchange="toggleWelcomeConfig()" type="checkbox" {{WELCOME_ENABLED}}>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <p style="margin: 0; color: #e0e0e0;">Send a message when new members join the server</p>
+            </div>
+
+            <!-- 3. Welcome Messages Configuration -->
+            <div class="config-card" id="welcomeConfigCard" style="display: {{WELCOME_CONFIG_DISPLAY}};">
+                <h2>⚙️ Welcome Message Configuration</h2>
+
+                <div class="form-group">
+                    <label for="welcomeChannel">Channel:</label>
+                    <select id="welcomeChannel" name="welcome_channel_id" required>
+                        <option value="">Select a channel...</option>
+                        {{CHANNELS_HTML}}
+                    </select>
+                </div>
+
+                <div class="message-type-selector">
+                    <div class="type-option {{WELCOME_MESSAGE_TYPE_EMBED_CLASS}}" onclick="selectWelcomeMessageType('embed')">
+                        <input name="welcome_message_type" type="radio" value="embed" {{WELCOME_MESSAGE_TYPE_EMBED_CHECKED}}>
+                        <strong>Rich Embed</strong>
+                        <div style="font-size: 0.9em; margin-top: 5px; opacity: 0.8;">Formatted message with colors and fields</div>
+                    </div>
+                    <div class="type-option {{WELCOME_MESSAGE_TYPE_TEXT_CLASS}}" onclick="selectWelcomeMessageType('text')">
+                        <input name="welcome_message_type" type="radio" value="text" {{WELCOME_MESSAGE_TYPE_TEXT_CHECKED}}>
+                        <strong>Simple Text</strong>
+                        <div style="font-size: 0.9em; margin-top: 5px; opacity: 0.8;">Plain text message</div>
+                    </div>
+                </div>
+
+                <div class="text-config {{WELCOME_TEXT_HIDE}}" id="welcomeTextConfig">
+                    <div class="form-group">
+                        <label for="welcomeContent">Message Content:</label>
+                        <textarea id="welcomeContent" name="welcome_message_content" placeholder="Welcome {user} to {server}! We now have {member_count} members! 🎉" rows="4">{{WELCOME_MESSAGE_CONTENT}}</textarea>
+                    </div>
+                </div>
+
+                <div class="embed-config {{WELCOME_EMBED_SHOW}}" id="welcomeEmbedConfig">
+                    <div class="form-group">
+                        <label for="welcomeEmbedTitle">Embed Title:</label>
+                        <input id="welcomeEmbedTitle" name="welcome_embed_title" placeholder="Welcome to {server}!" type="text" value="{{WELCOME_EMBED_TITLE}}">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="welcomeEmbedDescription">Embed Description:</label>
+                        <textarea id="welcomeEmbedDescription" name="welcome_embed_description" placeholder="Hello {user}! Welcome to our server. We now have {member_count} members!" rows="3">{{WELCOME_EMBED_DESCRIPTION}}</textarea>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="welcomeEmbedColor">Embed Color:</label>
+                            <div class="color-input">
+                                <input class="color-picker" id="welcomeEmbedColor" name="welcome_embed_color" type="color" value="{{WELCOME_EMBED_COLOR}}">
+                                <input id="welcomeEmbedColorHex" placeholder="#5865F2" type="text" value="{{WELCOME_EMBED_COLOR}}">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="welcomeEmbedFooter">Footer Text:</label>
+                            <input id="welcomeEmbedFooter" name="welcome_embed_footer" placeholder="Member #{member_count}" type="text" value="{{WELCOME_EMBED_FOOTER}}">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="welcomeEmbedThumbnail">Thumbnail URL:</label>
+                            <input id="welcomeEmbedThumbnail" name="welcome_embed_thumbnail" placeholder="https://example.com/image.png" type="url" value="{{WELCOME_EMBED_THUMBNAIL}}">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="welcomeEmbedImage">Image URL:</label>
+                            <input id="welcomeEmbedImage" name="welcome_embed_image" placeholder="https://example.com/banner.png" type="url" value="{{WELCOME_EMBED_IMAGE}}">
+                        </div>
+                    </div>
+
+                    <div class="checkbox-group" id="welcomeTimestampGroup" onclick="toggleTimestamp('welcome')">
+                        <input id="welcomeEmbedTimestamp" name="welcome_embed_timestamp" type="checkbox" {{WELCOME_EMBED_TIMESTAMP}}>
+                        <label for="welcomeEmbedTimestamp">Include timestamp</label>
+                    </div>
+                </div>
+
+                <div class="button-row">
+                    <button class="save-only-button" id="saveWelcomeBtn" onclick="saveConfigurationOnly()" type="button">Save</button>
+                    <button class="test-button" id="testWelcomeBtn" onclick="sendTestWelcome()" type="button">Send Test Welcome</button>
+                </div>
+            </div>
+
+            <!-- 4. Goodbye Messages Toggle -->
+            <div class="config-card">
+                <div class="toggle-section">
+                    <h2>👋 Goodbye Messages</h2>
+                    <label class="toggle-switch">
+                        <input id="goodbyeEnabled" onchange="toggleGoodbyeConfig()" type="checkbox" {{GOODBYE_ENABLED}}>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <p style="margin: 0; color: #e0e0e0;">Send a message when members leave the server</p>
+            </div>
+
+            <!-- 5. Goodbye Messages Configuration -->
+            <div class="config-card" id="goodbyeConfigCard" style="display: {{GOODBYE_CONFIG_DISPLAY}};">
+                <h2>⚙️ Goodbye Message Configuration</h2>
+
+                <div class="form-group">
+                    <label for="goodbyeChannel">Channel:</label>
+                    <select id="goodbyeChannel" name="goodbye_channel_id" required>
+                        <option value="">Select a channel...</option>
+                        {{CHANNELS_HTML}}
+                    </select>
+                </div>
+
+                <div class="message-type-selector">
+                    <div class="type-option {{GOODBYE_MESSAGE_TYPE_EMBED_CLASS}}" onclick="selectGoodbyeMessageType('embed')">
+                        <input name="goodbye_message_type" type="radio" value="embed" {{GOODBYE_MESSAGE_TYPE_EMBED_CHECKED}}>
+                        <strong>Rich Embed</strong>
+                        <div style="font-size: 0.9em; margin-top: 5px; opacity: 0.8;">Formatted message with colors and fields</div>
+                    </div>
+                    <div class="type-option {{GOODBYE_MESSAGE_TYPE_TEXT_CLASS}}" onclick="selectGoodbyeMessageType('text')">
+                        <input name="goodbye_message_type" type="radio" value="text" {{GOODBYE_MESSAGE_TYPE_TEXT_CHECKED}}>
+                        <strong>Simple Text</strong>
+                        <div style="font-size: 0.9em; margin-top: 5px; opacity: 0.8;">Plain text message</div>
+                    </div>
+                </div>
+
+                <div class="text-config {{GOODBYE_TEXT_HIDE}}" id="goodbyeTextConfig">
+                    <div class="form-group">
+                        <label for="goodbyeContent">Message Content:</label>
+                        <textarea id="goodbyeContent" name="goodbye_message_content" placeholder="Goodbye {username}! We'll miss you. We now have {member_count} members." rows="4">{{GOODBYE_MESSAGE_CONTENT}}</textarea>
+                    </div>
+                </div>
+
+                <div class="embed-config {{GOODBYE_EMBED_SHOW}}" id="goodbyeEmbedConfig">
+                    <div class="form-group">
+                        <label for="goodbyeEmbedTitle">Embed Title:</label>
+                        <input id="goodbyeEmbedTitle" name="goodbye_embed_title" placeholder="Farewell!" type="text" value="{{GOODBYE_EMBED_TITLE}}">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="goodbyeEmbedDescription">Embed Description:</label>
+                        <textarea id="goodbyeEmbedDescription" name="goodbye_embed_description" placeholder="Goodbye {username}! Thanks for being part of {server}." rows="3">{{GOODBYE_EMBED_DESCRIPTION}}</textarea>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="goodbyeEmbedColor">Embed Color:</label>
+                            <div class="color-input">
+                                <input class="color-picker" id="goodbyeEmbedColor" name="goodbye_embed_color" type="color" value="{{GOODBYE_EMBED_COLOR}}">
+                                <input id="goodbyeEmbedColorHex" placeholder="#5865F2" type="text" value="{{GOODBYE_EMBED_COLOR}}">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="goodbyeEmbedFooter">Footer Text:</label>
+                            <input id="goodbyeEmbedFooter" name="goodbye_embed_footer" placeholder="Members left: {member_count}" type="text" value="{{GOODBYE_EMBED_FOOTER}}">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="goodbyeEmbedThumbnail">Thumbnail URL:</label>
+                            <input id="goodbyeEmbedThumbnail" name="goodbye_embed_thumbnail" placeholder="https://example.com/image.png" type="url" value="{{GOODBYE_EMBED_THUMBNAIL}}">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="goodbyeEmbedImage">Image URL:</label>
+                            <input id="goodbyeEmbedImage" name="goodbye_embed_image" placeholder="https://example.com/banner.png" type="url" value="{{GOODBYE_EMBED_IMAGE}}">
+                        </div>
+                    </div>
+
+                    <div class="checkbox-group" id="goodbyeTimestampGroup" onclick="toggleTimestamp('goodbye')">
+                        <input id="goodbyeEmbedTimestamp" name="goodbye_embed_timestamp" type="checkbox" {{GOODBYE_EMBED_TIMESTAMP}}>
+                        <label for="goodbyeEmbedTimestamp">Include timestamp</label>
+                    </div>
+                </div>
+
+                <div class="button-row">
+                    <button class="save-only-button" id="saveGoodbyeBtn" onclick="saveConfigurationOnly()" type="button">Save</button>
+                    <button class="test-button" id="testGoodbyeBtn" onclick="sendTestGoodbye()" type="button">Send Test Goodbye</button>
+                </div>
+            </div>
+        </div>
+
+        <button class="save-button" onclick="saveConfiguration()" type="button">Save Configuration</button>
+    </div>
+
+    <script>
+        const guildId = '{{GUILD_ID}}';
+
+        // Initialize channel selectors with current values
+        document.addEventListener('DOMContentLoaded', function() {
+            const welcomeChannelSelect = document.getElementById('welcomeChannel');
+            const goodbyeChannelSelect = document.getElementById('goodbyeChannel');
+
+            // Set selected channels from template data
+            const options = welcomeChannelSelect.querySelectorAll('option');
+            options.forEach(option => {
+                if (option.dataset.welcomeSelected === 'true') {
+                    welcomeChannelSelect.value = option.value;
+                }
+                if (option.dataset.goodbyeSelected === 'true') {
+                    goodbyeChannelSelect.value = option.value;
+                }
+            });
+
+            // Sync color pickers
+            syncColorPicker('welcome');
+            syncColorPicker('goodbye');
+
+            // Initialize timestamp toggle states
+            updateTimestampToggleState('welcome');
+            updateTimestampToggleState('goodbye');
+        });
+
+        function toggleWelcomeConfig() {
+            const enabled = document.getElementById('welcomeEnabled').checked;
+            const configCard = document.getElementById('welcomeConfigCard');
+            configCard.style.display = enabled ? 'block' : 'none';
+        }
+
+        function toggleGoodbyeConfig() {
+            const enabled = document.getElementById('goodbyeEnabled').checked;
+            const configCard = document.getElementById('goodbyeConfigCard');
+            configCard.style.display = enabled ? 'block' : 'none';
+        }
+
+        function selectWelcomeMessageType(type) {
+            const embedOption = document.querySelector('.message-type-selector .type-option:nth-child(1)');
+            const textOption = document.querySelector('.message-type-selector .type-option:nth-child(2)');
+            const embedConfig = document.getElementById('welcomeEmbedConfig');
+            const textConfig = document.getElementById('welcomeTextConfig');
+            const radio = document.querySelector(`input[name="welcome_message_type"][value="${type}"]`);
+
+            // Update radio button
+            radio.checked = true;
+
+            // Update visual selection
+            embedOption.classList.toggle('selected', type === 'embed');
+            textOption.classList.toggle('selected', type === 'text');
+
+            // Show/hide configs
+            embedConfig.classList.toggle('show', type === 'embed');
+            textConfig.classList.toggle('show', type === 'text');
+        }
+
+        function selectGoodbyeMessageType(type) {
+            const embedOption = document.querySelectorAll('.message-type-selector .type-option')[2];
+            const textOption = document.querySelectorAll('.message-type-selector .type-option')[3];
+            const embedConfig = document.getElementById('goodbyeEmbedConfig');
+            const textConfig = document.getElementById('goodbyeTextConfig');
+            const radio = document.querySelector(`input[name="goodbye_message_type"][value="${type}"]`);
+
+            // Update radio button
+            radio.checked = true;
+
+            // Update visual selection
+            embedOption.classList.toggle('selected', type === 'embed');
+            textOption.classList.toggle('selected', type === 'text');
+
+            // Show/hide configs
+            embedConfig.classList.toggle('show', type === 'embed');
+            textConfig.classList.toggle('show', type === 'text');
+        }
+
+        function syncColorPicker(type) {
+            const colorPicker = document.getElementById(`${type}EmbedColor`);
+            const hexInput = document.getElementById(`${type}EmbedColorHex`);
+
+            // Update color picker style with current value
+            colorPicker.style.backgroundColor = hexInput.value;
+
+            colorPicker.addEventListener('input', function() {
+                hexInput.value = this.value;
+                this.style.backgroundColor = this.value;
+            });
+
+            hexInput.addEventListener('input', function() {
+                if (this.value.match(/^#[0-9A-Fa-f]{6}$/)) {
+                    colorPicker.value = this.value;
+                    colorPicker.style.backgroundColor = this.value;
+                }
+            });
+        }
+
+        function toggleTimestamp(type) {
+            const checkbox = document.getElementById(`${type}EmbedTimestamp`);
+            checkbox.checked = !checkbox.checked;
+            updateTimestampToggleState(type);
+        }
+
+        function updateTimestampToggleState(type) {
+            const checkbox = document.getElementById(`${type}EmbedTimestamp`);
+            const group = document.getElementById(`${type}TimestampGroup`);
+
+            if (checkbox.checked) {
+                group.classList.add('checked');
+            } else {
+                group.classList.remove('checked');
+            }
+        }
+
+        async function sendTestWelcome() {
+            const btn = document.getElementById('testWelcomeBtn');
+            btn.disabled = true;
+            btn.textContent = 'Sending...';
+
+            try {
+                const response = await fetch(`/api/welcome-goodbye/${guildId}/test/welcome`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    alert('Test welcome message sent successfully!');
+                } else {
+                    alert(`Error: ${result.error}`);
+                }
+            } catch (error) {
+                alert('Failed to send test message. Please try again.');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Send Test Welcome';
+            }
+        }
+
+        async function sendTestGoodbye() {
+            const btn = document.getElementById('testGoodbyeBtn');
+            btn.disabled = true;
+            btn.textContent = 'Sending...';
+
+            try {
+                const response = await fetch(`/api/welcome-goodbye/${guildId}/test/goodbye`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    alert('Test goodbye message sent successfully!');
+                } else {
+                    alert(`Error: ${result.error}`);
+                }
+            } catch (error) {
+                alert('Failed to send test message. Please try again.');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Send Test Goodbye';
+            }
+        }
+
+        async function saveConfigurationOnly() {
+            const saveBtn = document.querySelector('.save-button');
+            const originalText = saveBtn.textContent;
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'Saving...';
+
+            try {
+                const formData = {
+                    welcome_enabled: document.getElementById('welcomeEnabled').checked,
+                    goodbye_enabled: document.getElementById('goodbyeEnabled').checked,
+                    welcome_channel_id: document.getElementById('welcomeChannel').value || null,
+                    goodbye_channel_id: document.getElementById('goodbyeChannel').value || null,
+                    welcome_message_type: document.querySelector('input[name="welcome_message_type"]:checked').value,
+                    goodbye_message_type: document.querySelector('input[name="goodbye_message_type"]:checked').value,
+                    welcome_message_content: document.getElementById('welcomeContent').value || null,
+                    goodbye_message_content: document.getElementById('goodbyeContent').value || null,
+                    welcome_embed_title: document.getElementById('welcomeEmbedTitle').value || null,
+                    welcome_embed_description: document.getElementById('welcomeEmbedDescription').value || null,
+                    welcome_embed_color: document.getElementById('welcomeEmbedColorHex').value || null,
+                    welcome_embed_footer: document.getElementById('welcomeEmbedFooter').value || null,
+                    welcome_embed_thumbnail: document.getElementById('welcomeEmbedThumbnail').value || null,
+                    welcome_embed_image: document.getElementById('welcomeEmbedImage').value || null,
+                    welcome_embed_timestamp: document.getElementById('welcomeEmbedTimestamp').checked,
+                    goodbye_embed_title: document.getElementById('goodbyeEmbedTitle').value || null,
+                    goodbye_embed_description: document.getElementById('goodbyeEmbedDescription').value || null,
+                    goodbye_embed_color: document.getElementById('goodbyeEmbedColorHex').value || null,
+                    goodbye_embed_footer: document.getElementById('goodbyeEmbedFooter').value || null,
+                    goodbye_embed_thumbnail: document.getElementById('goodbyeEmbedThumbnail').value || null,
+                    goodbye_embed_image: document.getElementById('goodbyeEmbedImage').value || null,
+                    goodbye_embed_timestamp: document.getElementById('goodbyeEmbedTimestamp').checked
+                };
+
+                const response = await fetch(`/api/welcome-goodbye/${guildId}/config`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    alert('Configuration saved successfully!');
+                } else {
+                    alert(`Error: ${result.error}`);
+                }
+            } catch (error) {
+                alert('Failed to save configuration. Please try again.');
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.textContent = originalText;
+            }
+        }
+
+        async function saveConfiguration() {
+            const saveBtn = document.querySelector('.save-button');
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'Saving...';
+
+            try {
+                const formData = {
+                    welcome_enabled: document.getElementById('welcomeEnabled').checked,
+                    goodbye_enabled: document.getElementById('goodbyeEnabled').checked,
+                    welcome_channel_id: document.getElementById('welcomeChannel').value || null,
+                    goodbye_channel_id: document.getElementById('goodbyeChannel').value || null,
+                    welcome_message_type: document.querySelector('input[name="welcome_message_type"]:checked').value,
+                    goodbye_message_type: document.querySelector('input[name="goodbye_message_type"]:checked').value,
+                    welcome_message_content: document.getElementById('welcomeContent').value || null,
+                    goodbye_message_content: document.getElementById('goodbyeContent').value || null,
+                    welcome_embed_title: document.getElementById('welcomeEmbedTitle').value || null,
+                    welcome_embed_description: document.getElementById('welcomeEmbedDescription').value || null,
+                    welcome_embed_color: document.getElementById('welcomeEmbedColorHex').value || null,
+                    welcome_embed_footer: document.getElementById('welcomeEmbedFooter').value || null,
+                    welcome_embed_thumbnail: document.getElementById('welcomeEmbedThumbnail').value || null,
+                    welcome_embed_image: document.getElementById('welcomeEmbedImage').value || null,
+                    welcome_embed_timestamp: document.getElementById('welcomeEmbedTimestamp').checked,
+                    goodbye_embed_title: document.getElementById('goodbyeEmbedTitle').value || null,
+                    goodbye_embed_description: document.getElementById('goodbyeEmbedDescription').value || null,
+                    goodbye_embed_color: document.getElementById('goodbyeEmbedColorHex').value || null,
+                    goodbye_embed_footer: document.getElementById('goodbyeEmbedFooter').value || null,
+                    goodbye_embed_thumbnail: document.getElementById('goodbyeEmbedThumbnail').value || null,
+                    goodbye_embed_image: document.getElementById('goodbyeEmbedImage').value || null,
+                    goodbye_embed_timestamp: document.getElementById('goodbyeEmbedTimestamp').checked
+                };
+
+                const response = await fetch(`/api/welcome-goodbye/${guildId}/config`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // Redirect back to guild dashboard on success
+                    window.location.href = `/dashboard/${guildId}`;
+                } else {
+                    alert(`Error: ${result.error}`);
+                }
+            } catch (error) {
+                alert('Failed to save configuration. Please try again.');
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.textContent = 'Save Configuration';
+            }
+        }
+
+        function copyPlaceholder(placeholder, element) {
+            navigator.clipboard.writeText(placeholder).then(() => {
+                // Add the "copied" class for visual feedback
+                element.classList.add('copied');
+
+                // Remove the class after animation
+                setTimeout(() => {
+                    element.classList.remove('copied');
+                }, 600);
+            }).catch(err => {
+                console.error('Failed to copy: ', err);
+                alert('Failed to copy placeholder');
+            });
+        }
+    </script>
+</body>
+</html>

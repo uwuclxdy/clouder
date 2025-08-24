@@ -3,6 +3,7 @@ use sqlx::{migrate::MigrateDatabase, sqlite::SqlitePool, Sqlite};
 use std::path::Path;
 
 pub mod selfroles;
+pub mod welcome_goodbye;
 
 pub async fn initialize_database(db_url: &str) -> Result<SqlitePool> {
     let data_dir = "data";
@@ -29,6 +30,7 @@ async fn run_migrations(pool: &SqlitePool) -> Result<()> {
     let migrations = [
         include_str!("../../migrations/001_initial.sql"),
         include_str!("../../migrations/002_reminders.sql"),
+        include_str!("../../migrations/003_welcome_goodbye.sql"),
     ];
 
     for (index, migration_content) in migrations.iter().enumerate() {

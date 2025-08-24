@@ -14,6 +14,7 @@ use crate::commands::purge::purge;
 use crate::commands::selfroles::selfroles;
 use crate::config::{AppState, Config};
 use crate::database::selfroles::SelfRoleCooldown;
+use crate::events::event_handler;
 use anyhow::Result;
 use poise::serenity_prelude as serenity;
 use std::sync::Arc;
@@ -104,36 +105,6 @@ async fn main() -> Result<()> {
         error!("Discord client error: {}", e);
     }
 
-    Ok(())
-}
-
-async fn event_handler(
-    ctx: &serenity::Context,
-    event: &serenity::FullEvent,
-    _framework: poise::FrameworkContext<'_, Data, Error>,
-    data: &Data,
-) -> Result<(), Error> {
-    match event {
-        serenity::FullEvent::Ready { data_about_bot, .. } => {
-            info!("Bot {} is ready!", data_about_bot.user.name);
-        }
-        serenity::FullEvent::InteractionCreate { interaction } => {
-            events::handle_interaction_create(ctx, interaction, data).await;
-        }
-        serenity::FullEvent::MessageDelete { channel_id, deleted_message_id, guild_id } => {
-            events::handle_message_delete(ctx, channel_id, deleted_message_id, guild_id, data).await;
-        }
-        serenity::FullEvent::Message { new_message } => {
-            events::on_message(ctx, new_message, data).await;
-        }
-        serenity::FullEvent::GuildMemberAddition { new_member } => {
-            events::member_events::member_addition(ctx, &new_member.guild_id, new_member).await;
-        }
-        serenity::FullEvent::GuildMemberRemoval { guild_id, user, member_data_if_available } => {
-            events::member_events::member_removal(ctx, guild_id, user, member_data_if_available).await;
-        }
-        _ => {}
-    }
     Ok(())
 }
 

@@ -8,20 +8,20 @@ class SelfRoleManager {
         this.roles = [];
         this.isEditMode = configId !== null;
         this.currentEmojiRoleId = null;
-        
+
         this.initializeEventListeners();
     }
 
     initializeEventListeners() {
         const titleInput = document.getElementById('title');
         const bodyInput = document.getElementById('body');
-        
+
         if (titleInput) titleInput.addEventListener('input', debounce(() => this.updatePreview(), 300));
         if (bodyInput) bodyInput.addEventListener('input', debounce(() => this.updatePreview(), 300));
-        
+
         const channelSelect = document.getElementById('channel');
         if (channelSelect) channelSelect.addEventListener('change', () => this.updateDeployButton());
-        
+
         const selectionTypeRadios = document.querySelectorAll('input[name="selection_type"]');
         selectionTypeRadios.forEach(radio => {
             radio.addEventListener('change', () => {
@@ -29,7 +29,7 @@ class SelfRoleManager {
                 this.updateRadioGroupStyles();
             });
         });
-        
+
         this.updateRadioGroupStyles();
 
         const form = document.getElementById('selfRoleForm');
@@ -41,11 +41,11 @@ class SelfRoleManager {
     async init() {
         try {
             await Promise.all([this.loadChannels(), this.loadRoles()]);
-            
+
             if (this.isEditMode) {
                 await this.loadExistingConfig();
             }
-            
+
             this.updateDeployButton();
         } catch (error) {
             console.error('Failed to initialize:', error);
@@ -60,7 +60,7 @@ class SelfRoleManager {
 
             const channelSelect = document.getElementById('channel');
             channelSelect.innerHTML = '<option value="">Select a channel...</option>';
-            
+
             this.channels.forEach(channel => {
                 channelSelect.innerHTML += `<option value="${channel.id}">#${channel.name}</option>`;
             });
@@ -143,7 +143,7 @@ class SelfRoleManager {
     createRoleItem(role) {
         const roleItem = document.createElement('div');
         roleItem.className = 'role-item';
-        
+
         roleItem.innerHTML = `
             <input type="checkbox" class="role-checkbox" data-role-id="${role.id}" onchange="selfRoleManager.updatePreview(); selfRoleManager.updateRoleItemState(this)" onclick="event.stopPropagation()">
             <div class="emoji-button" data-role-id="${role.id}">
@@ -152,26 +152,26 @@ class SelfRoleManager {
             <div class="role-name">${role.name}</div>
             <div class="role-color-indicator" style="background-color: #${role.color.toString(16).padStart(6, '0')}"></div>
         `;
-        
+
         // Set up emoji button click handler
         const emojiButton = roleItem.querySelector('.emoji-button');
         emojiButton.addEventListener('click', (e) => {
             e.stopPropagation();
             this.openEmojiPicker(role.id);
         });
-        
+
         // Clickable role item
         roleItem.addEventListener('click', (e) => {
             if (!e.target.closest('.emoji-button')) {
                 this.addRippleEffect(roleItem);
-                
+
                 const checkbox = roleItem.querySelector('.role-checkbox');
                 checkbox.checked = !checkbox.checked;
                 this.updateRoleItemState(checkbox);
                 this.updatePreview();
             }
         });
-        
+
         return roleItem;
     }
 
@@ -193,22 +193,22 @@ class SelfRoleManager {
 
     openEmojiPicker(roleId) {
         this.currentEmojiRoleId = roleId;
-        
+
         // Create modal if it doesn't exist
         if (!document.getElementById('emojiPickerModal')) {
             this.createEmojiPickerModal();
         }
-        
+
         const modal = document.getElementById('emojiPickerModal');
         modal.classList.add('show');
-        
+
         // Close on backdrop click
         modal.addEventListener('click', (e) => {
             if (e.target === modal) {
                 this.closeEmojiPicker();
             }
         });
-        
+
         // Close on escape key
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
@@ -232,9 +232,9 @@ class SelfRoleManager {
                 <emoji-picker></emoji-picker>
             </div>
         `;
-        
+
         document.body.appendChild(modal);
-        
+
         // Set up emoji selection
         setTimeout(() => {
             const picker = modal.querySelector('emoji-picker');
@@ -348,8 +348,8 @@ class SelfRoleManager {
 
         const deployBtn = document.getElementById('deployBtn');
         const originalText = deployBtn.textContent;
-        const actionText = this.isEditMode ? 'Updating...' : 'Deploying...';
-        
+        const actionText = this.isEditMode ? 'Updating...' : 'Creating...';
+
         setButtonLoading(deployBtn, true, actionText);
 
         try {
@@ -371,10 +371,10 @@ class SelfRoleManager {
                 roles: selectedRoles
             };
 
-            const url = this.isEditMode 
+            const url = this.isEditMode
                 ? `/api/selfroles/${this.guildId}/${this.configId}`
                 : `/api/selfroles/${this.guildId}`;
-            
+
             const method = this.isEditMode ? 'PUT' : 'POST';
 
             const { data } = await apiRequest(url, { method, body: JSON.stringify(payload) });
@@ -484,7 +484,7 @@ async function deleteMessage(event, configId, title, guildId) {
     event.stopPropagation();
 
     const confirmed = confirm(`⚠️ Delete "${title}"?\n\nThis will permanently remove:\n• The self-role message from Discord\n• All role assignment data\n• Cannot be undone\n\nAre you sure?`);
-    
+
     if (!confirmed) {
         return;
     }
@@ -506,7 +506,7 @@ async function deleteMessage(event, configId, title, guildId) {
     } catch (error) {
         console.error('Delete failed:', error);
         showMessage(error.message || 'Failed to delete self-role message. Please try again.', 'error');
-        
+
         // Reset button state on error
         deleteBtn.textContent = originalText;
         deleteBtn.disabled = false;

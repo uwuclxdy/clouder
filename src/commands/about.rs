@@ -334,11 +334,7 @@ pub async fn user(
             .collect();
 
         if !roles.is_empty() {
-            let roles_text = if roles.len() > 10 {
-                format!("{} and {} more...", roles[..10].join(" "), roles.len() - 10)
-            } else {
-                roles.join(" ")
-            };
+            let roles_text = roles.join(" ");
             embed = embed.field(&format!("🎭 roles: `{}`", roles.len()), roles_text, false);
         }
 

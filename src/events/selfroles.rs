@@ -292,7 +292,7 @@ pub async fn handle_selfrole_interaction(ctx: &serenity::Context, interaction: &
             serenity::RoleId::new(role_id_u64),
             Some("Self-role removal"),
         ).await {
-            Ok(_) => ("removed", "➖", format!("removed '{}'", target_role.mention())),
+            Ok(_) => ("removed", "➖", format!("removed {}", target_role.mention())),
             Err(e) => {
                 tracing::error!("Failed to remove role {} from user {}: {}", role_id_u64, interaction.user.id, e);
                 ("error", "❌", format!("failed to remove the role '{}'. i might not have permission or the role might not exist anymore.", target_role.name))
@@ -306,7 +306,7 @@ pub async fn handle_selfrole_interaction(ctx: &serenity::Context, interaction: &
             serenity::RoleId::new(role_id_u64),
             Some("Self-role assignment"),
         ).await {
-            Ok(_) => ("added", "✅", format!("added '{}'", target_role.mention())),
+            Ok(_) => ("added", "✅", format!("added {}", target_role.mention())),
             Err(e) => {
                 tracing::error!("Failed to add role {} to user {}: {}", role_id_u64, interaction.user.id, e);
                 ("error", "❌", format!("failed to assign the role '{}'. i might not have permission, or the role might be higher than my role in the hierarchy.", target_role.name))

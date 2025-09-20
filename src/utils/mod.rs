@@ -1,6 +1,7 @@
 use crate::config::AppState;
 use serenity::all::Color;
 
+pub mod content_detection;
 pub mod welcome_goodbye;
 
 /// Get the default embed color from configuration

@@ -1,15 +1,10 @@
-use axum::{
-    extract::Request,
-    http::StatusCode,
-    middleware::Next,
-    response::Response,
-};
+use crate::web::models::SessionUser;
+use axum::{extract::Request, http::StatusCode, middleware::Next, response::Response};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use uuid::Uuid;
-use crate::web::models::SessionUser;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Session {
@@ -40,7 +35,10 @@ impl SessionStore {
             expires_at: chrono::Utc::now() + chrono::Duration::hours(24),
         };
 
-        self.sessions.write().await.insert(session_id.clone(), session);
+        self.sessions
+            .write()
+            .await
+            .insert(session_id.clone(), session);
         session_id
     }
 
@@ -49,7 +47,10 @@ impl SessionStore {
     }
 
     pub async fn update_session(&self, session_id: &str, session: Session) {
-        self.sessions.write().await.insert(session_id.to_string(), session);
+        self.sessions
+            .write()
+            .await
+            .insert(session_id.to_string(), session);
     }
 
     pub async fn delete_session(&self, session_id: &str) {
@@ -58,7 +59,10 @@ impl SessionStore {
 
     pub async fn cleanup_expired(&self) {
         let now = chrono::Utc::now();
-        self.sessions.write().await.retain(|_, session| session.expires_at > now);
+        self.sessions
+            .write()
+            .await
+            .retain(|_, session| session.expires_at > now);
     }
 }
 
@@ -74,10 +78,7 @@ lazy_static::lazy_static! {
 
 pub type SessionData = (Session, Option<SessionUser>);
 
-pub async fn session_middleware(
-    request: Request,
-    next: Next,
-) -> Result<Response, StatusCode> {
+pub async fn session_middleware(request: Request, next: Next) -> Result<Response, StatusCode> {
     tokio::spawn(async {
         GLOBAL_SESSION_STORE.cleanup_expired().await;
     });

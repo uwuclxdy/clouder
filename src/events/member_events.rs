@@ -1,5 +1,7 @@
 use crate::config::AppState;
-use crate::database::welcome_goodbye::{get_member_placeholders, replace_placeholders, WelcomeGoodbyeConfig};
+use crate::database::welcome_goodbye::{
+    get_member_placeholders, replace_placeholders, WelcomeGoodbyeConfig,
+};
 use serenity::{
     builder::{CreateEmbed, CreateMessage},
     client::Context,
@@ -49,7 +51,10 @@ pub async fn member_addition(ctx: &Context, guild_id: &GuildId, new_member: &Mem
     let channel_id = match config.welcome_channel_id.as_ref().unwrap().parse::<u64>() {
         Ok(id) => ChannelId::new(id),
         Err(_) => {
-            tracing::error!("Invalid welcome channel ID: {}", config.welcome_channel_id.unwrap());
+            tracing::error!(
+                "Invalid welcome channel ID: {}",
+                config.welcome_channel_id.unwrap()
+            );
             return;
         }
     };
@@ -62,14 +67,24 @@ pub async fn member_addition(ctx: &Context, guild_id: &GuildId, new_member: &Mem
         }
     };
 
-    let placeholders = get_member_placeholders(&new_member.user, &guild_name, member_count, Some(new_member));
+    let placeholders = get_member_placeholders(
+        &new_member.user,
+        &guild_name,
+        member_count,
+        Some(new_member),
+    );
 
     if let Err(e) = send_welcome_message(&ctx, &channel_id, &config, &placeholders, &data).await {
         tracing::error!("Failed to send welcome message: {}", e);
     }
 }
 
-pub async fn member_removal(ctx: &Context, guild_id: &GuildId, user: &User, member_data_if_available: &Option<Member>) {
+pub async fn member_removal(
+    ctx: &Context,
+    guild_id: &GuildId,
+    user: &User,
+    member_data_if_available: &Option<Member>,
+) {
     let data = ctx.data.read().await;
     let pool = match data.get::<Database>() {
         Some(pool) => pool,
@@ -95,7 +110,10 @@ pub async fn member_removal(ctx: &Context, guild_id: &GuildId, user: &User, memb
     let channel_id = match config.goodbye_channel_id.as_ref().unwrap().parse::<u64>() {
         Ok(id) => ChannelId::new(id),
         Err(_) => {
-            tracing::error!("Invalid goodbye channel ID: {}", config.goodbye_channel_id.unwrap());
+            tracing::error!(
+                "Invalid goodbye channel ID: {}",
+                config.goodbye_channel_id.unwrap()
+            );
             return;
         }
     };
@@ -108,7 +126,12 @@ pub async fn member_removal(ctx: &Context, guild_id: &GuildId, user: &User, memb
         }
     };
 
-    let placeholders = get_member_placeholders(user, &guild_name, member_count, member_data_if_available.as_ref());
+    let placeholders = get_member_placeholders(
+        user,
+        &guild_name,
+        member_count,
+        member_data_if_available.as_ref(),
+    );
 
     if let Err(e) = send_goodbye_message(&ctx, &channel_id, &config, &placeholders, &data).await {
         tracing::error!("Failed to send goodbye message: {}", e);
@@ -157,7 +180,8 @@ async fn send_welcome_message(
             }
 
             // Set color
-            let color = config.welcome_embed_color
+            let color = config
+                .welcome_embed_color
                 .map(|c| c as u64)
                 .unwrap_or_else(|| {
                     data.get::<AppStateKey>()
@@ -169,7 +193,9 @@ async fn send_welcome_message(
             // Set footer if provided
             if let Some(footer) = &config.welcome_embed_footer {
                 if !footer.trim().is_empty() {
-                    embed = embed.footer(serenity::builder::CreateEmbedFooter::new(replace_placeholders(footer, placeholders)));
+                    embed = embed.footer(serenity::builder::CreateEmbedFooter::new(
+                        replace_placeholders(footer, placeholders),
+                    ));
                 }
             }
 
@@ -206,7 +232,10 @@ async fn send_welcome_message(
             }
         }
         _ => {
-            tracing::error!("Invalid welcome message type: {}", config.welcome_message_type);
+            tracing::error!(
+                "Invalid welcome message type: {}",
+                config.welcome_message_type
+            );
             return Err("Invalid message type".into());
         }
     }
@@ -256,7 +285,8 @@ async fn send_goodbye_message(
             }
 
             // Set color
-            let color = config.goodbye_embed_color
+            let color = config
+                .goodbye_embed_color
                 .map(|c| c as u64)
                 .unwrap_or_else(|| {
                     data.get::<AppStateKey>()
@@ -268,7 +298,9 @@ async fn send_goodbye_message(
             // Set footer if provided
             if let Some(footer) = &config.goodbye_embed_footer {
                 if !footer.trim().is_empty() {
-                    embed = embed.footer(serenity::builder::CreateEmbedFooter::new(replace_placeholders(footer, placeholders)));
+                    embed = embed.footer(serenity::builder::CreateEmbedFooter::new(
+                        replace_placeholders(footer, placeholders),
+                    ));
                 }
             }
 
@@ -305,7 +337,10 @@ async fn send_goodbye_message(
             }
         }
         _ => {
-            tracing::error!("Invalid goodbye message type: {}", config.goodbye_message_type);
+            tracing::error!(
+                "Invalid goodbye message type: {}",
+                config.goodbye_message_type
+            );
             return Err("Invalid message type".into());
         }
     }

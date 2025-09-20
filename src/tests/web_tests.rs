@@ -1,14 +1,11 @@
 #[cfg(test)]
 mod tests {
-
-    use axum::{
-        http::{StatusCode},
-    };
-    use sqlx::Row;
-    use crate::tests::{create_test_db, create_test_app_state};
     use crate::database::selfroles::{SelfRoleConfig, SelfRoleRole};
-    use crate::web::{get_bot_member_info};
-    use serenity::all::{Http, GuildId};
+    use crate::tests::{create_test_app_state, create_test_db};
+    use crate::web::get_bot_member_info;
+    use axum::http::StatusCode;
+    use serenity::all::{GuildId, Http};
+    use sqlx::Row;
 
     #[tokio::test]
     async fn test_web_module_exists() {
@@ -87,7 +84,9 @@ mod tests {
             "Test Title",
             "Test Body",
             "multiple",
-        ).await.unwrap();
+        )
+        .await
+        .unwrap();
 
         assert_eq!(config.title, "Test Title");
         assert_eq!(config.body, "Test Body");
@@ -95,19 +94,19 @@ mod tests {
 
         // Test updating the config
         let mut updated_config = config;
-        updated_config.update(
-            &db,
-            "Updated Title",
-            "Updated Body",
-            "radio",
-        ).await.unwrap();
+        updated_config
+            .update(&db, "Updated Title", "Updated Body", "radio")
+            .await
+            .unwrap();
 
         assert_eq!(updated_config.title, "Updated Title");
         assert_eq!(updated_config.body, "Updated Body");
         assert_eq!(updated_config.selection_type, "radio");
 
         // Test that we can get the updated config
-        let configs = SelfRoleConfig::get_by_guild(&db, "123456789").await.unwrap();
+        let configs = SelfRoleConfig::get_by_guild(&db, "123456789")
+            .await
+            .unwrap();
         assert_eq!(configs.len(), 1);
         assert_eq!(configs[0].title, "Updated Title");
     }
@@ -124,22 +123,18 @@ mod tests {
             "Test Title",
             "Test Body",
             "multiple",
-        ).await.unwrap();
+        )
+        .await
+        .unwrap();
 
         // Create test roles for this config
-        let _role1 = SelfRoleRole::create(
-            &db,
-            config.id,
-            "role1",
-            "🎮"
-        ).await.unwrap();
+        let _role1 = SelfRoleRole::create(&db, config.id, "role1", "🎮")
+            .await
+            .unwrap();
 
-        let _role2 = SelfRoleRole::create(
-            &db,
-            config.id,
-            "role2",
-            "🎨"
-        ).await.unwrap();
+        let _role2 = SelfRoleRole::create(&db, config.id, "role2", "🎨")
+            .await
+            .unwrap();
 
         // Test getting roles for config
         let roles = config.get_roles(&db).await.unwrap();
@@ -151,7 +146,9 @@ mod tests {
         assert!(role_ids.contains(&"role2"));
 
         // Test deleting roles by config ID
-        SelfRoleRole::delete_by_config_id(&db, config.id).await.unwrap();
+        SelfRoleRole::delete_by_config_id(&db, config.id)
+            .await
+            .unwrap();
 
         // Verify roles are deleted
         let roles_after_delete = config.get_roles(&db).await.unwrap();
@@ -171,24 +168,22 @@ mod tests {
             "Original Title",
             "Original Body",
             "multiple",
-        ).await.unwrap();
+        )
+        .await
+        .unwrap();
 
-        let _role1 = SelfRoleRole::create(
-            &db,
-            config.id,
-            "original_role_1",
-            "🎮",
-        ).await.unwrap();
+        let _role1 = SelfRoleRole::create(&db, config.id, "original_role_1", "🎮")
+            .await
+            .unwrap();
 
-        let _role2 = SelfRoleRole::create(
-            &db,
-            config.id,
-            "original_role_2",
-            "🎯",
-        ).await.unwrap();
+        let _role2 = SelfRoleRole::create(&db, config.id, "original_role_2", "🎯")
+            .await
+            .unwrap();
 
         // 2. Verify we can fetch the config (simulating GET /api/selfroles/{guild_id}/{config_id})
-        let fetched_configs = SelfRoleConfig::get_by_guild(&db, "123456789").await.unwrap();
+        let fetched_configs = SelfRoleConfig::get_by_guild(&db, "123456789")
+            .await
+            .unwrap();
         let fetched_config = fetched_configs.iter().find(|c| c.id == config.id).unwrap();
         assert_eq!(fetched_config.title, "Original Title");
 
@@ -197,40 +192,36 @@ mod tests {
 
         // 3. Update the config (simulating PUT /api/selfroles/{guild_id}/{config_id})
         let mut updated_config = config;
-        updated_config.update(
-            &db,
-            "Updated Title",
-            "Updated Body",
-            "radio",
-        ).await.unwrap();
+        updated_config
+            .update(&db, "Updated Title", "Updated Body", "radio")
+            .await
+            .unwrap();
 
         // 4. Delete existing roles and add new ones (simulating role update)
-        SelfRoleRole::delete_by_config_id(&db, updated_config.id).await.unwrap();
+        SelfRoleRole::delete_by_config_id(&db, updated_config.id)
+            .await
+            .unwrap();
 
-        let _new_role1 = SelfRoleRole::create(
-            &db,
-            updated_config.id,
-            "new_role_1",
-            "⚡",
-        ).await.unwrap();
+        let _new_role1 = SelfRoleRole::create(&db, updated_config.id, "new_role_1", "⚡")
+            .await
+            .unwrap();
 
-        let _new_role2 = SelfRoleRole::create(
-            &db,
-            updated_config.id,
-            "new_role_2",
-            "🔥",
-        ).await.unwrap();
+        let _new_role2 = SelfRoleRole::create(&db, updated_config.id, "new_role_2", "🔥")
+            .await
+            .unwrap();
 
-        let _new_role3 = SelfRoleRole::create(
-            &db,
-            updated_config.id,
-            "new_role_3",
-            "💎",
-        ).await.unwrap();
+        let _new_role3 = SelfRoleRole::create(&db, updated_config.id, "new_role_3", "💎")
+            .await
+            .unwrap();
 
         // 5. Verify the update worked
-        let final_configs = SelfRoleConfig::get_by_guild(&db, "123456789").await.unwrap();
-        let final_config = final_configs.iter().find(|c| c.id == updated_config.id).unwrap();
+        let final_configs = SelfRoleConfig::get_by_guild(&db, "123456789")
+            .await
+            .unwrap();
+        let final_config = final_configs
+            .iter()
+            .find(|c| c.id == updated_config.id)
+            .unwrap();
 
         assert_eq!(final_config.title, "Updated Title");
         assert_eq!(final_config.body, "Updated Body");
@@ -256,10 +247,11 @@ mod tests {
             &db,
             "123456789",
             "987654321",
-            "",  // Empty title
+            "", // Empty title
             "Test Body",
             "multiple",
-        ).await;
+        )
+        .await;
 
         // This should fail (or be handled by validation in the API layer)
         // For now, let's just verify the database allows it, but we'll handle validation in API
@@ -272,14 +264,17 @@ mod tests {
             "Test Title",
             "Test Body",
             "multiple",
-        ).await.unwrap();
+        )
+        .await
+        .unwrap();
 
         let role_result = SelfRoleRole::create(
             &db,
             config.id,
             "test_role",
-            "",  // Empty emoji
-        ).await;
+            "", // Empty emoji
+        )
+        .await;
 
         // This should work at database level, validation should be in API
         assert!(role_result.is_ok());
@@ -291,7 +286,7 @@ mod tests {
         // This is a regression test for the PUT vs. POST routing issue
 
         // Test that we import the required HTTP methods
-        use axum::routing::{get, post, delete, put};
+        use axum::routing::{delete, get, post, put};
 
         // Verify we can create routes with different methods
         let _route = axum::Router::<()>::new()
@@ -442,7 +437,7 @@ mod tests {
                     "emoji": "🎮"
                 },
                 {
-                    "role_id": "444555666", 
+                    "role_id": "444555666",
                     "emoji": "🎨"
                 }
             ]
@@ -461,9 +456,7 @@ mod tests {
     fn test_role_hierarchy_position_conversion() {
         // Test conversion between u16 and i16 for role positions
         let u16_positions: Vec<u16> = vec![0, 1, 100, 32767];
-        let i16_positions: Vec<i16> = u16_positions.iter()
-            .map(|&pos| pos as i16)
-            .collect();
+        let i16_positions: Vec<i16> = u16_positions.iter().map(|&pos| pos as i16).collect();
 
         assert_eq!(i16_positions[0], 0);
         assert_eq!(i16_positions[1], 1);
@@ -496,7 +489,7 @@ mod tests {
     #[test]
     fn test_http_header_parsing() {
         // Test HTTP header parsing for session management
-        use axum::http::{HeaderMap, header::COOKIE};
+        use axum::http::{header::COOKIE, HeaderMap};
 
         let mut headers = HeaderMap::new();
         headers.insert(COOKIE, "session_id=test123; other=value".parse().unwrap());
@@ -520,8 +513,10 @@ mod tests {
                 &format!("channel_{}", i),
                 &format!("Title {}", i),
                 &format!("Body {}", i),
-                "multiple"
-            ).await.unwrap();
+                "multiple",
+            )
+            .await
+            .unwrap();
         }
 
         // Verify all configs were created

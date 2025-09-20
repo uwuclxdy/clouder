@@ -1,11 +1,7 @@
 #[cfg(test)]
 mod tests {
-    use crate::database::welcome_goodbye::{
-        replace_placeholders, WelcomeGoodbyeConfig,
-    };
-    use crate::utils::welcome_goodbye::{
-        validate_message_config, validate_url,
-    };
+    use crate::database::welcome_goodbye::{replace_placeholders, WelcomeGoodbyeConfig};
+    use crate::utils::welcome_goodbye::{validate_message_config, validate_url};
     use serenity::{model::id::UserId, model::user::User};
     use sqlx::SqlitePool;
     use std::collections::HashMap;
@@ -20,27 +16,22 @@ mod tests {
         let content = "Welcome {user} to {server}! Your username is {username}.";
         let result = replace_placeholders(content, &placeholders);
 
-        assert_eq!(result, "Welcome <@12345> to Test Server! Your username is TestUser.");
+        assert_eq!(
+            result,
+            "Welcome <@12345> to Test Server! Your username is TestUser."
+        );
     }
 
     #[test]
     fn test_validate_message_config() {
         // Test embed with title
-        let result = validate_message_config(
-            "embed",
-            &None,
-            &Some("Test Title".to_string()),
-            &None,
-        );
+        let result =
+            validate_message_config("embed", &None, &Some("Test Title".to_string()), &None);
         assert!(result.is_ok());
 
         // Test embed with description
-        let result = validate_message_config(
-            "embed",
-            &None,
-            &None,
-            &Some("Test Description".to_string()),
-        );
+        let result =
+            validate_message_config("embed", &None, &None, &Some("Test Description".to_string()));
         assert!(result.is_ok());
 
         // Test embed with both
@@ -53,39 +44,21 @@ mod tests {
         assert!(result.is_ok());
 
         // Test embed with neither
-        let result = validate_message_config(
-            "embed",
-            &None,
-            &None,
-            &None,
-        );
+        let result = validate_message_config("embed", &None, &None, &None);
         assert!(result.is_err());
 
         // Test text with content
-        let result = validate_message_config(
-            "text",
-            &Some("Test Content".to_string()),
-            &None,
-            &None,
-        );
+        let result =
+            validate_message_config("text", &Some("Test Content".to_string()), &None, &None);
         assert!(result.is_ok());
 
         // Test text without content
-        let result = validate_message_config(
-            "text",
-            &None,
-            &None,
-            &None,
-        );
+        let result = validate_message_config("text", &None, &None, &None);
         assert!(result.is_err());
 
         // Test invalid message type
-        let result = validate_message_config(
-            "invalid",
-            &Some("Test Content".to_string()),
-            &None,
-            &None,
-        );
+        let result =
+            validate_message_config("invalid", &Some("Test Content".to_string()), &None, &None);
         assert!(result.is_err());
     }
 
@@ -122,7 +95,9 @@ mod tests {
         let guild_id = "123456789";
 
         // Test getting non-existent config
-        let config = WelcomeGoodbyeConfig::get_config(&pool, guild_id).await.unwrap();
+        let config = WelcomeGoodbyeConfig::get_config(&pool, guild_id)
+            .await
+            .unwrap();
         assert!(config.is_none());
 
         // Test creating config
@@ -133,25 +108,44 @@ mod tests {
         config.welcome_message_type = "embed".to_string();
         config.welcome_embed_title = Some("Welcome!".to_string());
 
-        WelcomeGoodbyeConfig::upsert_config(&pool, &config).await.unwrap();
+        WelcomeGoodbyeConfig::upsert_config(&pool, &config)
+            .await
+            .unwrap();
 
         // Test getting config
-        let retrieved_config = WelcomeGoodbyeConfig::get_config(&pool, guild_id).await.unwrap().unwrap();
+        let retrieved_config = WelcomeGoodbyeConfig::get_config(&pool, guild_id)
+            .await
+            .unwrap()
+            .unwrap();
         assert_eq!(retrieved_config.guild_id, guild_id);
         assert!(retrieved_config.welcome_enabled);
-        assert_eq!(retrieved_config.welcome_channel_id, Some("987654321".to_string()));
-        assert_eq!(retrieved_config.welcome_embed_title, Some("Welcome!".to_string()));
+        assert_eq!(
+            retrieved_config.welcome_channel_id,
+            Some("987654321".to_string())
+        );
+        assert_eq!(
+            retrieved_config.welcome_embed_title,
+            Some("Welcome!".to_string())
+        );
 
         // Test updating config
         let mut updated_config = retrieved_config.clone();
         updated_config.goodbye_enabled = true;
         updated_config.goodbye_channel_id = Some("555555555".to_string());
 
-        WelcomeGoodbyeConfig::upsert_config(&pool, &updated_config).await.unwrap();
+        WelcomeGoodbyeConfig::upsert_config(&pool, &updated_config)
+            .await
+            .unwrap();
 
-        let final_config = WelcomeGoodbyeConfig::get_config(&pool, guild_id).await.unwrap().unwrap();
+        let final_config = WelcomeGoodbyeConfig::get_config(&pool, guild_id)
+            .await
+            .unwrap()
+            .unwrap();
         assert!(final_config.goodbye_enabled);
-        assert_eq!(final_config.goodbye_channel_id, Some("555555555".to_string()));
+        assert_eq!(
+            final_config.goodbye_channel_id,
+            Some("555555555".to_string())
+        );
     }
 
     #[tokio::test]
@@ -200,16 +194,36 @@ mod tests {
         config.welcome_embed_image = Some("https://example.com/image.png".to_string());
         config.welcome_embed_timestamp = true;
 
-        WelcomeGoodbyeConfig::upsert_config(&pool, &config).await.unwrap();
+        WelcomeGoodbyeConfig::upsert_config(&pool, &config)
+            .await
+            .unwrap();
 
-        let retrieved = WelcomeGoodbyeConfig::get_config(&pool, guild_id).await.unwrap().unwrap();
+        let retrieved = WelcomeGoodbyeConfig::get_config(&pool, guild_id)
+            .await
+            .unwrap()
+            .unwrap();
 
-        assert_eq!(retrieved.welcome_embed_title, Some("Welcome Title".to_string()));
-        assert_eq!(retrieved.welcome_embed_description, Some("Welcome Description".to_string()));
+        assert_eq!(
+            retrieved.welcome_embed_title,
+            Some("Welcome Title".to_string())
+        );
+        assert_eq!(
+            retrieved.welcome_embed_description,
+            Some("Welcome Description".to_string())
+        );
         assert_eq!(retrieved.welcome_embed_color, Some(0x5865F2));
-        assert_eq!(retrieved.welcome_embed_footer, Some("Footer Text".to_string()));
-        assert_eq!(retrieved.welcome_embed_thumbnail, Some("https://example.com/thumb.png".to_string()));
-        assert_eq!(retrieved.welcome_embed_image, Some("https://example.com/image.png".to_string()));
+        assert_eq!(
+            retrieved.welcome_embed_footer,
+            Some("Footer Text".to_string())
+        );
+        assert_eq!(
+            retrieved.welcome_embed_thumbnail,
+            Some("https://example.com/thumb.png".to_string())
+        );
+        assert_eq!(
+            retrieved.welcome_embed_image,
+            Some("https://example.com/image.png".to_string())
+        );
         assert!(retrieved.welcome_embed_timestamp);
     }
 

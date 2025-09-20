@@ -24,10 +24,12 @@ pub async fn purge(
 
     let messages_to_delete = if let Ok(count) = amount_or_id.parse::<u8>() {
         if count == 0 || count > 100 {
-            ctx.send(poise::CreateReply::default()
-                .content("❌ number must be between 1 and 100!")
-                .ephemeral(true))
-                .await?;
+            ctx.send(
+                poise::CreateReply::default()
+                    .content("❌ number must be between 1 and 100!")
+                    .ephemeral(true),
+            )
+            .await?;
             return Ok(());
         }
 
@@ -39,23 +41,30 @@ pub async fn purge(
     } else if let Ok(message_id) = amount_or_id.parse::<u64>() {
         let target_id = MessageId::new(message_id);
         let messages = channel_id
-            .messages(&ctx.http(), serenity::GetMessages::new().after(target_id).limit(100))
+            .messages(
+                &ctx.http(),
+                serenity::GetMessages::new().after(target_id).limit(100),
+            )
             .await?;
 
         messages
     } else {
-        ctx.send(poise::CreateReply::default()
-            .content("❌ invalid input! provide either a number (1-100) or a message ID!")
-            .ephemeral(true))
-            .await?;
+        ctx.send(
+            poise::CreateReply::default()
+                .content("❌ invalid input! provide either a number (1-100) or a message ID!")
+                .ephemeral(true),
+        )
+        .await?;
         return Ok(());
     };
 
     if messages_to_delete.is_empty() {
-        ctx.send(poise::CreateReply::default()
-            .content("❌ no messages found to delete!")
-            .ephemeral(true))
-            .await?;
+        ctx.send(
+            poise::CreateReply::default()
+                .content("❌ no messages found to delete!")
+                .ephemeral(true),
+        )
+        .await?;
         return Ok(());
     }
 
@@ -63,10 +72,12 @@ pub async fn purge(
         match messages_to_delete[0].delete(&ctx.http()).await {
             Ok(_) => 1,
             Err(e) => {
-                ctx.send(poise::CreateReply::default()
-                    .content(&format!("❌ failed to delete message: {}", e))
-                    .ephemeral(true))
-                    .await?;
+                ctx.send(
+                    poise::CreateReply::default()
+                        .content(&format!("❌ failed to delete message: {}", e))
+                        .ephemeral(true),
+                )
+                .await?;
                 return Ok(());
             }
         }
@@ -84,10 +95,12 @@ pub async fn purge(
                 }
 
                 if success_count == 0 {
-                    ctx.send(poise::CreateReply::default()
-                        .content(&format!("❌ failed to delete messages: {}", e))
-                        .ephemeral(true))
-                        .await?;
+                    ctx.send(
+                        poise::CreateReply::default()
+                            .content(&format!("❌ failed to delete messages: {}", e))
+                            .ephemeral(true),
+                    )
+                    .await?;
                     return Ok(());
                 }
                 success_count
@@ -95,15 +108,14 @@ pub async fn purge(
         }
     };
     let embed = CreateEmbed::new()
-        .description(&format!("🗑️ deleted **`{}`** message{} >_<",
+        .description(&format!(
+            "🗑️ deleted **`{}`** message{} >_<",
             deleted_count,
             if deleted_count == 1 { "" } else { "s" }
         ))
         .color(get_default_embed_color(ctx.data()));
 
-    ctx.send(poise::CreateReply::default()
-        .embed(embed)
-        .ephemeral(false))
+    ctx.send(poise::CreateReply::default().embed(embed).ephemeral(false))
         .await?;
 
     Ok(())

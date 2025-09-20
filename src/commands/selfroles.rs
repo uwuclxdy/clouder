@@ -19,13 +19,12 @@ pub async fn selfroles(ctx: Context<'_>) -> Result<(), Error> {
             false,
         )
         .color(get_default_embed_color(ctx.data()))
-        .footer(serenity::CreateEmbedFooter::new("you need 'manage roles' permission to configure self-roles"));
+        .footer(serenity::CreateEmbedFooter::new(
+            "you need 'manage roles' permission to configure self-roles",
+        ));
 
-    ctx.send(
-        poise::CreateReply::default()
-            .embed(embed)
-            .ephemeral(true)
-    ).await?;
+    ctx.send(poise::CreateReply::default().embed(embed).ephemeral(true))
+        .await?;
 
     Ok(())
 }

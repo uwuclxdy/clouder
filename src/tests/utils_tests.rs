@@ -109,7 +109,8 @@ mod tests {
         ];
 
         // Find highest position (excluding @everyone)
-        let highest_position = roles.iter()
+        let highest_position = roles
+            .iter()
             .filter(|(name, _)| *name != "@everyone")
             .map(|(_, pos)| *pos)
             .max()
@@ -132,19 +133,46 @@ mod tests {
         let expected_timestamp = 1755612300; // Unix timestamp as produced by chrono (test environment specific)
 
         // Test different formatting styles
-        assert_eq!(format_discord_timestamp(test_time, 'F'), format!("<t:{}:F>", expected_timestamp));
-        assert_eq!(format_discord_timestamp(test_time, 'f'), format!("<t:{}:f>", expected_timestamp));
-        assert_eq!(format_discord_timestamp(test_time, 'D'), format!("<t:{}:D>", expected_timestamp));
-        assert_eq!(format_discord_timestamp(test_time, 'd'), format!("<t:{}:d>", expected_timestamp));
-        assert_eq!(format_discord_timestamp(test_time, 't'), format!("<t:{}:t>", expected_timestamp));
-        assert_eq!(format_discord_timestamp(test_time, 'T'), format!("<t:{}:T>", expected_timestamp));
-        assert_eq!(format_discord_timestamp(test_time, 'R'), format!("<t:{}:R>", expected_timestamp));
+        assert_eq!(
+            format_discord_timestamp(test_time, 'F'),
+            format!("<t:{}:F>", expected_timestamp)
+        );
+        assert_eq!(
+            format_discord_timestamp(test_time, 'f'),
+            format!("<t:{}:f>", expected_timestamp)
+        );
+        assert_eq!(
+            format_discord_timestamp(test_time, 'D'),
+            format!("<t:{}:D>", expected_timestamp)
+        );
+        assert_eq!(
+            format_discord_timestamp(test_time, 'd'),
+            format!("<t:{}:d>", expected_timestamp)
+        );
+        assert_eq!(
+            format_discord_timestamp(test_time, 't'),
+            format!("<t:{}:t>", expected_timestamp)
+        );
+        assert_eq!(
+            format_discord_timestamp(test_time, 'T'),
+            format!("<t:{}:T>", expected_timestamp)
+        );
+        assert_eq!(
+            format_discord_timestamp(test_time, 'R'),
+            format!("<t:{}:R>", expected_timestamp)
+        );
 
         // Test default format (invalid style character)
-        assert_eq!(format_discord_timestamp(test_time, 'X'), format!("<t:{}:f>", expected_timestamp));
+        assert_eq!(
+            format_discord_timestamp(test_time, 'X'),
+            format!("<t:{}:f>", expected_timestamp)
+        );
 
         // Test invalid timestamp
-        assert_eq!(format_discord_timestamp("invalid-time", 'F'), "invalid timestamp");
+        assert_eq!(
+            format_discord_timestamp("invalid-time", 'F'),
+            "invalid timestamp"
+        );
 
         // Test just that timezone formatting works, without strict timestamp checking
         let time_with_offset = "2025-08-19T16:05:00+02:00";
@@ -195,7 +223,11 @@ mod tests {
 
         // Test negative positions (edge case)
         let negative_roles = vec![("Negative", -1), ("Zero", 0), ("Positive", 1)];
-        let negative_highest = negative_roles.iter().map(|(_, pos)| *pos).max().unwrap_or(0);
+        let negative_highest = negative_roles
+            .iter()
+            .map(|(_, pos)| *pos)
+            .max()
+            .unwrap_or(0);
         assert_eq!(negative_highest, 1);
     }
 }

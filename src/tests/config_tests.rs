@@ -22,7 +22,10 @@ mod tests {
 
         assert_eq!(config.web.oauth.client_id, "test_client_id");
         assert_eq!(config.web.oauth.client_secret, "test_client_secret");
-        assert_eq!(config.web.oauth.redirect_uri, "http://localhost:3000/auth/callback");
+        assert_eq!(
+            config.web.oauth.redirect_uri,
+            "http://localhost:3000/auth/callback"
+        );
     }
 
     #[tokio::test]
@@ -49,11 +52,11 @@ mod tests {
         assert!(json.contains("test_token"));
         assert!(json.contains("test_client_id"));
 
-        let deserialized: Config = serde_json::from_str(&json).expect("Config should deserialize from JSON");
+        let deserialized: Config =
+            serde_json::from_str(&json).expect("Config should deserialize from JSON");
         assert_eq!(deserialized.discord.token, config.discord.token);
         assert_eq!(deserialized.web.oauth.client_id, config.web.oauth.client_id);
     }
-
 
     #[test]
     fn test_config_clone() {
@@ -61,7 +64,10 @@ mod tests {
         let config2 = config1.clone();
 
         assert_eq!(config1.discord.token, config2.discord.token);
-        assert_eq!(config1.discord.application_id, config2.discord.application_id);
+        assert_eq!(
+            config1.discord.application_id,
+            config2.discord.application_id
+        );
         assert_eq!(config1.web.host, config2.web.host);
         assert_eq!(config1.web.port, config2.web.port);
     }
@@ -105,5 +111,4 @@ mod tests {
         assert!(!config.database.url.is_empty());
         assert_eq!(config.database.url, ":memory:");
     }
-
 }

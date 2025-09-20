@@ -43,7 +43,7 @@ mod tests {
         for invalid_input in invalid_inputs {
             let num_parse: Result<u8, _> = invalid_input.parse();
             let id_parse: Result<u64, _> = invalid_input.parse();
-            
+
             // Both should fail for truly invalid inputs
             assert!(num_parse.is_err() && id_parse.is_err());
         }
@@ -101,7 +101,7 @@ mod tests {
                 count,
                 if count == 1 { "" } else { "s" }
             );
-            
+
             assert!(description.contains(&count.to_string()));
             if count == 1 {
                 assert!(!description.contains("messages"));
@@ -116,11 +116,11 @@ mod tests {
     fn test_permission_requirements() {
         // Test that the command has the correct permission requirements
         // This tests the poise command attributes
-        
+
         // The purge command should require MANAGE_MESSAGES permission
         // and be guild_only and ephemeral
         // These are defined in the #[poise::command(...)] attribute
-        
+
         // We can't directly test the attributes, but we can verify
         // the expected behavior constants
         assert_eq!("MANAGE_MESSAGES", "MANAGE_MESSAGES");
@@ -148,7 +148,7 @@ mod tests {
     fn test_channel_id_validation() {
         // Test ChannelId creation and validation
         let test_channel_ids = vec![123456789012345678u64, 987654321098765432u64];
-        
+
         for id in test_channel_ids {
             let channel_id = ChannelId::new(id);
             assert_eq!(channel_id.get(), id);
@@ -158,20 +158,20 @@ mod tests {
     #[test]
     fn test_message_collection_scenarios() {
         // Test different message collection scenarios using counts
-        
+
         // Empty collection
         let empty_count = 0;
         assert_eq!(empty_count, 0);
-        
+
         // Single message
         let single_count = 1;
         assert_eq!(single_count, 1);
-        
+
         // Multiple messages (bulk delete scenario)
         let bulk_count = 10;
         assert_eq!(bulk_count, 10);
         assert!(bulk_count > 1);
-        
+
         // Maximum messages
         let max_count = 100;
         assert_eq!(max_count, 100);
@@ -189,9 +189,9 @@ mod tests {
     fn test_message_id_extraction() {
         // Test message ID handling logic
         let test_ids = vec![111u64, 222u64, 333u64];
-        
+
         let message_ids: Vec<MessageId> = test_ids.iter().map(|&id| MessageId::new(id)).collect();
-        
+
         assert_eq!(message_ids.len(), 3);
         assert_eq!(message_ids[0].get(), 111);
         assert_eq!(message_ids[1].get(), 222);
@@ -201,13 +201,13 @@ mod tests {
     #[test]
     fn test_error_scenarios() {
         // Test various error scenarios the command might encounter
-        
+
         // Zero count (should be rejected)
         assert_eq!(0u8, 0);
-        
+
         // Count too high (should be rejected)
         assert!(101u8 > 100);
-        
+
         // Invalid message ID format
         let invalid_id_result: Result<u64, _> = "invalid".parse();
         assert!(invalid_id_result.is_err());
@@ -216,19 +216,19 @@ mod tests {
     #[test]
     fn test_command_parsing_logic() {
         // Test the input parsing logic from the purge command
-        
+
         // Test number parsing
         let number_input = "50";
         let parsed_number: Result<u8, _> = number_input.parse();
         assert!(parsed_number.is_ok());
         assert_eq!(parsed_number.unwrap(), 50);
-        
-        // Test message ID parsing  
+
+        // Test message ID parsing
         let id_input = "123456789012345678";
         let parsed_id: Result<u64, _> = id_input.parse();
         assert!(parsed_id.is_ok());
         assert_eq!(parsed_id.unwrap(), 123456789012345678);
-        
+
         // Test invalid input
         let invalid_input = "not_a_number";
         let number_result: Result<u8, _> = invalid_input.parse();
@@ -243,7 +243,7 @@ mod tests {
         let description = "Number of messages to delete OR message ID to delete up to";
         let min_value = 1;
         let max_value = 100;
-        
+
         assert!(!description.is_empty());
         assert!(description.contains("Number of messages"));
         assert!(description.contains("message ID"));

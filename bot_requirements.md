@@ -43,6 +43,17 @@
 - only deletes messages from the channel the command is invoked in
 - ephemeral response with number of messages deleted
 
+**`/mediaonly [channel] [enabled]`** - Configure media-only mode (Manage Channels permission)
+- Automatically deletes non-media messages after 3 seconds
+- Optional parameters: channel (defaults to current), enabled (toggles if not specified)
+- Configurable content types via web dashboard:
+  - Links (includes embedded links)
+  - Attachments (files, images, videos)
+  - GIFs (attached files, GIF links, Tenor/Giphy embeds)
+  - Stickers (Discord stickers)
+- Ignores messages from bots
+- Ephemeral response with configuration status
+
 #### **Reminders**
 
 **`/reminders`** - View active reminders
@@ -299,6 +310,22 @@
 - Self-roles configurations and message tracking
 - Reminders configurations
 - Welcome/goodbye message configurations and status
+
+#### **Media-Only Channel Management**
+- **Channel Configuration:** Select channels to enable media-only mode
+- **Per-Channel Settings:**
+  - Enable/disable toggle for each channel
+  - Allowed content types (configurable per channel):
+    - Links (any URLs including auto-embedded ones)
+    - Attachments (uploaded files and images)
+    - GIFs (file attachments, GIF URLs, Tenor/Giphy links)
+    - Stickers (Discord stickers)
+- **Visual Interface:**
+  - List of all configured channels
+  - Quick toggle switches for enabled state
+  - Checkboxes for each content type
+  - Add/remove channels dynamically
+- **Automatic Deletion:** Messages without allowed content deleted after 3 seconds (non-configurable)
 
 ## **Project Structure**
 ```

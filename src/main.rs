@@ -11,6 +11,7 @@ mod tests;
 
 use crate::commands::about::about;
 use crate::commands::help::help;
+use crate::commands::mediaonly::mediaonly;
 use crate::commands::purge::purge;
 use crate::commands::selfroles::selfroles;
 use crate::config::{AppState, Config};
@@ -51,7 +52,7 @@ async fn main() -> Result<()> {
 
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
-            commands: vec![selfroles(), about(), help(), purge()],
+            commands: vec![selfroles(), about(), help(), purge(), mediaonly()],
             event_handler: |ctx, event, framework, data| {
                 Box::pin(event_handler(ctx, event, framework, data))
             },

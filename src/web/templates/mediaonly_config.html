@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Media-Only Channels - {{GUILD_NAME}}</title>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <style>
+        {{COMMON_CSS}}
+        {{DASHBOARD_CSS}}
+
+        /* Media-Only specific styles */
+        .config-grid {
+            display: grid;
+            gap: 25px;
+            margin-top: 20px;
+        }
+
+        .config-card {
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            color: #f5f5f5;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            transition: all 0.3s ease;
+        }
+
+        .config-card h2 {
+            margin: 0 0 20px 0;
+            font-size: 1.5em;
+            font-weight: 500;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .config-card h3 {
+            margin: 0 0 15px 0;
+            font-size: 1.2em;
+            font-weight: 500;
+            color: #ffffff;
+        }
+
+        .channel-config {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .channel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .channel-name {
+            font-size: 1.1em;
+            font-weight: 500;
+            color: #ffffff;
+        }
+
+        .channel-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .delete-btn {
+            background: rgba(220, 53, 69, 0.9);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+        }
+
+        .delete-btn:hover {
+            background: rgba(220, 53, 69, 1);
+            transform: translateY(-1px);
+        }
+
+        .toggle-section {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .toggle-section h3 {
+            margin: 0;
+        }
+
+        .permissions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            margin-bottom: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            gap: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            user-select: none;
+        }
+
+        .checkbox-group:hover {
+            background: rgba(0, 0, 0, 0.4);
+            border-color: rgba(143, 164, 255, 0.3);
+        }
+
+        .checkbox-group.checked {
+            background: rgba(143, 164, 255, 0.15);
+            border-color: rgba(143, 164, 255, 0.5);
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+            margin: 0;
+            padding: 0;
+        }
+
+        .checkbox-group label {
+            margin: 0;
+            cursor: pointer;
+            font-weight: 500;
+            color: #f0f0f0;
+            flex: 1;
+        }
+
+        .checkbox-group.checked label {
+            color: #8fa4ff !important;
+            font-weight: 600;
+        }
+
+        .add-channel-section {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: 20px;
+        }
+
+        .add-channel-section h3 {
+            margin: 0 0 15px 0;
+            color: #ffffff;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .form-row.single {
+            grid-template-columns: 1fr;
+        }
+
+        .add-button {
+            background: linear-gradient(45deg, #28a745, #20c997);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+
+        .add-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(40, 167, 69, 0.3);
+        }
+
+        .add-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .save-button {
+            background: linear-gradient(45deg, #4a5fc4, #5a3e8b);
+            color: #ffffff;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-top: 20px;
+            margin-bottom: 40px;
+        }
+
+        .save-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(74, 95, 196, 0.3);
+        }
+
+        .save-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #e0e0e0;
+        }
+
+        .empty-state h3 {
+            margin: 0 0 10px 0;
+            color: #ffffff;
+        }
+
+        .empty-state p {
+            margin: 0;
+            font-size: 0.9em;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .permissions-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .channel-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+
+            .channel-actions {
+                width: 100%;
+                justify-content: flex-end;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <div class="navbar-left">
+                <div class="logo">clouder</div>
+                <div class="breadcrumb">
+                    <a class="breadcrumb-item" href="/">Dashboard</a>
+                    <span class="breadcrumb-separator">/</span>
+                    <a class="breadcrumb-item" href="/dashboard/{{GUILD_ID}}">{{GUILD_NAME}}</a>
+                    <span class="breadcrumb-separator">/</span>
+                    <span class="breadcrumb-item current">Media-Only Channels</span>
+                </div>
+            </div>
+            <div class="navbar-right">
+                <a class="add-server-btn" href="{{INVITE_URL}}" target="_blank">Add to Server</a>
+                <a class="logout-btn" href="/user/settings" style="margin-right: 10px;">Settings</a>
+                <a class="logout-btn" href="/auth/logout">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="header guild-header">
+            <img alt="{{GUILD_NAME}}" class="guild-icon" src="{{GUILD_ICON}}">
+            <div class="header-info">
+                <h1>Media-Only Channels</h1>
+                <p>Configure channels to automatically delete non-media messages for <span class="guild-name-highlight">{{GUILD_NAME}}</span></p>
+            </div>
+        </div>
+
+        <div class="config-grid">
+            <!-- 1. Add New Channel -->
+            <div class="config-card">
+                <h2>➕ Add Media-Only Channel</h2>
+
+                <div class="add-channel-section">
+                    <div class="form-group">
+                        <label for="newChannel">Select Channel:</label>
+                        <select id="newChannel" required>
+                            <option value="">Select a channel...</option>
+                            {{CHANNELS_HTML}}
+                        </select>
+                    </div>
+
+                    <div class="toggle-section">
+                        <span>Enable media-only mode for this channel</span>
+                        <label class="toggle-switch">
+                            <input checked id="newChannelEnabled" type="checkbox">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+
+                    <div id="newChannelPermissions" style="display: block;">
+                        <h3>Allowed Content Types</h3>
+                        <p style="margin-bottom: 15px; color: #e0e0e0; font-size: 0.9em;">Select which types of media content are allowed in this channel:</p>
+
+                        <div class="permissions-grid">
+                            <div class="checkbox-group checked" onclick="togglePermission('new', 'links')">
+                                <input checked id="newAllowLinks" name="new_allow_links" type="checkbox">
+                                <label for="newAllowLinks">🔗 Links</label>
+                            </div>
+
+                            <div class="checkbox-group checked" onclick="togglePermission('new', 'attachments')">
+                                <input checked id="newAllowAttachments" name="new_allow_attachments" type="checkbox">
+                                <label for="newAllowAttachments">📎 File Attachments</label>
+                            </div>
+
+                            <div class="checkbox-group checked" onclick="togglePermission('new', 'gifs')">
+                                <input checked id="newAllowGifs" name="new_allow_gifs" type="checkbox">
+                                <label for="newAllowGifs">🎞️ GIFs</label>
+                            </div>
+
+                            <div class="checkbox-group checked" onclick="togglePermission('new', 'stickers')">
+                                <input checked id="newAllowStickers" name="new_allow_stickers" type="checkbox">
+                                <label for="newAllowStickers">🎭 Stickers</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="add-button" onclick="addChannel()" type="button">Add Channel</button>
+                </div>
+            </div>
+
+            <!-- 2. Current Configurations -->
+            <div class="config-card">
+                <h2>🔒 Configured Channels</h2>
+                <p style="margin-bottom: 20px; color: #e0e0e0;">Manage your media-only channel configurations:</p>
+
+                <div id="channelsList">
+                    <div class="empty-state">
+                        <h3>No channels configured</h3>
+                        <p>Add a channel below to get started</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <button class="save-button" onclick="saveAllConfigurations()" type="button">Save All Changes</button>
+    </div>
+
+    <script>
+        const guildId = '{{GUILD_ID}}';
+        let configs = {{CONFIGS_JSON}};
+
+        document.addEventListener('DOMContentLoaded', function() {
+            renderChannels();
+        });
+
+        function renderChannels() {
+            const channelsList = document.getElementById('channelsList');
+
+            if (configs.length === 0) {
+                channelsList.innerHTML = `
+                    <div class="empty-state">
+                        <h3>No channels configured</h3>
+                        <p>Add a channel below to get started</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            configs.forEach(config => {
+                html += `
+                    <div class="channel-config" data-channel-id="${config.channel_id}">
+                        <div class="channel-header">
+                            <div class="channel-name"># ${config.channel_name}</div>
+                            <div class="channel-actions">
+                                <button class="delete-btn" onclick="deleteChannel('${config.channel_id}')" type="button">Delete</button>
+                            </div>
+                        </div>
+
+                        <div class="toggle-section">
+                            <span>Enable media-only mode</span>
+                            <label class="toggle-switch">
+                                <input id="enabled_${config.channel_id}" type="checkbox" ${config.enabled ? 'checked' : ''} onchange="toggleChannel('${config.channel_id}')">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+
+                        <div id="permissions_${config.channel_id}" style="display: ${config.enabled ? 'block' : 'none'};">
+                            <h3>Allowed Content Types</h3>
+                            <div class="permissions-grid">
+                                <div class="checkbox-group ${config.allow_links ? 'checked' : ''}" onclick="togglePermission('${config.channel_id}', 'links')">
+                                    <input id="links_${config.channel_id}" type="checkbox" ${config.allow_links ? 'checked' : ''}>
+                                    <label for="links_${config.channel_id}">🔗 Links</label>
+                                </div>
+                                <div class="checkbox-group ${config.allow_attachments ? 'checked' : ''}" onclick="togglePermission('${config.channel_id}', 'attachments')">
+                                    <input id="attachments_${config.channel_id}" type="checkbox" ${config.allow_attachments ? 'checked' : ''}>
+                                    <label for="attachments_${config.channel_id}">📎 File Attachments</label>
+                                </div>
+                                <div class="checkbox-group ${config.allow_gifs ? 'checked' : ''}" onclick="togglePermission('${config.channel_id}', 'gifs')">
+                                    <input id="gifs_${config.channel_id}" type="checkbox" ${config.allow_gifs ? 'checked' : ''}>
+                                    <label for="gifs_${config.channel_id}">🎞️ GIFs</label>
+                                </div>
+                                <div class="checkbox-group ${config.allow_stickers ? 'checked' : ''}" onclick="togglePermission('${config.channel_id}', 'stickers')">
+                                    <input id="stickers_${config.channel_id}" type="checkbox" ${config.allow_stickers ? 'checked' : ''}>
+                                    <label for="stickers_${config.channel_id}">🎭 Stickers</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            channelsList.innerHTML = html;
+        }
+
+        function toggleChannel(channelId) {
+            const enabled = document.getElementById(`enabled_${channelId}`).checked;
+            const permissionsDiv = document.getElementById(`permissions_${channelId}`);
+            permissionsDiv.style.display = enabled ? 'block' : 'none';
+
+            // Update config in memory
+            const config = configs.find(c => c.channel_id === channelId);
+            if (config) {
+                config.enabled = enabled;
+            }
+        }
+
+        function togglePermission(channelId, permissionType) {
+            const checkbox = document.getElementById(`${permissionType}_${channelId}`);
+            const group = checkbox.closest('.checkbox-group');
+
+            checkbox.checked = !checkbox.checked;
+
+            if (checkbox.checked) {
+                group.classList.add('checked');
+            } else {
+                group.classList.remove('checked');
+            }
+
+            // Update config in memory
+            const config = configs.find(c => c.channel_id === channelId);
+            if (config) {
+                config[`allow_${permissionType}`] = checkbox.checked;
+            }
+        }
+
+        async function addChannel() {
+            const channelSelect = document.getElementById('newChannel');
+            const enabled = document.getElementById('newChannelEnabled').checked;
+            const allowLinks = document.getElementById('newAllowLinks').checked;
+            const allowAttachments = document.getElementById('newAllowAttachments').checked;
+            const allowGifs = document.getElementById('newAllowGifs').checked;
+            const allowStickers = document.getElementById('newAllowStickers').checked;
+
+            if (!channelSelect.value) {
+                alert('Please select a channel');
+                return;
+            }
+
+            // Check if channel already exists
+            if (configs.some(c => c.channel_id === channelSelect.value)) {
+                alert('This channel is already configured');
+                return;
+            }
+
+            const btn = document.querySelector('.add-button');
+            btn.disabled = true;
+            btn.textContent = 'Adding...';
+
+            try {
+                const response = await fetch(`/api/mediaonly/${guildId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        channel_id: channelSelect.value,
+                        enabled,
+                        allow_links: allowLinks,
+                        allow_attachments: allowAttachments,
+                        allow_gifs: allowGifs,
+                        allow_stickers: allowStickers
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // Refresh configs
+                    await loadConfigs();
+                    // Reset form
+                    channelSelect.value = '';
+                    document.getElementById('newChannelEnabled').checked = true;
+                    ['newAllowLinks', 'newAllowAttachments', 'newAllowGifs', 'newAllowStickers'].forEach(id => {
+                        document.getElementById(id).checked = true;
+                        document.getElementById(id).closest('.checkbox-group').classList.add('checked');
+                    });
+                } else {
+                    alert(`Error: ${result.error}`);
+                }
+            } catch (error) {
+                alert('Failed to add channel. Please try again.');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Add Channel';
+            }
+        }
+
+        async function deleteChannel(channelId) {
+            if (!confirm('Are you sure you want to remove this channel from media-only mode?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/mediaonly/${guildId}/${channelId}`, {
+                    method: 'DELETE'
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    await loadConfigs();
+                } else {
+                    alert(`Error: ${result.error}`);
+                }
+            } catch (error) {
+                alert('Failed to delete channel. Please try again.');
+            }
+        }
+
+        async function saveAllConfigurations() {
+            const saveBtn = document.querySelector('.save-button');
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'Saving...';
+
+            try {
+                // Save all configs
+                for (const config of configs) {
+                    const response = await fetch(`/api/mediaonly/${guildId}/${config.channel_id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            allow_links: config.allow_links,
+                            allow_attachments: config.allow_attachments,
+                            allow_gifs: config.allow_gifs,
+                            allow_stickers: config.allow_stickers
+                        })
+                    });
+
+                    const result = await response.json();
+                    if (!result.success) {
+                        throw new Error(result.error);
+                    }
+                }
+
+                alert('All configurations saved successfully!');
+            } catch (error) {
+                alert(`Failed to save configurations: ${error.message}`);
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.textContent = 'Save All Changes';
+            }
+        }
+
+        async function loadConfigs() {
+            try {
+                const response = await fetch(`/api/mediaonly/${guildId}`);
+                const result = await response.json();
+
+                if (result.success) {
+                    configs = result.configs;
+                    renderChannels();
+                }
+            } catch (error) {
+                console.error('Failed to load configs:', error);
+            }
+        }
+    </script>
+</body>
+</html>

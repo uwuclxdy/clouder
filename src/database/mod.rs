@@ -2,6 +2,7 @@ use anyhow::Result;
 use sqlx::{migrate::MigrateDatabase, sqlite::SqlitePool, Sqlite};
 use std::path::Path;
 
+pub mod mediaonly;
 pub mod selfroles;
 pub mod welcome_goodbye;
 
@@ -31,6 +32,7 @@ async fn run_migrations(pool: &SqlitePool) -> Result<()> {
         include_str!("../../migrations/001_initial.sql"),
         include_str!("../../migrations/002_reminders.sql"),
         include_str!("../../migrations/003_welcome_goodbye.sql"),
+        include_str!("../../migrations/004_mediaonly.sql"),
     ];
 
     for (index, migration_content) in migrations.iter().enumerate() {

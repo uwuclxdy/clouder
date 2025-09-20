@@ -36,3 +36,4 @@ sysinfo = "0.37.0"
 
 # Configuration
 dotenvy = "0.15"
+regex = "1.11.2"

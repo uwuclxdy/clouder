@@ -1,11 +1,11 @@
 use crate::{
     config::AppState,
     database::welcome_goodbye::WelcomeGoodbyeConfig,
-    utils::{get_default_embed_color, welcome_goodbye::{validate_message_config, validate_url}},
-    web::{
-        models::SessionUser,
-        session_extractor::extract_session_data,
+    utils::{
+        get_default_embed_color,
+        welcome_goodbye::{validate_message_config, validate_url},
     },
+    web::{models::SessionUser, session_extractor::extract_session_data},
 };
 use axum::{
     extract::{Path, State},
@@ -82,11 +82,13 @@ pub struct WelcomeGoodbyeConfigDisplay {
 
 impl From<WelcomeGoodbyeConfig> for WelcomeGoodbyeConfigDisplay {
     fn from(config: WelcomeGoodbyeConfig) -> Self {
-        let welcome_color_hex = config.welcome_embed_color
+        let welcome_color_hex = config
+            .welcome_embed_color
             .map(|c| format!("#{:06x}", c as u32))
             .unwrap_or_else(|| "#5865F2".to_string());
 
-        let goodbye_color_hex = config.goodbye_embed_color
+        let goodbye_color_hex = config
+            .goodbye_embed_color
             .map(|c| format!("#{:06x}", c as u32))
             .unwrap_or_else(|| "#5865F2".to_string());
 
@@ -131,17 +133,22 @@ pub async fn show_welcome_goodbye_config(
     headers: HeaderMap,
     State(state): State<AppState>,
 ) -> Result<Html<String>, Redirect> {
-    let session = extract_session_data(&headers).await
+    let session = extract_session_data(&headers)
+        .await
         .map_err(|_| Redirect::temporary("/auth/login"))?;
 
-    let user = session.1.ok_or_else(|| Redirect::temporary("/auth/login"))?;
+    let user = session
+        .1
+        .ok_or_else(|| Redirect::temporary("/auth/login"))?;
 
     // Check if user has administrator permission for this guild
     if !user.has_administrator_in_guild(&guild_id) {
         return Err(Redirect::temporary("/"));
     }
 
-    let guild_info = user.guilds.iter()
+    let guild_info = user
+        .guilds
+        .iter()
         .find(|g| g.id == guild_id)
         .ok_or_else(|| Redirect::temporary("/"))?;
 
@@ -168,8 +175,15 @@ pub async fn show_welcome_goodbye_config(
         }
     };
 
-    let guild_icon = guild_info.icon.as_ref()
-        .map(|icon| format!("https://cdn.discordapp.com/icons/{}/{}.png", guild_info.id, icon))
+    let guild_icon = guild_info
+        .icon
+        .as_ref()
+        .map(|icon| {
+            format!(
+                "https://cdn.discordapp.com/icons/{}/{}.png",
+                guild_info.id, icon
+            )
+        })
         .unwrap_or_else(|| "https://cdn.discordapp.com/embed/avatars/0.png".to_string());
 
     let invite_url = format!(
@@ -193,44 +207,215 @@ pub async fn show_welcome_goodbye_config(
 
     let template = include_str!("templates/welcome_goodbye_config.html")
         .replace("{{COMMON_CSS}}", include_str!("static/css/common.css"))
-        .replace("{{DASHBOARD_CSS}}", include_str!("static/css/dashboard.css"))
+        .replace(
+            "{{DASHBOARD_CSS}}",
+            include_str!("static/css/dashboard.css"),
+        )
         .replace("{{GUILD_NAME}}", &guild_info.name)
         .replace("{{GUILD_ICON}}", &guild_icon)
         .replace("{{INVITE_URL}}", &invite_url)
         .replace("{{GUILD_ID}}", &guild_id)
         .replace("{{CHANNELS_HTML}}", &channels_html)
-        .replace("{{WELCOME_ENABLED}}", if config_display.welcome_enabled { "checked" } else { "" })
-        .replace("{{GOODBYE_ENABLED}}", if config_display.goodbye_enabled { "checked" } else { "" })
-        .replace("{{WELCOME_MESSAGE_CONTENT}}", &config_display.welcome_message_content.unwrap_or_default())
-        .replace("{{GOODBYE_MESSAGE_CONTENT}}", &config_display.goodbye_message_content.unwrap_or_default())
-        .replace("{{WELCOME_EMBED_TITLE}}", &config_display.welcome_embed_title.unwrap_or_default())
-        .replace("{{WELCOME_EMBED_DESCRIPTION}}", &config_display.welcome_embed_description.unwrap_or_default())
-        .replace("{{WELCOME_EMBED_COLOR}}", &config_display.welcome_embed_color_hex)
-        .replace("{{WELCOME_EMBED_FOOTER}}", &config_display.welcome_embed_footer.unwrap_or_default())
-        .replace("{{WELCOME_EMBED_THUMBNAIL}}", &config_display.welcome_embed_thumbnail.unwrap_or_default())
-        .replace("{{WELCOME_EMBED_IMAGE}}", &config_display.welcome_embed_image.unwrap_or_default())
-        .replace("{{WELCOME_EMBED_TIMESTAMP}}", if config_display.welcome_embed_timestamp { "checked" } else { "" })
-        .replace("{{GOODBYE_EMBED_TITLE}}", &config_display.goodbye_embed_title.unwrap_or_default())
-        .replace("{{GOODBYE_EMBED_DESCRIPTION}}", &config_display.goodbye_embed_description.unwrap_or_default())
-        .replace("{{GOODBYE_EMBED_COLOR}}", &config_display.goodbye_embed_color_hex)
-        .replace("{{GOODBYE_EMBED_FOOTER}}", &config_display.goodbye_embed_footer.unwrap_or_default())
-        .replace("{{GOODBYE_EMBED_THUMBNAIL}}", &config_display.goodbye_embed_thumbnail.unwrap_or_default())
-        .replace("{{GOODBYE_EMBED_IMAGE}}", &config_display.goodbye_embed_image.unwrap_or_default())
-        .replace("{{GOODBYE_EMBED_TIMESTAMP}}", if config_display.goodbye_embed_timestamp { "checked" } else { "" })
-        .replace("{{WELCOME_MESSAGE_TYPE_EMBED_CHECKED}}", if config_display.welcome_message_type == "embed" { "checked" } else { "" })
-        .replace("{{WELCOME_MESSAGE_TYPE_TEXT_CHECKED}}", if config_display.welcome_message_type == "text" { "checked" } else { "" })
-        .replace("{{GOODBYE_MESSAGE_TYPE_EMBED_CHECKED}}", if config_display.goodbye_message_type == "embed" { "checked" } else { "" })
-        .replace("{{GOODBYE_MESSAGE_TYPE_TEXT_CHECKED}}", if config_display.goodbye_message_type == "text" { "checked" } else { "" })
-        .replace("{{WELCOME_MESSAGE_TYPE_EMBED_CLASS}}", if config_display.welcome_message_type == "embed" { "selected" } else { "" })
-        .replace("{{WELCOME_MESSAGE_TYPE_TEXT_CLASS}}", if config_display.welcome_message_type == "text" { "selected" } else { "" })
-        .replace("{{GOODBYE_MESSAGE_TYPE_EMBED_CLASS}}", if config_display.goodbye_message_type == "embed" { "selected" } else { "" })
-        .replace("{{GOODBYE_MESSAGE_TYPE_TEXT_CLASS}}", if config_display.goodbye_message_type == "text" { "selected" } else { "" })
-        .replace("{{WELCOME_TEXT_HIDE}}", if config_display.welcome_message_type == "text" { "show" } else { "" })
-        .replace("{{WELCOME_EMBED_SHOW}}", if config_display.welcome_message_type == "embed" { "show" } else { "" })
-        .replace("{{GOODBYE_TEXT_HIDE}}", if config_display.goodbye_message_type == "text" { "show" } else { "" })
-        .replace("{{GOODBYE_EMBED_SHOW}}", if config_display.goodbye_message_type == "embed" { "show" } else { "" })
-        .replace("{{WELCOME_CONFIG_DISPLAY}}", if config_display.welcome_enabled { "block" } else { "none" })
-        .replace("{{GOODBYE_CONFIG_DISPLAY}}", if config_display.goodbye_enabled { "block" } else { "none" });
+        .replace(
+            "{{WELCOME_ENABLED}}",
+            if config_display.welcome_enabled {
+                "checked"
+            } else {
+                ""
+            },
+        )
+        .replace(
+            "{{GOODBYE_ENABLED}}",
+            if config_display.goodbye_enabled {
+                "checked"
+            } else {
+                ""
+            },
+        )
+        .replace(
+            "{{WELCOME_MESSAGE_CONTENT}}",
+            &config_display.welcome_message_content.unwrap_or_default(),
+        )
+        .replace(
+            "{{GOODBYE_MESSAGE_CONTENT}}",
+            &config_display.goodbye_message_content.unwrap_or_default(),
+        )
+        .replace(
+            "{{WELCOME_EMBED_TITLE}}",
+            &config_display.welcome_embed_title.unwrap_or_default(),
+        )
+        .replace(
+            "{{WELCOME_EMBED_DESCRIPTION}}",
+            &config_display.welcome_embed_description.unwrap_or_default(),
+        )
+        .replace(
+            "{{WELCOME_EMBED_COLOR}}",
+            &config_display.welcome_embed_color_hex,
+        )
+        .replace(
+            "{{WELCOME_EMBED_FOOTER}}",
+            &config_display.welcome_embed_footer.unwrap_or_default(),
+        )
+        .replace(
+            "{{WELCOME_EMBED_THUMBNAIL}}",
+            &config_display.welcome_embed_thumbnail.unwrap_or_default(),
+        )
+        .replace(
+            "{{WELCOME_EMBED_IMAGE}}",
+            &config_display.welcome_embed_image.unwrap_or_default(),
+        )
+        .replace(
+            "{{WELCOME_EMBED_TIMESTAMP}}",
+            if config_display.welcome_embed_timestamp {
+                "checked"
+            } else {
+                ""
+            },
+        )
+        .replace(
+            "{{GOODBYE_EMBED_TITLE}}",
+            &config_display.goodbye_embed_title.unwrap_or_default(),
+        )
+        .replace(
+            "{{GOODBYE_EMBED_DESCRIPTION}}",
+            &config_display.goodbye_embed_description.unwrap_or_default(),
+        )
+        .replace(
+            "{{GOODBYE_EMBED_COLOR}}",
+            &config_display.goodbye_embed_color_hex,
+        )
+        .replace(
+            "{{GOODBYE_EMBED_FOOTER}}",
+            &config_display.goodbye_embed_footer.unwrap_or_default(),
+        )
+        .replace(
+            "{{GOODBYE_EMBED_THUMBNAIL}}",
+            &config_display.goodbye_embed_thumbnail.unwrap_or_default(),
+        )
+        .replace(
+            "{{GOODBYE_EMBED_IMAGE}}",
+            &config_display.goodbye_embed_image.unwrap_or_default(),
+        )
+        .replace(
+            "{{GOODBYE_EMBED_TIMESTAMP}}",
+            if config_display.goodbye_embed_timestamp {
+                "checked"
+            } else {
+                ""
+            },
+        )
+        .replace(
+            "{{WELCOME_MESSAGE_TYPE_EMBED_CHECKED}}",
+            if config_display.welcome_message_type == "embed" {
+                "checked"
+            } else {
+                ""
+            },
+        )
+        .replace(
+            "{{WELCOME_MESSAGE_TYPE_TEXT_CHECKED}}",
+            if config_display.welcome_message_type == "text" {
+                "checked"
+            } else {
+                ""
+            },
+        )
+        .replace(
+            "{{GOODBYE_MESSAGE_TYPE_EMBED_CHECKED}}",
+            if config_display.goodbye_message_type == "embed" {
+                "checked"
+            } else {
+                ""
+            },
+        )
+        .replace(
+            "{{GOODBYE_MESSAGE_TYPE_TEXT_CHECKED}}",
+            if config_display.goodbye_message_type == "text" {
+                "checked"
+            } else {
+                ""
+            },
+        )
+        .replace(
+            "{{WELCOME_MESSAGE_TYPE_EMBED_CLASS}}",
+            if config_display.welcome_message_type == "embed" {
+                "selected"
+            } else {
+                ""
+            },
+        )
+        .replace(
+            "{{WELCOME_MESSAGE_TYPE_TEXT_CLASS}}",
+            if config_display.welcome_message_type == "text" {
+                "selected"
+            } else {
+                ""
+            },
+        )
+        .replace(
+            "{{GOODBYE_MESSAGE_TYPE_EMBED_CLASS}}",
+            if config_display.goodbye_message_type == "embed" {
+                "selected"
+            } else {
+                ""
+            },
+        )
+        .replace(
+            "{{GOODBYE_MESSAGE_TYPE_TEXT_CLASS}}",
+            if config_display.goodbye_message_type == "text" {
+                "selected"
+            } else {
+                ""
+            },
+        )
+        .replace(
+            "{{WELCOME_TEXT_HIDE}}",
+            if config_display.welcome_message_type == "text" {
+                "show"
+            } else {
+                ""
+            },
+        )
+        .replace(
+            "{{WELCOME_EMBED_SHOW}}",
+            if config_display.welcome_message_type == "embed" {
+                "show"
+            } else {
+                ""
+            },
+        )
+        .replace(
+            "{{GOODBYE_TEXT_HIDE}}",
+            if config_display.goodbye_message_type == "text" {
+                "show"
+            } else {
+                ""
+            },
+        )
+        .replace(
+            "{{GOODBYE_EMBED_SHOW}}",
+            if config_display.goodbye_message_type == "embed" {
+                "show"
+            } else {
+                ""
+            },
+        )
+        .replace(
+            "{{WELCOME_CONFIG_DISPLAY}}",
+            if config_display.welcome_enabled {
+                "block"
+            } else {
+                "none"
+            },
+        )
+        .replace(
+            "{{GOODBYE_CONFIG_DISPLAY}}",
+            if config_display.goodbye_enabled {
+                "block"
+            } else {
+                "none"
+            },
+        );
 
     Ok(Html(template))
 }
@@ -241,7 +426,8 @@ pub async fn save_welcome_goodbye_config(
     State(state): State<AppState>,
     Json(request): Json<WelcomeGoodbyeConfigRequest>,
 ) -> Result<Json<serde_json::Value>, StatusCode> {
-    let session = extract_session_data(&headers).await
+    let session = extract_session_data(&headers)
+        .await
         .map_err(|_| StatusCode::UNAUTHORIZED)?;
 
     let user = session.1.ok_or(StatusCode::UNAUTHORIZED)?;
@@ -253,7 +439,9 @@ pub async fn save_welcome_goodbye_config(
     // Validate the configuration
     if request.welcome_enabled {
         if request.welcome_channel_id.is_none() {
-            return Ok(Json(json!({"success": false, "error": "Welcome channel is required when welcome messages are enabled"})));
+            return Ok(Json(
+                json!({"success": false, "error": "Welcome channel is required when welcome messages are enabled"}),
+            ));
         }
 
         if let Err(e) = validate_message_config(
@@ -262,25 +450,33 @@ pub async fn save_welcome_goodbye_config(
             &request.welcome_embed_title,
             &request.welcome_embed_description,
         ) {
-            return Ok(Json(json!({"success": false, "error": format!("Welcome message validation error: {}", e)})));
+            return Ok(Json(
+                json!({"success": false, "error": format!("Welcome message validation error: {}", e)}),
+            ));
         }
 
         // Validate URLs if provided
         if let Some(ref url) = request.welcome_embed_thumbnail {
             if !url.is_empty() && !validate_url(url) {
-                return Ok(Json(json!({"success": false, "error": "Invalid welcome thumbnail URL"})));
+                return Ok(Json(
+                    json!({"success": false, "error": "Invalid welcome thumbnail URL"}),
+                ));
             }
         }
         if let Some(ref url) = request.welcome_embed_image {
             if !url.is_empty() && !validate_url(url) {
-                return Ok(Json(json!({"success": false, "error": "Invalid welcome image URL"})));
+                return Ok(Json(
+                    json!({"success": false, "error": "Invalid welcome image URL"}),
+                ));
             }
         }
     }
 
     if request.goodbye_enabled {
         if request.goodbye_channel_id.is_none() {
-            return Ok(Json(json!({"success": false, "error": "Goodbye channel is required when goodbye messages are enabled"})));
+            return Ok(Json(
+                json!({"success": false, "error": "Goodbye channel is required when goodbye messages are enabled"}),
+            ));
         }
 
         if let Err(e) = validate_message_config(
@@ -289,29 +485,37 @@ pub async fn save_welcome_goodbye_config(
             &request.goodbye_embed_title,
             &request.goodbye_embed_description,
         ) {
-            return Ok(Json(json!({"success": false, "error": format!("Goodbye message validation error: {}", e)})));
+            return Ok(Json(
+                json!({"success": false, "error": format!("Goodbye message validation error: {}", e)}),
+            ));
         }
 
         // Validate URLs if provided
         if let Some(ref url) = request.goodbye_embed_thumbnail {
             if !url.is_empty() && !validate_url(url) {
-                return Ok(Json(json!({"success": false, "error": "Invalid goodbye thumbnail URL"})));
+                return Ok(Json(
+                    json!({"success": false, "error": "Invalid goodbye thumbnail URL"}),
+                ));
             }
         }
         if let Some(ref url) = request.goodbye_embed_image {
             if !url.is_empty() && !validate_url(url) {
-                return Ok(Json(json!({"success": false, "error": "Invalid goodbye image URL"})));
+                return Ok(Json(
+                    json!({"success": false, "error": "Invalid goodbye image URL"}),
+                ));
             }
         }
     }
 
     // Convert hex colors to integers
-    let welcome_embed_color = request.welcome_embed_color
+    let welcome_embed_color = request
+        .welcome_embed_color
         .as_ref()
         .and_then(|hex| hex.strip_prefix('#'))
         .and_then(|hex| i32::from_str_radix(hex, 16).ok());
 
-    let goodbye_embed_color = request.goodbye_embed_color
+    let goodbye_embed_color = request
+        .goodbye_embed_color
         .as_ref()
         .and_then(|hex| hex.strip_prefix('#'))
         .and_then(|hex| i32::from_str_radix(hex, 16).ok());
@@ -351,7 +555,9 @@ pub async fn save_welcome_goodbye_config(
         }
         Err(e) => {
             tracing::error!("Failed to save welcome/goodbye config: {}", e);
-            Ok(Json(json!({"success": false, "error": "Failed to save configuration"})))
+            Ok(Json(
+                json!({"success": false, "error": "Failed to save configuration"}),
+            ))
         }
     }
 }
@@ -361,7 +567,8 @@ pub async fn send_test_welcome(
     headers: HeaderMap,
     State(state): State<AppState>,
 ) -> Result<Json<serde_json::Value>, StatusCode> {
-    let session = extract_session_data(&headers).await
+    let session = extract_session_data(&headers)
+        .await
         .map_err(|_| StatusCode::UNAUTHORIZED)?;
 
     let user = session.1.ok_or(StatusCode::UNAUTHORIZED)?;
@@ -405,7 +612,11 @@ pub async fn send_test_welcome(
     // Send test welcome message using the logged-in user as test subject
     match send_test_message_to_channel(&state, &config, &user, &guild_id, "welcome").await {
         Ok(_) => {
-            tracing::info!("Test welcome message sent for guild {} by user {}", guild_id, user.user.id);
+            tracing::info!(
+                "Test welcome message sent for guild {} by user {}",
+                guild_id,
+                user.user.id
+            );
             Ok(Json(json!({"success": true})))
         }
         Err(e) => {
@@ -423,7 +634,8 @@ pub async fn send_test_goodbye(
     headers: HeaderMap,
     State(state): State<AppState>,
 ) -> Result<Json<serde_json::Value>, StatusCode> {
-    let session = extract_session_data(&headers).await
+    let session = extract_session_data(&headers)
+        .await
         .map_err(|_| StatusCode::UNAUTHORIZED)?;
 
     let user = session.1.ok_or(StatusCode::UNAUTHORIZED)?;
@@ -467,7 +679,11 @@ pub async fn send_test_goodbye(
     // Send test goodbye message using the logged-in user as test subject
     match send_test_message_to_channel(&state, &config, &user, &guild_id, "goodbye").await {
         Ok(_) => {
-            tracing::info!("Test goodbye message sent for guild {} by user {}", guild_id, user.user.id);
+            tracing::info!(
+                "Test goodbye message sent for guild {} by user {}",
+                guild_id,
+                user.user.id
+            );
             Ok(Json(json!({"success": true})))
         }
         Err(e) => {
@@ -486,7 +702,8 @@ pub async fn get_live_preview(
     State(_state): State<AppState>,
     Json(_request): Json<HashMap<String, serde_json::Value>>,
 ) -> Result<Json<serde_json::Value>, StatusCode> {
-    let session = extract_session_data(&headers).await
+    let session = extract_session_data(&headers)
+        .await
         .map_err(|_| StatusCode::UNAUTHORIZED)?;
 
     let user = session.1.ok_or(StatusCode::UNAUTHORIZED)?;
@@ -502,7 +719,10 @@ pub async fn get_live_preview(
     })))
 }
 
-async fn get_guild_text_channels(state: &AppState, guild_id: &str) -> Result<Vec<ChannelInfo>, Box<dyn std::error::Error + Send + Sync>> {
+async fn get_guild_text_channels(
+    state: &AppState,
+    guild_id: &str,
+) -> Result<Vec<ChannelInfo>, Box<dyn std::error::Error + Send + Sync>> {
     let guild_id_u64: u64 = guild_id.parse()?;
     let channels = state.http.get_channels(guild_id_u64.into()).await?;
 
@@ -535,11 +755,25 @@ async fn send_test_message_to_channel(
     placeholders.insert("user".to_string(), format!("<@{}>", user.user.id));
     placeholders.insert("username".to_string(), user.user.username.clone());
     placeholders.insert("server".to_string(), guild.name.clone());
-    placeholders.insert("member_count".to_string(), guild.approximate_member_count.unwrap_or(0).to_string());
+    placeholders.insert(
+        "member_count".to_string(),
+        guild.approximate_member_count.unwrap_or(0).to_string(),
+    );
     placeholders.insert("user_id".to_string(), user.user.id.clone());
     placeholders.insert("join_date".to_string(), "2024-01-01".to_string()); // Placeholder date
 
-    let (channel_id, msg_type, content, embed_title, embed_desc, embed_color, embed_footer, embed_thumb, embed_image, embed_timestamp) = match message_type {
+    let (
+        channel_id,
+        msg_type,
+        content,
+        embed_title,
+        embed_desc,
+        embed_color,
+        embed_footer,
+        embed_thumb,
+        embed_image,
+        embed_timestamp,
+    ) = match message_type {
         "welcome" => (
             config.welcome_channel_id.as_ref().unwrap(),
             &config.welcome_message_type,
@@ -592,9 +826,10 @@ async fn send_test_message_to_channel(
 
             if let Some(footer) = embed_footer {
                 if !footer.trim().is_empty() {
-                    embed = embed.footer(CreateEmbedFooter::new(
-                        replace_placeholders(footer, &placeholders)
-                    ));
+                    embed = embed.footer(CreateEmbedFooter::new(replace_placeholders(
+                        footer,
+                        &placeholders,
+                    )));
                 }
             }
 
@@ -615,14 +850,20 @@ async fn send_test_message_to_channel(
             }
 
             let message = CreateMessage::new().embed(embed);
-            state.http.send_message(channel_id_u64.into(), Vec::new(), &message).await?;
+            state
+                .http
+                .send_message(channel_id_u64.into(), Vec::new(), &message)
+                .await?;
         }
         "text" => {
             if let Some(content) = content {
                 let processed_content = replace_placeholders(content, &placeholders);
                 if !processed_content.trim().is_empty() {
                     let message = CreateMessage::new().content(processed_content);
-                    state.http.send_message(channel_id_u64.into(), Vec::new(), &message).await?;
+                    state
+                        .http
+                        .send_message(channel_id_u64.into(), Vec::new(), &message)
+                        .await?;
                 }
             }
         }

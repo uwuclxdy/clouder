@@ -1,6 +1,6 @@
 [package]
 name = "clouder"
-version = "0.1.4"
+version = "0.1.6"
 edition = "2024"
 
 [dependencies]
@@ -12,7 +12,7 @@ poise = "0.6"
 axum = { version = "0.8.4", features = ["multipart"] }
 
 # Database
-sqlx = { version = "0.8.6", features = ["runtime-tokio-rustls", "sqlite", "chrono", "uuid", "derive", "migrate"], default-features = false }
+sqlx = { version = "0.8.6", features = ["runtime-tokio-rustls", "sqlite", "chrono", "uuid", "derive", "migrate", "macros"], default-features = false }
 
 # Authentication & OAuth2
 reqwest = { version = "0.12.23", features = ["json"] }

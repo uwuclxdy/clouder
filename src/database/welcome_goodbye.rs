@@ -66,7 +66,10 @@ impl Default for WelcomeGoodbyeConfig {
 }
 
 impl WelcomeGoodbyeConfig {
-    pub async fn get_config(pool: &SqlitePool, guild_id: &str) -> Result<Option<Self>, sqlx::Error> {
+    pub async fn get_config(
+        pool: &SqlitePool,
+        guild_id: &str,
+    ) -> Result<Option<Self>, sqlx::Error> {
         let row = sqlx::query(
             r#"
             SELECT guild_id, welcome_enabled, goodbye_enabled, welcome_channel_id, goodbye_channel_id,
@@ -109,12 +112,18 @@ impl WelcomeGoodbyeConfig {
                 goodbye_embed_thumbnail: row.get("goodbye_embed_thumbnail"),
                 goodbye_embed_image: row.get("goodbye_embed_image"),
                 goodbye_embed_timestamp: row.get("goodbye_embed_timestamp"),
-                created_at: chrono::DateTime::parse_from_str(&row.get::<String, _>("created_at"), "%Y-%m-%d %H:%M:%S")
-                    .unwrap_or_else(|_| chrono::Utc::now().into())
-                    .with_timezone(&chrono::Utc),
-                updated_at: chrono::DateTime::parse_from_str(&row.get::<String, _>("updated_at"), "%Y-%m-%d %H:%M:%S")
-                    .unwrap_or_else(|_| chrono::Utc::now().into())
-                    .with_timezone(&chrono::Utc),
+                created_at: chrono::DateTime::parse_from_str(
+                    &row.get::<String, _>("created_at"),
+                    "%Y-%m-%d %H:%M:%S",
+                )
+                .unwrap_or_else(|_| chrono::Utc::now().into())
+                .with_timezone(&chrono::Utc),
+                updated_at: chrono::DateTime::parse_from_str(
+                    &row.get::<String, _>("updated_at"),
+                    "%Y-%m-%d %H:%M:%S",
+                )
+                .unwrap_or_else(|_| chrono::Utc::now().into())
+                .with_timezone(&chrono::Utc),
             }))
         } else {
             Ok(None)
@@ -168,10 +177,7 @@ impl WelcomeGoodbyeConfig {
     }
 }
 
-pub fn replace_placeholders(
-    content: &str,
-    placeholders: &HashMap<String, String>,
-) -> String {
+pub fn replace_placeholders(content: &str, placeholders: &HashMap<String, String>) -> String {
     let mut result = content.to_string();
 
     for (key, value) in placeholders {
@@ -198,12 +204,18 @@ pub fn get_member_placeholders(
 
     if let Some(member) = member {
         if let Some(joined_at) = member.joined_at {
-            placeholders.insert("join_date".to_string(), joined_at.format("%Y-%m-%d").to_string());
+            placeholders.insert(
+                "join_date".to_string(),
+                joined_at.format("%Y-%m-%d").to_string(),
+            );
         }
     } else {
         // For welcome messages, use account creation date if member info not available
         let created_at = user.created_at();
-        placeholders.insert("join_date".to_string(), created_at.format("%Y-%m-%d").to_string());
+        placeholders.insert(
+            "join_date".to_string(),
+            created_at.format("%Y-%m-%d").to_string(),
+        );
     }
 
     placeholders

@@ -10,15 +10,20 @@ pub async fn server_list(
     headers: HeaderMap,
     State(state): State<AppState>,
 ) -> Result<Html<String>, Redirect> {
-    let session = extract_session_data(&headers).await
+    let session = extract_session_data(&headers)
+        .await
         .map_err(|_| Redirect::temporary("/auth/login"))?;
 
-    let user = session.1.ok_or_else(|| Redirect::temporary("/auth/login"))?;
+    let user = session
+        .1
+        .ok_or_else(|| Redirect::temporary("/auth/login"))?;
     let manageable_guilds = user.get_manageable_guilds();
 
     let mut guilds_html = String::new();
     for guild in manageable_guilds {
-        let icon_url = guild.icon.as_ref()
+        let icon_url = guild
+            .icon
+            .as_ref()
             .map(|icon| format!("https://cdn.discordapp.com/icons/{}/{}.png", guild.id, icon))
             .unwrap_or_else(|| "https://cdn.discordapp.com/embed/avatars/0.png".to_string());
 
@@ -26,7 +31,10 @@ pub async fn server_list(
             .replace("{{GUILD_ID}}", &guild.id)
             .replace("{{ICON_URL}}", &icon_url)
             .replace("{{GUILD_NAME}}", &guild.name)
-            .replace("{{PERMISSION_TEXT}}", if guild.owner { "Owner" } else { "Manage Roles" });
+            .replace(
+                "{{PERMISSION_TEXT}}",
+                if guild.owner { "Owner" } else { "Manage Roles" },
+            );
 
         guilds_html.push_str(&guild_card);
     }
@@ -39,8 +47,16 @@ pub async fn server_list(
         };
     }
 
-    let user_avatar = user.user.avatar.as_ref()
-        .map(|avatar| format!("https://cdn.discordapp.com/avatars/{}/{}.png", user.user.id, avatar))
+    let user_avatar = user
+        .user
+        .avatar
+        .as_ref()
+        .map(|avatar| {
+            format!(
+                "https://cdn.discordapp.com/avatars/{}/{}.png",
+                user.user.id, avatar
+            )
+        })
         .unwrap_or_else(|| "https://cdn.discordapp.com/embed/avatars/0.png".to_string());
 
     // Generate Discord invite URL with Administrator permission
@@ -51,7 +67,10 @@ pub async fn server_list(
 
     let template = include_str!("templates/server_list.html")
         .replace("{{COMMON_CSS}}", include_str!("static/css/common.css"))
-        .replace("{{DASHBOARD_CSS}}", include_str!("static/css/dashboard.css"))
+        .replace(
+            "{{DASHBOARD_CSS}}",
+            include_str!("static/css/dashboard.css"),
+        )
         .replace("{{USER_AVATAR}}", &user_avatar)
         .replace("{{USER_NAME}}", &user.user.username)
         .replace("{{INVITE_URL}}", &invite_url)
@@ -64,13 +83,24 @@ pub async fn user_settings(
     headers: HeaderMap,
     State(state): State<AppState>,
 ) -> Result<Html<String>, Redirect> {
-    let session = extract_session_data(&headers).await
+    let session = extract_session_data(&headers)
+        .await
         .map_err(|_| Redirect::temporary("/auth/login"))?;
 
-    let user = session.1.ok_or_else(|| Redirect::temporary("/auth/login"))?;
+    let user = session
+        .1
+        .ok_or_else(|| Redirect::temporary("/auth/login"))?;
 
-    let user_avatar = user.user.avatar.as_ref()
-        .map(|avatar| format!("https://cdn.discordapp.com/avatars/{}/{}.png", user.user.id, avatar))
+    let user_avatar = user
+        .user
+        .avatar
+        .as_ref()
+        .map(|avatar| {
+            format!(
+                "https://cdn.discordapp.com/avatars/{}/{}.png",
+                user.user.id, avatar
+            )
+        })
         .unwrap_or_else(|| "https://cdn.discordapp.com/embed/avatars/0.png".to_string());
 
     // Generate Discord invite URL with Administrator permission
@@ -299,10 +329,13 @@ pub async fn guild_dashboard(
     headers: HeaderMap,
     State(_state): State<AppState>,
 ) -> Result<Html<String>, Redirect> {
-    let session = extract_session_data(&headers).await
+    let session = extract_session_data(&headers)
+        .await
         .map_err(|_| Redirect::temporary("/auth/login"))?;
 
-    let user = session.1.ok_or_else(|| Redirect::temporary("/auth/login"))?;
+    let user = session
+        .1
+        .ok_or_else(|| Redirect::temporary("/auth/login"))?;
 
     if !user.has_manage_roles_in_guild(&guild_id) {
         return Err(Redirect::temporary("/"));
@@ -310,7 +343,9 @@ pub async fn guild_dashboard(
 
     let guild = user.guilds.iter().find(|g| g.id == guild_id).unwrap();
 
-    let guild_icon = guild.icon.as_ref()
+    let guild_icon = guild
+        .icon
+        .as_ref()
         .map(|icon| format!("https://cdn.discordapp.com/icons/{}/{}.png", guild.id, icon))
         .unwrap_or_else(|| "https://cdn.discordapp.com/embed/avatars/0.png".to_string());
 
@@ -322,7 +357,10 @@ pub async fn guild_dashboard(
 
     let template = include_str!("templates/guild_dashboard.html")
         .replace("{{COMMON_CSS}}", include_str!("static/css/common.css"))
-        .replace("{{DASHBOARD_CSS}}", include_str!("static/css/dashboard.css"))
+        .replace(
+            "{{DASHBOARD_CSS}}",
+            include_str!("static/css/dashboard.css"),
+        )
         .replace("{{GUILD_NAME}}", &guild.name)
         .replace("{{GUILD_ICON}}", &guild_icon)
         .replace("{{GUILD_ID}}", &guild_id)
@@ -336,10 +374,13 @@ pub async fn selfroles_list(
     headers: HeaderMap,
     State(_state): State<AppState>,
 ) -> Result<Html<String>, Redirect> {
-    let session = extract_session_data(&headers).await
+    let session = extract_session_data(&headers)
+        .await
         .map_err(|_| Redirect::temporary("/auth/login"))?;
 
-    let user = session.1.ok_or_else(|| Redirect::temporary("/auth/login"))?;
+    let user = session
+        .1
+        .ok_or_else(|| Redirect::temporary("/auth/login"))?;
 
     if !user.has_manage_roles_in_guild(&guild_id) {
         return Err(Redirect::temporary("/"));
@@ -355,7 +396,10 @@ pub async fn selfroles_list(
 
     let template = include_str!("templates/selfroles_list.html")
         .replace("{{COMMON_CSS}}", include_str!("static/css/common.css"))
-        .replace("{{DASHBOARD_CSS}}", include_str!("static/css/dashboard.css"))
+        .replace(
+            "{{DASHBOARD_CSS}}",
+            include_str!("static/css/dashboard.css"),
+        )
         .replace("{{COMMON_JS}}", include_str!("static/js/common.js"))
         .replace("{{SELFROLES_JS}}", include_str!("static/js/selfroles.js"))
         .replace("{{GUILD_NAME}}", &guild.name)
@@ -370,10 +414,13 @@ pub async fn selfroles_create(
     headers: HeaderMap,
     State(state): State<AppState>,
 ) -> Result<Html<String>, Redirect> {
-    let session = extract_session_data(&headers).await
+    let session = extract_session_data(&headers)
+        .await
         .map_err(|_| Redirect::temporary("/auth/login"))?;
 
-    let user = session.1.ok_or_else(|| Redirect::temporary("/auth/login"))?;
+    let user = session
+        .1
+        .ok_or_else(|| Redirect::temporary("/auth/login"))?;
 
     if !user.has_manage_roles_in_guild(&guild_id) {
         return Err(Redirect::temporary("/"));
@@ -388,10 +435,13 @@ pub async fn selfroles_edit(
     headers: HeaderMap,
     State(state): State<AppState>,
 ) -> Result<Html<String>, Redirect> {
-    let session = extract_session_data(&headers).await
+    let session = extract_session_data(&headers)
+        .await
         .map_err(|_| Redirect::temporary("/auth/login"))?;
 
-    let user = session.1.ok_or_else(|| Redirect::temporary("/auth/login"))?;
+    let user = session
+        .1
+        .ok_or_else(|| Redirect::temporary("/auth/login"))?;
 
     if !user.has_manage_roles_in_guild(&guild_id) {
         return Err(Redirect::temporary("/"));
@@ -414,7 +464,7 @@ fn render_selfroles_form(
                 "Edit Self-Role Message",
                 "Edit interactive role assignment message for",
                 "Edit",
-                "Update Self-Role Message"
+                "Update Self-Role Message",
             )
         } else {
             (
@@ -422,7 +472,7 @@ fn render_selfroles_form(
                 "Create Self-Role Message",
                 "Create a new interactive role assignment message for",
                 "Create",
-                "Create Self-Role Message"
+                "Create Self-Role Message",
             )
         };
 
@@ -434,9 +484,15 @@ fn render_selfroles_form(
 
     let template = include_str!("templates/selfroles_form.html")
         .replace("{{COMMON_CSS}}", include_str!("static/css/common.css"))
-        .replace("{{DASHBOARD_CSS}}", include_str!("static/css/dashboard.css"))
+        .replace(
+            "{{DASHBOARD_CSS}}",
+            include_str!("static/css/dashboard.css"),
+        )
         .replace("{{COMMON_JS}}", include_str!("static/js/common.js"))
-        .replace("{{SELFROLES_CONFIG_JS}}", include_str!("static/js/selfroles_config.js"))
+        .replace(
+            "{{SELFROLES_CONFIG_JS}}",
+            include_str!("static/js/selfroles_config.js"),
+        )
         .replace("{{SELFROLES_JS}}", include_str!("static/js/selfroles.js"))
         .replace("{{GUILD_NAME}}", guild_name)
         .replace("{{GUILD_ID}}", guild_id)
@@ -457,10 +513,13 @@ pub async fn custom_commands(
     headers: HeaderMap,
     State(_state): State<AppState>,
 ) -> Result<Html<String>, Redirect> {
-    let session = extract_session_data(&headers).await
+    let session = extract_session_data(&headers)
+        .await
         .map_err(|_| Redirect::temporary("/auth/login"))?;
 
-    let user = session.1.ok_or_else(|| Redirect::temporary("/auth/login"))?;
+    let user = session
+        .1
+        .ok_or_else(|| Redirect::temporary("/auth/login"))?;
 
     if !user.has_manage_roles_in_guild(&guild_id) {
         return Err(Redirect::temporary("/"));
@@ -476,10 +535,13 @@ pub async fn server_settings(
     headers: HeaderMap,
     State(_state): State<AppState>,
 ) -> Result<Html<String>, Redirect> {
-    let session = extract_session_data(&headers).await
+    let session = extract_session_data(&headers)
+        .await
         .map_err(|_| Redirect::temporary("/auth/login"))?;
 
-    let user = session.1.ok_or_else(|| Redirect::temporary("/auth/login"))?;
+    let user = session
+        .1
+        .ok_or_else(|| Redirect::temporary("/auth/login"))?;
 
     if !user.has_manage_roles_in_guild(&guild_id) {
         return Err(Redirect::temporary("/"));

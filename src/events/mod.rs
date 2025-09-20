@@ -1,11 +1,11 @@
 use crate::config::AppState;
-use crate::events::bot_mentioned::on_mention;
+use crate::events::bot_mentioned::{handle_ai_retry_interaction, on_mention};
 use crate::events::selfroles::{handle_selfrole_interaction, selfrole_message_delete};
 use crate::{serenity, Data, Error};
 use tracing::info;
 
-pub mod member_events;
 mod bot_mentioned;
+pub mod member_events;
 mod selfroles;
 
 pub async fn event_handler(
@@ -21,7 +21,11 @@ pub async fn event_handler(
         serenity::FullEvent::InteractionCreate { interaction } => {
             handle_interaction_create(ctx, interaction, data).await;
         }
-        serenity::FullEvent::MessageDelete { channel_id, deleted_message_id, guild_id } => {
+        serenity::FullEvent::MessageDelete {
+            channel_id,
+            deleted_message_id,
+            guild_id,
+        } => {
             selfrole_message_delete(ctx, channel_id, deleted_message_id, guild_id, data).await;
         }
         serenity::FullEvent::Message { new_message } => {
@@ -30,7 +34,11 @@ pub async fn event_handler(
         serenity::FullEvent::GuildMemberAddition { new_member } => {
             member_events::member_addition(ctx, &new_member.guild_id, new_member).await;
         }
-        serenity::FullEvent::GuildMemberRemoval { guild_id, user, member_data_if_available } => {
+        serenity::FullEvent::GuildMemberRemoval {
+            guild_id,
+            user,
+            member_data_if_available,
+        } => {
             member_events::member_removal(ctx, guild_id, user, member_data_if_available).await;
         }
         _ => {}
@@ -58,5 +66,7 @@ pub async fn handle_component_interaction(
 ) {
     if interaction.data.custom_id.starts_with("selfrole_") {
         handle_selfrole_interaction(ctx, interaction, data).await;
+    } else if interaction.data.custom_id.starts_with("ai_retry_") {
+        handle_ai_retry_interaction(ctx, interaction, data).await;
     }
 }

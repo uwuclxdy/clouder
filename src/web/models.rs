@@ -9,7 +9,9 @@ where
     match value {
         Value::String(s) => Ok(s),
         Value::Number(n) => Ok(n.to_string()),
-        _ => Err(serde::de::Error::custom("Expected string or number for permissions"))
+        _ => Err(serde::de::Error::custom(
+            "Expected string or number for permissions",
+        )),
     }
 }
 
@@ -23,7 +25,7 @@ where
         Value::Null => Ok(None),
         Value::String(s) => Ok(Some(s)),
         Value::Number(n) => Ok(Some(n.to_string())),
-        _ => Ok(None)
+        _ => Ok(None),
     }
 }
 
@@ -77,20 +79,15 @@ pub struct SessionUser {
     pub access_token: String,
 }
 
-#[derive(Debug, Deserialize)]
-pub struct AuthCallback {
-    #[allow(dead_code)]
-    pub code: String,
-    #[allow(dead_code)]
-    pub state: Option<String>,
-}
-
 impl SessionUser {
     pub fn has_manage_roles_in_guild(&self, guild_id: &str) -> bool {
-        self.guilds.iter()
+        self.guilds
+            .iter()
             .find(|g| g.id == guild_id)
             .map(|guild| {
-                if guild.owner { return true; }
+                if guild.owner {
+                    return true;
+                }
                 let permissions = guild.permissions.parse::<u64>().unwrap_or(0);
                 const MANAGE_ROLES: u64 = 0x10000000;
                 (permissions & MANAGE_ROLES) != 0
@@ -99,21 +96,27 @@ impl SessionUser {
     }
 
     pub fn has_administrator_in_guild(&self, guild_id: &str) -> bool {
-        self.guilds.iter()
+        self.guilds
+            .iter()
             .find(|g| g.id == guild_id)
             .map(|guild| {
-                if guild.owner { return true; }
+                if guild.owner {
+                    return true;
+                }
                 let permissions = guild.permissions.parse::<u64>().unwrap_or(0);
                 const ADMINISTRATOR: u64 = 0x8;
                 (permissions & ADMINISTRATOR) != 0
             })
             .unwrap_or(false)
     }
-    
+
     pub fn get_manageable_guilds(&self) -> Vec<&Guild> {
-        self.guilds.iter()
+        self.guilds
+            .iter()
             .filter(|guild| {
-                if guild.owner { return true; }
+                if guild.owner {
+                    return true;
+                }
                 let permissions = guild.permissions.parse::<u64>().unwrap_or(0);
                 const MANAGE_ROLES: u64 = 0x10000000;
                 (permissions & MANAGE_ROLES) != 0

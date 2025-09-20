@@ -25,11 +25,9 @@ pub fn format_duration(seconds: u64) -> String {
     }
 }
 
-pub fn can_bot_manage_role(
-    bot_role_positions: &[u16],
-    target_role_position: u16,
-) -> bool {
-    bot_role_positions.iter()
+pub fn can_bot_manage_role(bot_role_positions: &[u16], target_role_position: u16) -> bool {
+    bot_role_positions
+        .iter()
         .any(|&bot_pos| bot_pos > target_role_position)
 }
 
@@ -49,7 +47,9 @@ pub fn get_bot_role_positions(
     bot_member: &serenity::all::Member,
     guild_roles: &[serenity::all::Role],
 ) -> Vec<u16> {
-    bot_member.roles.iter()
+    bot_member
+        .roles
+        .iter()
         .filter_map(|role_id| guild_roles.iter().find(|r| r.id == *role_id))
         .map(|role| role.position)
         .collect()

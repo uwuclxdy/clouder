@@ -1,13 +1,13 @@
+pub mod about_tests;
+pub mod commands_tests;
 pub mod config_tests;
 pub mod database_tests;
-pub mod web_tests;
 pub mod events_tests;
-pub mod commands_tests;
-pub mod utils_tests;
-pub mod session_extractor_tests;
-pub mod about_tests;
 mod help_tests;
 mod purge_tests;
+pub mod session_extractor_tests;
+pub mod utils_tests;
+pub mod web_tests;
 mod welcome_goodbye_tests;
 
 use crate::config::AppState;
@@ -19,7 +19,8 @@ use std::sync::Arc;
 pub async fn create_test_db() -> SqlitePool {
     let pool = SqlitePool::connect("sqlite::memory:").await.unwrap();
 
-    sqlx::query(r#"
+    sqlx::query(
+        r#"
         CREATE TABLE selfrole_configs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             guild_id TEXT NOT NULL,
@@ -31,9 +32,14 @@ pub async fn create_test_db() -> SqlitePool {
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
         );
-    "#).execute(&pool).await.unwrap();
+    "#,
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
 
-    sqlx::query(r#"
+    sqlx::query(
+        r#"
         CREATE TABLE selfrole_roles (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             config_id INTEGER NOT NULL,
@@ -41,9 +47,14 @@ pub async fn create_test_db() -> SqlitePool {
             emoji TEXT NOT NULL,
             FOREIGN KEY (config_id) REFERENCES selfrole_configs(id) ON DELETE CASCADE
         );
-    "#).execute(&pool).await.unwrap();
+    "#,
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
 
-    sqlx::query(r#"
+    sqlx::query(
+        r#"
         CREATE TABLE selfrole_cooldowns (
             user_id TEXT NOT NULL,
             role_id TEXT NOT NULL,
@@ -51,7 +62,11 @@ pub async fn create_test_db() -> SqlitePool {
             expires_at DATETIME NOT NULL,
             PRIMARY KEY (user_id, role_id, guild_id)
         );
-    "#).execute(&pool).await.unwrap();
+    "#,
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
 
     pool
 }

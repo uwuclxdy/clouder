@@ -35,6 +35,9 @@ async fn main() -> Result<()> {
 
     info!("Starting Clouder Discord Bot...");
 
+    // Initialize bot start time for uptime calculation
+    let _ = *crate::commands::about::BOT_START_TIME;
+
     let config = Arc::new(Config::from_env()?);
     info!("Configuration loaded successfully");
 

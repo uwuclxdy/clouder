@@ -1,7 +1,7 @@
 use crate::commands::about::BOT_START_TIME;
+use crate::utils::format_duration;
 use poise::serenity_prelude as serenity;
 use sysinfo::System;
-use crate::utils::format_duration;
 
 #[tokio::test]
 async fn test_format_duration() {
@@ -26,8 +26,10 @@ async fn test_bot_start_time_initialization() {
 #[tokio::test]
 async fn test_database_stats_format() {
     // Test that database stats string formatting works correctly
-    let db_stats = format!("Configs: {}\nRoles: {}\nCooldowns: {}\nDB Guilds: {}",
-        5, 15, 2, 3);
+    let db_stats = format!(
+        "Configs: {}\nRoles: {}\nCooldowns: {}\nDB Guilds: {}",
+        5, 15, 2, 3
+    );
 
     assert!(db_stats.contains("Configs: 5"));
     assert!(db_stats.contains("Roles: 15"));
@@ -129,7 +131,7 @@ fn test_memory_calculations() {
     assert_eq!(mb_from_gb, 1024);
 
     let total_memory = 8192_u64; // 8GB in MB
-    let used_memory = 4096_u64;  // 4GB in MB
+    let used_memory = 4096_u64; // 4GB in MB
     let usage_percent = (used_memory as f64 / total_memory as f64) * 100.0;
     assert_eq!(usage_percent, 50.0);
 }

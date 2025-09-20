@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use crate::database::selfroles::{SelfRoleConfig};
+    use crate::database::selfroles::SelfRoleConfig;
     use crate::tests::create_test_db;
 
     #[tokio::test]
@@ -21,17 +21,16 @@ mod tests {
             "987654321",
             "Test Roles",
             "Select your roles below:",
-            "multiple"
-        ).await.unwrap();
+            "multiple",
+        )
+        .await
+        .unwrap();
 
         // Create a test role for this config
         use crate::database::selfroles::SelfRoleRole;
-        let _role = SelfRoleRole::create(
-            &db,
-            config.id,
-            "111222333",
-            "🎮"
-        ).await.unwrap();
+        let _role = SelfRoleRole::create(&db, config.id, "111222333", "🎮")
+            .await
+            .unwrap();
 
         let roles = config.get_roles(&db).await.unwrap();
         assert_eq!(roles.len(), 1);
@@ -44,7 +43,10 @@ mod tests {
         let error_messages = vec![
             ("role_not_found", "Role not found"),
             ("permission_denied", "You don't have permission"),
-            ("cooldown_active", "Please wait before using this command again"),
+            (
+                "cooldown_active",
+                "Please wait before using this command again",
+            ),
         ];
 
         for (_error_type, message) in error_messages {

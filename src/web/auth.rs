@@ -1,12 +1,15 @@
 use crate::config::AppState;
-use crate::web::{middleware::GLOBAL_SESSION_STORE, models::{DiscordUser, Guild, SessionUser}};
+use crate::web::{
+    middleware::GLOBAL_SESSION_STORE,
+    models::{DiscordUser, Guild, SessionUser},
+};
 use axum::{
     extract::{Query, State},
+    http::{HeaderValue, StatusCode},
     response::Redirect,
-    http::{StatusCode, HeaderValue},
 };
-use serde::Deserialize;
 use reqwest::Client;
+use serde::Deserialize;
 
 #[derive(Deserialize)]
 pub struct AuthQuery {
@@ -41,17 +44,27 @@ pub async fn login(State(state): State<AppState>) -> Redirect {
 pub async fn callback(
     State(state): State<AppState>,
     Query(params): Query<AuthQuery>,
-) -> Result<(StatusCode, [(axum::http::HeaderName, HeaderValue); 1], Redirect), Redirect> {
+) -> Result<
+    (
+        StatusCode,
+        [(axum::http::HeaderName, HeaderValue); 1],
+        Redirect,
+    ),
+    Redirect,
+> {
     if params.error.is_some() || params.code.is_none() {
         return Err(Redirect::temporary("/auth/login"));
     }
-    
+
     let code = params.code.unwrap();
     let client = Client::new();
-    
+
     let token_params = [
         ("client_id", state.config.web.oauth.client_id.as_str()),
-        ("client_secret", state.config.web.oauth.client_secret.as_str()),
+        (
+            "client_secret",
+            state.config.web.oauth.client_secret.as_str(),
+        ),
         ("grant_type", "authorization_code"),
         ("code", &code),
         ("redirect_uri", &state.config.web.oauth.redirect_uri),
@@ -69,7 +82,9 @@ pub async fn callback(
         return Err(Redirect::temporary("/auth/login"));
     }
 
-    let token_data: TokenResponse = token_response.json().await
+    let token_data: TokenResponse = token_response
+        .json()
+        .await
         .map_err(|_| Redirect::temporary("/auth/login"))?;
 
     let user: DiscordUser = client
@@ -93,30 +108,48 @@ pub async fn callback(
         .await
         .unwrap_or_default();
 
-    let session_user = SessionUser { user, guilds, access_token: token_data.access_token };
+    let session_user = SessionUser {
+        user,
+        guilds,
+        access_token: token_data.access_token,
+    };
     let session_id = GLOBAL_SESSION_STORE.create_session().await;
-    
+
     if let Some(mut session) = GLOBAL_SESSION_STORE.get_session(&session_id).await {
-        session.data.insert("user".to_string(), serde_json::to_value(&session_user).unwrap());
-        GLOBAL_SESSION_STORE.update_session(&session_id, session).await;
+        session.data.insert(
+            "user".to_string(),
+            serde_json::to_value(&session_user).unwrap(),
+        );
+        GLOBAL_SESSION_STORE
+            .update_session(&session_id, session)
+            .await;
     } else {
         return Err(Redirect::temporary("/auth/login"));
     }
 
-    let cookie_header = HeaderValue::from_str(&format!("session_id={}; Path=/; HttpOnly; SameSite=Lax; Max-Age=86400", session_id)).unwrap();
+    let cookie_header = HeaderValue::from_str(&format!(
+        "session_id={}; Path=/; HttpOnly; SameSite=Lax; Max-Age=86400",
+        session_id
+    ))
+    .unwrap();
 
     Ok((
         StatusCode::FOUND,
         [(axum::http::header::SET_COOKIE, cookie_header)],
-        Redirect::temporary("/")
+        Redirect::temporary("/"),
     ))
 }
 
-pub async fn logout() -> (StatusCode, [(axum::http::HeaderName, HeaderValue); 1], Redirect) {
-    let cookie_header = HeaderValue::from_str("session_id=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0").unwrap();
+pub async fn logout() -> (
+    StatusCode,
+    [(axum::http::HeaderName, HeaderValue); 1],
+    Redirect,
+) {
+    let cookie_header =
+        HeaderValue::from_str("session_id=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0").unwrap();
     (
         StatusCode::FOUND,
         [(axum::http::header::SET_COOKIE, cookie_header)],
-        Redirect::temporary("/auth/login")
+        Redirect::temporary("/auth/login"),
     )
 }

@@ -103,7 +103,10 @@ async fn show_general_help(ctx: Context<'_>, commands: &[CommandInfo]) -> Result
 pub fn create_help_embed(commands: &[CommandInfo], app_state: &AppState) -> CreateEmbed {
     let mut categories = std::collections::HashMap::new();
     for cmd in commands {
-        categories.entry(cmd.category.clone()).or_insert_with(Vec::new).push(cmd);
+        categories
+            .entry(cmd.category.clone())
+            .or_insert_with(Vec::new)
+            .push(cmd);
     }
 
     let mut embed = CreateEmbed::new()
@@ -121,7 +124,13 @@ pub fn create_help_embed(commands: &[CommandInfo], app_state: &AppState) -> Crea
         if let Some(category_commands) = categories.get(&category) {
             let command_list = category_commands
                 .iter()
-                .map(|cmd| format!("**{}** - {}", cmd.name, truncate_description(&cmd.description, 50)))
+                .map(|cmd| {
+                    format!(
+                        "**{}** - {}",
+                        cmd.name,
+                        truncate_description(&cmd.description, 50)
+                    )
+                })
                 .collect::<Vec<_>>()
                 .join("\n");
 
@@ -135,7 +144,11 @@ pub fn create_help_embed(commands: &[CommandInfo], app_state: &AppState) -> Crea
     embed
 }
 
-async fn show_category_help(ctx: Context<'_>, commands: &[CommandInfo], category_name: &str) -> Result<(), Error> {
+async fn show_category_help(
+    ctx: Context<'_>,
+    commands: &[CommandInfo],
+    category_name: &str,
+) -> Result<(), Error> {
     let category = match category_name.to_lowercase().as_str() {
         "core" => CommandCategory::Core,
         "info" | "information" => CommandCategory::Info,
@@ -157,10 +170,12 @@ async fn show_category_help(ctx: Context<'_>, commands: &[CommandInfo], category
         .collect();
 
     if category_commands.is_empty() {
-        ctx.send(poise::CreateReply::default()
-            .content(&format!("❌ no commands for '{}' yet", category.as_str()))
-            .ephemeral(true))
-            .await?;
+        ctx.send(
+            poise::CreateReply::default()
+                .content(&format!("❌ no commands for '{}' yet", category.as_str()))
+                .ephemeral(true),
+        )
+        .await?;
         return Ok(());
     }
 
@@ -192,10 +207,7 @@ async fn show_category_help(ctx: Context<'_>, commands: &[CommandInfo], category
     Ok(())
 }
 
-async fn category_autocomplete(
-    _ctx: Context<'_>,
-    partial: &str,
-) -> impl Iterator<Item = String> {
+async fn category_autocomplete(_ctx: Context<'_>, partial: &str) -> impl Iterator<Item = String> {
     let categories = vec!["core", "info", "management", "api", "utility"];
 
     categories
@@ -217,7 +229,9 @@ pub fn register_command(command: CommandInfo) -> Vec<CommandInfo> {
     let mut commands = get_all_commands();
     commands.push(command);
     commands.sort_by(|a, b| {
-        a.category.as_str().cmp(b.category.as_str())
+        a.category
+            .as_str()
+            .cmp(b.category.as_str())
             .then_with(|| a.name.cmp(&b.name))
     });
     commands

@@ -1,10 +1,15 @@
+use crate::web::{
+    middleware::{SessionData, GLOBAL_SESSION_STORE},
+    models::SessionUser,
+};
 use axum::http::{HeaderMap, StatusCode};
-use crate::web::{middleware::{GLOBAL_SESSION_STORE, SessionData}, models::SessionUser};
 
 pub async fn extract_session_data(headers: &HeaderMap) -> Result<SessionData, StatusCode> {
     let session_id = extract_session_id_from_headers(headers)?;
-    
-    let session = GLOBAL_SESSION_STORE.get_session(&session_id).await
+
+    let session = GLOBAL_SESSION_STORE
+        .get_session(&session_id)
+        .await
         .ok_or(StatusCode::UNAUTHORIZED)?;
 
     if session.expires_at < chrono::Utc::now() {

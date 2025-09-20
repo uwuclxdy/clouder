@@ -46,7 +46,7 @@ impl SelfRoleConfig {
             r#"
             INSERT INTO selfrole_configs (guild_id, channel_id, title, body, selection_type)
             VALUES (?, ?, ?, ?, ?)
-            "#
+            "#,
         )
         .bind(guild_id)
         .bind(channel_id)
@@ -56,27 +56,21 @@ impl SelfRoleConfig {
         .execute(pool)
         .await?;
 
-        let config = sqlx::query_as::<_, Self>(
-            "SELECT * FROM selfrole_configs WHERE id = ?"
-        )
-        .bind(result.last_insert_rowid())
-        .fetch_one(pool)
-        .await?;
+        let config = sqlx::query_as::<_, Self>("SELECT * FROM selfrole_configs WHERE id = ?")
+            .bind(result.last_insert_rowid())
+            .fetch_one(pool)
+            .await?;
 
         Ok(config)
     }
 
-    pub async fn update_message_id(
-        &mut self,
-        pool: &SqlitePool,
-        message_id: &str,
-    ) -> Result<()> {
+    pub async fn update_message_id(&mut self, pool: &SqlitePool, message_id: &str) -> Result<()> {
         sqlx::query(
             r#"
             UPDATE selfrole_configs
             SET message_id = ?, updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
-            "#
+            "#,
         )
         .bind(message_id)
         .bind(self.id)
@@ -87,26 +81,19 @@ impl SelfRoleConfig {
         Ok(())
     }
 
-    pub async fn get_by_message_id(
-        pool: &SqlitePool,
-        message_id: &str,
-    ) -> Result<Option<Self>> {
-        let config = sqlx::query_as::<_, Self>(
-            "SELECT * FROM selfrole_configs WHERE message_id = ?"
-        )
-        .bind(message_id)
-        .fetch_optional(pool)
-        .await?;
+    pub async fn get_by_message_id(pool: &SqlitePool, message_id: &str) -> Result<Option<Self>> {
+        let config =
+            sqlx::query_as::<_, Self>("SELECT * FROM selfrole_configs WHERE message_id = ?")
+                .bind(message_id)
+                .fetch_optional(pool)
+                .await?;
 
         Ok(config)
     }
 
-    pub async fn get_by_guild(
-        pool: &SqlitePool,
-        guild_id: &str,
-    ) -> Result<Vec<Self>> {
+    pub async fn get_by_guild(pool: &SqlitePool, guild_id: &str) -> Result<Vec<Self>> {
         let configs = sqlx::query_as::<_, Self>(
-            "SELECT * FROM selfrole_configs WHERE guild_id = ? ORDER BY created_at DESC"
+            "SELECT * FROM selfrole_configs WHERE guild_id = ? ORDER BY created_at DESC",
         )
         .bind(guild_id)
         .fetch_all(pool)
@@ -136,7 +123,7 @@ impl SelfRoleConfig {
             UPDATE selfrole_configs
             SET title = ?, body = ?, selection_type = ?, updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
-            "#
+            "#,
         )
         .bind(title)
         .bind(body)
@@ -154,21 +141,17 @@ impl SelfRoleConfig {
     }
 
     pub async fn get_roles(&self, pool: &SqlitePool) -> Result<Vec<SelfRoleRole>> {
-        let roles = sqlx::query_as::<_, SelfRoleRole>(
-            "SELECT * FROM selfrole_roles WHERE config_id = ?"
-        )
-        .bind(self.id)
-        .fetch_all(pool)
-        .await?;
+        let roles =
+            sqlx::query_as::<_, SelfRoleRole>("SELECT * FROM selfrole_roles WHERE config_id = ?")
+                .bind(self.id)
+                .fetch_all(pool)
+                .await?;
 
         Ok(roles)
     }
 
     #[allow(dead_code)]
-    pub async fn delete_by_message_id(
-        pool: &SqlitePool,
-        message_id: &str,
-    ) -> Result<bool> {
+    pub async fn delete_by_message_id(pool: &SqlitePool, message_id: &str) -> Result<bool> {
         let result = sqlx::query("DELETE FROM selfrole_configs WHERE message_id = ?")
             .bind(message_id)
             .execute(pool)
@@ -178,12 +161,9 @@ impl SelfRoleConfig {
     }
 
     #[allow(dead_code)]
-    pub async fn get_by_guild_id(
-        pool: &SqlitePool,
-        guild_id: u64,
-    ) -> Result<Vec<Self>> {
+    pub async fn get_by_guild_id(pool: &SqlitePool, guild_id: u64) -> Result<Vec<Self>> {
         let configs = sqlx::query_as::<_, Self>(
-            "SELECT * FROM selfrole_configs WHERE guild_id = ? ORDER BY created_at DESC"
+            "SELECT * FROM selfrole_configs WHERE guild_id = ? ORDER BY created_at DESC",
         )
         .bind(guild_id.to_string())
         .fetch_all(pool)
@@ -193,16 +173,12 @@ impl SelfRoleConfig {
     }
 
     #[allow(dead_code)]
-    pub async fn get_by_message_id_u64(
-        pool: &SqlitePool,
-        message_id: u64,
-    ) -> Result<Option<Self>> {
-        let config = sqlx::query_as::<_, Self>(
-            "SELECT * FROM selfrole_configs WHERE message_id = ?"
-        )
-        .bind(message_id.to_string())
-        .fetch_optional(pool)
-        .await?;
+    pub async fn get_by_message_id_u64(pool: &SqlitePool, message_id: u64) -> Result<Option<Self>> {
+        let config =
+            sqlx::query_as::<_, Self>("SELECT * FROM selfrole_configs WHERE message_id = ?")
+                .bind(message_id.to_string())
+                .fetch_optional(pool)
+                .await?;
 
         Ok(config)
     }
@@ -219,7 +195,7 @@ impl SelfRoleRole {
             r#"
             INSERT INTO selfrole_roles (config_id, role_id, emoji)
             VALUES (?, ?, ?)
-            "#
+            "#,
         )
         .bind(config_id)
         .bind(role_id)
@@ -227,20 +203,15 @@ impl SelfRoleRole {
         .execute(pool)
         .await?;
 
-        let role = sqlx::query_as::<_, Self>(
-            "SELECT * FROM selfrole_roles WHERE id = ?"
-        )
-        .bind(result.last_insert_rowid())
-        .fetch_one(pool)
-        .await?;
+        let role = sqlx::query_as::<_, Self>("SELECT * FROM selfrole_roles WHERE id = ?")
+            .bind(result.last_insert_rowid())
+            .fetch_one(pool)
+            .await?;
 
         Ok(role)
     }
 
-    pub async fn delete_by_config_id(
-        pool: &SqlitePool,
-        config_id: i64,
-    ) -> Result<()> {
+    pub async fn delete_by_config_id(pool: &SqlitePool, config_id: i64) -> Result<()> {
         sqlx::query("DELETE FROM selfrole_roles WHERE config_id = ?")
             .bind(config_id)
             .execute(pool)
@@ -262,7 +233,7 @@ impl SelfRoleCooldown {
             r#"
             INSERT OR REPLACE INTO selfrole_cooldowns (user_id, role_id, guild_id, expires_at)
             VALUES (?, ?, ?, ?)
-            "#
+            "#,
         )
         .bind(user_id)
         .bind(role_id)
@@ -286,7 +257,7 @@ impl SelfRoleCooldown {
             r#"
             SELECT * FROM selfrole_cooldowns
             WHERE user_id = ? AND role_id = ? AND guild_id = ? AND expires_at > ?
-            "#
+            "#,
         )
         .bind(user_id)
         .bind(role_id)

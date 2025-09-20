@@ -1,9 +1,10 @@
+mod commands;
 mod config;
 mod database;
-mod commands;
 mod events;
-mod web;
+mod external;
 mod utils;
+mod web;
 
 #[cfg(test)]
 mod tests;
@@ -108,10 +109,7 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-async fn start_web_server(
-    web_config: config::WebConfig,
-    app_state: AppState,
-) -> Result<()> {
+async fn start_web_server(web_config: config::WebConfig, app_state: AppState) -> Result<()> {
     let app = web::create_router(app_state);
     let addr = format!("{}:{}", web_config.host, web_config.port);
 

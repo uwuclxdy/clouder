@@ -7,14 +7,18 @@ pub fn validate_message_config(
     match message_type {
         "embed" => {
             let has_title = embed_title.as_ref().map_or(false, |t| !t.trim().is_empty());
-            let has_description = embed_description.as_ref().map_or(false, |d| !d.trim().is_empty());
+            let has_description = embed_description
+                .as_ref()
+                .map_or(false, |d| !d.trim().is_empty());
 
             if !has_title && !has_description {
                 return Err("Embed messages require either a title or description".to_string());
             }
         }
         "text" => {
-            let has_content = message_content.as_ref().map_or(false, |c| !c.trim().is_empty());
+            let has_content = message_content
+                .as_ref()
+                .map_or(false, |c| !c.trim().is_empty());
 
             if !has_content {
                 return Err("Text messages require content".to_string());

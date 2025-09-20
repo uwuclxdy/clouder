@@ -1,10 +1,12 @@
 use crate::config::AppState;
 use crate::events::bot_mentioned::{handle_ai_retry_interaction, on_mention};
+use crate::events::mediaonly_handler::handle_media_only_message;
 use crate::events::selfroles::{handle_selfrole_interaction, selfrole_message_delete};
 use crate::{serenity, Data, Error};
 use tracing::info;
 
 mod bot_mentioned;
+mod mediaonly_handler;
 pub mod member_events;
 mod selfroles;
 
@@ -30,6 +32,7 @@ pub async fn event_handler(
         }
         serenity::FullEvent::Message { new_message } => {
             on_mention(ctx, new_message, data).await;
+            handle_media_only_message(ctx, new_message, data).await;
         }
         serenity::FullEvent::GuildMemberAddition { new_member } => {
             member_events::member_addition(ctx, &new_member.guild_id, new_member).await;

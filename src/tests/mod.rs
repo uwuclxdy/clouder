@@ -4,6 +4,7 @@ pub mod config_tests;
 pub mod database_tests;
 pub mod events_tests;
 mod help_tests;
+pub mod mediaonly_tests;
 mod purge_tests;
 pub mod session_extractor_tests;
 pub mod utils_tests;
@@ -61,6 +62,27 @@ pub async fn create_test_db() -> SqlitePool {
             guild_id TEXT NOT NULL,
             expires_at DATETIME NOT NULL,
             PRIMARY KEY (user_id, role_id, guild_id)
+        );
+    "#,
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    sqlx::query(
+        r#"
+        CREATE TABLE mediaonly_configs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            guild_id TEXT NOT NULL,
+            channel_id TEXT NOT NULL,
+            enabled BOOLEAN NOT NULL DEFAULT 1,
+            allow_links BOOLEAN NOT NULL DEFAULT 1,
+            allow_attachments BOOLEAN NOT NULL DEFAULT 1,
+            allow_gifs BOOLEAN NOT NULL DEFAULT 1,
+            allow_stickers BOOLEAN NOT NULL DEFAULT 1,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(guild_id, channel_id)
         );
     "#,
     )

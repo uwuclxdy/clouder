@@ -12,6 +12,7 @@ use session_extractor::extract_session_data;
 
 pub mod auth;
 pub mod dashboard;
+pub mod mediaonly;
 pub mod middleware;
 pub mod models;
 pub mod session_extractor;
@@ -51,6 +52,10 @@ pub fn create_router(app_state: AppState) -> Router {
             "/dashboard/{guild_id}/welcome-goodbye",
             get(welcome_goodbye::show_welcome_goodbye_config),
         )
+        .route(
+            "/dashboard/{guild_id}/mediaonly",
+            get(mediaonly::get_mediaonly_page),
+        )
         .route("/api/user/settings", put(api_update_user_settings))
         .route(
             "/api/selfroles/{guild_id}",
@@ -79,6 +84,14 @@ pub fn create_router(app_state: AppState) -> Router {
         .route(
             "/api/welcome-goodbye/{guild_id}/preview",
             post(welcome_goodbye::get_live_preview),
+        )
+        .route(
+            "/api/mediaonly/{guild_id}",
+            get(mediaonly::list_configs).post(mediaonly::create_or_update_config),
+        )
+        .route(
+            "/api/mediaonly/{guild_id}/{channel_id}",
+            put(mediaonly::update_permissions).delete(mediaonly::delete_config),
         )
         .layer(axum::middleware::from_fn(middleware::session_middleware))
         .with_state(app_state)

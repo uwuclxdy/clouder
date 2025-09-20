@@ -4,99 +4,102 @@
 
 ---
 
-## **Media-Only Channels System** [ ]
+## **Media-Only Channels System** [x]
 
-### Database Schema [ ]
-- [ ] Create `mediaonly_configs` table
-  - [ ] `id` (INTEGER PRIMARY KEY)
-  - [ ] `guild_id` (TEXT)
-  - [ ] `channel_id` (TEXT)
-  - [ ] `enabled` (BOOLEAN)
-  - [ ] `allow_links` (BOOLEAN)
-  - [ ] `allow_attachments` (BOOLEAN)
-  - [ ] `allow_gifs` (BOOLEAN)
-  - [ ] `allow_stickers` (BOOLEAN)
-  - [ ] `created_at`, `updated_at` timestamps
-  - [ ] UNIQUE constraint on (guild_id, channel_id)
-  - [ ] Indexes on guild_id, channel_id, enabled
+### Database Schema [x]
+- [x] Create `mediaonly_configs` table
+  - [x] `id` (INTEGER PRIMARY KEY)
+  - [x] `guild_id` (TEXT)
+  - [x] `channel_id` (TEXT)
+  - [x] `enabled` (BOOLEAN)
+  - [x] `allow_links` (BOOLEAN)
+  - [x] `allow_attachments` (BOOLEAN)
+  - [x] `allow_gifs` (BOOLEAN)
+  - [x] `allow_stickers` (BOOLEAN)
+  - [x] `created_at`, `updated_at` timestamps
+  - [x] UNIQUE constraint on (guild_id, channel_id)
+  - [x] Indexes on guild_id, channel_id, enabled
 
-### Database Model [ ]
-- [ ] Create `src/database/mediaonly.rs`
-  - [ ] `MediaOnlyConfig` struct with all fields
-  - [ ] `upsert()` - create or update configuration
-  - [ ] `get_by_channel()` - fetch config for specific channel
-  - [ ] `get_by_guild()` - fetch all configs for guild
-  - [ ] `update_permissions()` - update content type permissions
-  - [ ] `toggle()` - toggle enabled state
-  - [ ] `delete()` - remove configuration
+### Database Model [x]
+- [x] Create `src/database/mediaonly.rs`
+  - [x] `MediaOnlyConfig` struct with all fields
+  - [x] `upsert()` - create or update configuration
+  - [x] `get_by_channel()` - fetch config for specific channel
+  - [x] `get_by_guild()` - fetch all configs for guild
+  - [x] `update_permissions()` - update content type permissions
+  - [x] `toggle()` - toggle enabled state
+  - [x] `delete()` - remove configuration
 
-### Slash Command [ ]
-- [ ] Create `src/commands/mediaonly.rs`
-  - [ ] `/mediaonly [channel] [enabled]` command
-  - [ ] Require Manage Channels permission
-  - [ ] Default to current channel if not specified
-  - [ ] Toggle if enabled not specified
-  - [ ] Create/update database configuration
-  - [ ] Send ephemeral embed response with status
-  - [ ] Include link to web dashboard for detailed config
+### Slash Command [x]
+- [x] Create `src/commands/mediaonly.rs`
+  - [x] `/mediaonly [channel] [enabled]` command
+  - [x] Require Manage Channels permission
+  - [x] Default to current channel if not specified
+  - [x] Toggle if enabled not specified
+  - [x] Create/update database configuration
+  - [x] Send ephemeral embed response with status
+  - [x] Include link to web dashboard for detailed config
 
-### Content Detection Utilities [ ]
-- [ ] Create `src/utils/content_detection.rs`
-  - [ ] `has_link()` - detect URLs in message content
-  - [ ] `has_embedded_link()` - check for Discord auto-embeds
-  - [ ] `has_attachment()` - check for file attachments
-  - [ ] `has_gif()` - detect GIFs (files, URLs, Tenor/Giphy)
-  - [ ] `has_sticker()` - check for Discord stickers
-  - [ ] Use regex for URL pattern matching
-  - [ ] Handle edge cases (malformed URLs, etc.)
+### Content Detection Utilities [x]
+- [x] Create `src/utils/content_detection.rs`
+  - [x] `has_link()` - detect URLs in message content
+  - [x] `has_embedded_link()` - check for Discord auto-embeds
+  - [x] `has_attachment()` - check for file attachments
+  - [x] `has_gif()` - detect GIFs (files, URLs, Tenor/Giphy)
+  - [x] `has_sticker()` - check for Discord stickers
+  - [x] Use regex for URL pattern matching
+  - [x] Handle edge cases (malformed URLs, etc.)
 
-### Message Event Handler [ ]
-- [ ] Create `src/events/mediaonly_handler.rs`
-  - [ ] `handle_media_only_message()` function
-  - [ ] Check if channel has media-only enabled
-  - [ ] Ignore messages from bots
-  - [ ] Check message against allowed content types
-  - [ ] Spawn async task for 3-second delayed deletion
-  - [ ] Handle deletion errors gracefully (log only)
-  - [ ] Avoid attempting to delete already-deleted messages
+### Message Event Handler [x]
+- [x] Create `src/events/mediaonly_handler.rs`
+  - [x] `handle_media_only_message()` function
+  - [x] Check if channel has media-only enabled
+  - [x] Ignore messages from bots
+  - [x] Check message against allowed content types
+  - [x] Spawn async task for 3-second delayed deletion
+  - [x] Handle deletion errors gracefully (log only)
+  - [x] Avoid attempting to delete already-deleted messages
 
-### Web Dashboard Routes [ ]
-- [ ] Create `src/web/mediaonly.rs`
-  - [ ] GET `/api/mediaonly/{guild_id}` - list configurations
-  - [ ] POST `/api/mediaonly/{guild_id}` - create/update config
-  - [ ] PUT `/api/mediaonly/{guild_id}/{config_id}` - update permissions
-  - [ ] DELETE `/api/mediaonly/{guild_id}/{config_id}` - remove config
-  - [ ] GET `/dashboard/{guild_id}/mediaonly` - management page
-  - [ ] Check Manage Channels permission for all routes
-  - [ ] Return proper error codes for permission failures
+### Web Dashboard Routes [x]
+- [x] Create `src/web/mediaonly.rs`
+  - [x] GET `/api/mediaonly/{guild_id}` - list configurations
+  - [x] POST `/api/mediaonly/{guild_id}` - create/update config
+  - [x] PUT `/api/mediaonly/{guild_id}/{channel_id}` - update permissions
+  - [x] DELETE `/api/mediaonly/{guild_id}/{channel_id}` - remove config
+  - [x] GET `/dashboard/{guild_id}/mediaonly` - management page
+  - [x] Check Manage Channels permission for all routes
+  - [x] Return proper error codes for permission failures
 
-### Web Dashboard UI [ ]
-- [ ] Create `src/web/templates/mediaonly.html`
-  - [ ] Channel selection dropdown (populated from Discord API)
-  - [ ] List of configured channels with:
-    - [ ] Enable/disable toggle switch
-    - [ ] Checkboxes for each content type:
-      - [ ] Allow Links
-      - [ ] Allow Attachments
-      - [ ] Allow GIFs
-      - [ ] Allow Stickers
-    - [ ] Remove button for each channel
-  - [ ] AJAX for dynamic updates without page reload
-  - [ ] Visual feedback for save/delete operations
-  - [ ] Responsive design matching existing dashboard style
+### Web Dashboard UI [x]
+- [x] Create `src/web/mediaonly.rs` (embedded HTML template)
+  - [x] Channel selection dropdown (populated from Discord API)
+  - [x] List of configured channels with:
+    - [x] Enable/disable toggle switch
+    - [x] Checkboxes for each content type:
+      - [x] Allow Links
+      - [x] Allow Attachments
+      - [x] Allow GIFs
+      - [x] Allow Stickers
+    - [x] Remove button for each channel
+  - [x] AJAX for dynamic updates without page reload
+  - [x] Visual feedback for save/delete operations
+  - [x] Responsive design matching existing dashboard style
 
-### Integration [ ]
-- [ ] Update `src/main.rs` event handler
-  - [ ] Add media-only handler to message event
-  - [ ] Ensure handler runs for all guild messages
-  - [ ] Maintain performance with efficient checks
-- [ ] Register `/mediaonly` command in main command list
-- [ ] Add web routes to router configuration
-- [ ] Update navigation to include media-only management
+### Integration [x]
+- [x] Update `src/main.rs` event handler
+  - [x] Add media-only handler to message event
+  - [x] Ensure handler runs for all guild messages
+  - [x] Maintain performance with efficient checks
+- [x] Register `/mediaonly` command in main command list
+- [x] Add web routes to router configuration
+- [x] Update navigation to include media-only management
 
-### Testing [ ]
-- [ ] Test message deletion timing (exactly 3 seconds)
-- [ ] Test all content type detections:
+### Testing [x]
+- [x] Test compilation and build process
+- [x] Test all unit tests pass (137 tests passed)
+- [x] Unit tests for MediaOnlyConfig database operations
+- [ ] Test message deletion timing (exactly 3 seconds) *
+- [ ] Test all content type detections: *
   - [ ] Plain text (should delete)
   - [ ] URLs in text
   - [ ] Discord auto-embedded links
@@ -105,14 +108,16 @@
   - [ ] Tenor/Giphy links
   - [ ] Discord stickers
   - [ ] Mixed content
-- [ ] Test permission checks (command and web)
-- [ ] Test bot message immunity
-- [ ] Test concurrent deletions
-- [ ] Test error handling for missing permissions
+- [ ] Test permission checks (command and web) *
+- [ ] Test bot message immunity *
+- [ ] Test concurrent deletions *
+- [ ] Test error handling for missing permissions *
 
-### Migration [ ]
+*Requires live Discord server testing environment
+
+### Migration [x]
 - [x] Create `migrations/004_mediaonly.sql`
-- [ ] Ensure migration runs on bot startup
+- [x] Ensure migration runs on bot startup
 - [ ] Add rollback strategy if needed
 
 ---

@@ -142,7 +142,7 @@ pub async fn show_welcome_goodbye_config(
         .ok_or_else(|| Redirect::temporary("/auth/login"))?;
 
     // Check if user has MANAGE_ROLES permission for this guild
-    if !user.has_manage_roles_in_guild(&guild_id) {
+    if !user.has_manage_roles_in_guild(&guild_id) && !user.has_administrator_in_guild(&guild_id) {
         return Err(Redirect::temporary("/"));
     }
 
@@ -439,7 +439,7 @@ pub async fn save_welcome_goodbye_config(
 
     let user = session.1.ok_or(StatusCode::UNAUTHORIZED)?;
 
-    if !user.has_manage_roles_in_guild(&guild_id) {
+    if !user.has_manage_roles_in_guild(&guild_id) && !user.has_administrator_in_guild(&guild_id) {
         return Err(StatusCode::FORBIDDEN);
     }
 
@@ -580,7 +580,7 @@ pub async fn send_test_welcome(
 
     let user = session.1.ok_or(StatusCode::UNAUTHORIZED)?;
 
-    if !user.has_manage_roles_in_guild(&guild_id) {
+    if !user.has_manage_roles_in_guild(&guild_id) && !user.has_administrator_in_guild(&guild_id) {
         return Err(StatusCode::FORBIDDEN);
     }
 
@@ -647,7 +647,7 @@ pub async fn send_test_goodbye(
 
     let user = session.1.ok_or(StatusCode::UNAUTHORIZED)?;
 
-    if !user.has_manage_roles_in_guild(&guild_id) {
+    if !user.has_manage_roles_in_guild(&guild_id) && !user.has_administrator_in_guild(&guild_id) {
         return Err(StatusCode::FORBIDDEN);
     }
 
@@ -715,7 +715,7 @@ pub async fn get_live_preview(
 
     let user = session.1.ok_or(StatusCode::UNAUTHORIZED)?;
 
-    if !user.has_manage_roles_in_guild(&guild_id) {
+    if !user.has_manage_roles_in_guild(&guild_id) && !user.has_administrator_in_guild(&guild_id) {
         return Err(StatusCode::FORBIDDEN);
     }
 

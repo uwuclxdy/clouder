@@ -19,6 +19,7 @@ pub struct Config {
 pub struct DiscordConfig {
     pub token: String,
     pub application_id: u64,
+    pub bot_owner: u64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -123,6 +124,27 @@ impl Config {
                 );
                 return Err(anyhow::anyhow!(
                     "DISCORD_CLIENT_SECRET environment variable not set"
+                ));
+            }
+        };
+
+        let bot_owner = match env::var("BOT_OWNER") {
+            Ok(owner_str) => match owner_str.parse::<u64>() {
+                Ok(owner) => owner,
+                Err(e) => {
+                    error!(
+                        "BOT_OWNER has invalid format '{}': {}",
+                        owner_str, e
+                    );
+                    return Err(anyhow::anyhow!("Invalid BOT_OWNER format"));
+                }
+            },
+            Err(_) => {
+                error!(
+                    "BOT_OWNER environment variable not set - this is required for feature requests"
+                );
+                return Err(anyhow::anyhow!(
+                    "BOT_OWNER environment variable not set"
                 ));
             }
         };
@@ -255,6 +277,7 @@ impl Config {
             discord: DiscordConfig {
                 token: discord_token,
                 application_id,
+                bot_owner,
             },
             web: WebConfig {
                 host,
@@ -293,6 +316,7 @@ impl Config {
             discord: DiscordConfig {
                 token: "test_token".to_string(),
                 application_id: 12345,
+                bot_owner: 12345,
             },
             web: WebConfig {
                 host: "127.0.0.1".to_string(),

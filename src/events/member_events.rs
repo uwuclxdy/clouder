@@ -170,7 +170,17 @@ async fn send_welcome_message(
         }
     };
 
-    if !bot_member.permissions.unwrap_or_default().send_messages() {
+    let guild = match ctx.http.get_guild(guild_channel.guild_id).await {
+        Ok(guild) => guild,
+        Err(e) => {
+            tracing::error!("Failed to get guild info for welcome channel: {}", e);
+            return Err(format!("Failed to get guild info: {}", e).into());
+        }
+    };
+
+    let channel_permissions = guild.user_permissions_in(&guild_channel, &bot_member);
+
+    if !channel_permissions.send_messages() {
         tracing::warn!("Bot lacks SEND_MESSAGES permission in welcome channel {}", channel_id);
         return Err("Bot lacks SEND_MESSAGES permission".into());
     }
@@ -289,7 +299,17 @@ async fn send_goodbye_message(
         }
     };
 
-    if !bot_member.permissions.unwrap_or_default().send_messages() {
+    let guild = match ctx.http.get_guild(guild_channel.guild_id).await {
+        Ok(guild) => guild,
+        Err(e) => {
+            tracing::error!("Failed to get guild info for goodbye channel: {}", e);
+            return Err(format!("Failed to get guild info: {}", e).into());
+        }
+    };
+
+    let channel_permissions = guild.user_permissions_in(&guild_channel, &bot_member);
+
+    if !channel_permissions.send_messages() {
         tracing::warn!("Bot lacks SEND_MESSAGES permission in goodbye channel {}", channel_id);
         return Err("Bot lacks SEND_MESSAGES permission".into());
     }

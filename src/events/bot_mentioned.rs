@@ -170,7 +170,28 @@ async fn handle_openai_request(
                     return Ok(()); // Silently ignore if can't check permissions
                 }
             };
-            bot_member.permissions.unwrap_or_default()
+
+            let guild = match ctx.http.get_guild(guild_id).await {
+                Ok(guild) => guild,
+                Err(e) => {
+                    warn!("Failed to get guild info: {}", e);
+                    return Ok(());
+                }
+            };
+
+            let channel = match ctx.http.get_channel(message.channel_id).await {
+                Ok(serenity::Channel::Guild(channel)) => channel,
+                Ok(_) => {
+                    warn!("Channel {} is not a guild channel", message.channel_id);
+                    return Ok(());
+                }
+                Err(e) => {
+                    warn!("Failed to get channel info: {}", e);
+                    return Ok(());
+                }
+            };
+
+            guild.user_permissions_in(&channel, &bot_member)
         }
         None => serenity::Permissions::all(), // In DMs, assume all permissions
     };
@@ -306,7 +327,28 @@ async fn send_ephemeral_error(
                     return; // Silently ignore if can't check permissions
                 }
             };
-            bot_member.permissions.unwrap_or_default()
+
+            let guild = match ctx.http.get_guild(guild_id).await {
+                Ok(guild) => guild,
+                Err(e) => {
+                    warn!("Failed to get guild info: {}", e);
+                    return;
+                }
+            };
+
+            let channel = match ctx.http.get_channel(message.channel_id).await {
+                Ok(serenity::Channel::Guild(channel)) => channel,
+                Ok(_) => {
+                    warn!("Channel {} is not a guild channel", message.channel_id);
+                    return;
+                }
+                Err(e) => {
+                    warn!("Failed to get channel info: {}", e);
+                    return;
+                }
+            };
+
+            guild.user_permissions_in(&channel, &bot_member)
         }
         None => serenity::Permissions::all(), // In DMs, assume all permissions
     };
@@ -337,7 +379,28 @@ async fn send_help_as_message(
                     return Ok(()); // Silently ignore if can't check permissions
                 }
             };
-            bot_member.permissions.unwrap_or_default()
+
+            let guild = match ctx.http.get_guild(guild_id).await {
+                Ok(guild) => guild,
+                Err(e) => {
+                    warn!("Failed to get guild info: {}", e);
+                    return Ok(());
+                }
+            };
+
+            let channel = match ctx.http.get_channel(message.channel_id).await {
+                Ok(serenity::Channel::Guild(channel)) => channel,
+                Ok(_) => {
+                    warn!("Channel {} is not a guild channel", message.channel_id);
+                    return Ok(());
+                }
+                Err(e) => {
+                    warn!("Failed to get channel info: {}", e);
+                    return Ok(());
+                }
+            };
+
+            guild.user_permissions_in(&channel, &bot_member)
         }
         None => serenity::Permissions::all(), // In DMs, assume all permissions
     };
@@ -379,7 +442,28 @@ pub async fn handle_ai_retry_interaction(
                     return; // Silently ignore if can't check permissions
                 }
             };
-            bot_member.permissions.unwrap_or_default()
+
+            let guild = match ctx.http.get_guild(guild_id).await {
+                Ok(guild) => guild,
+                Err(e) => {
+                    warn!("Failed to get guild info: {}", e);
+                    return;
+                }
+            };
+
+            let channel = match ctx.http.get_channel(interaction.channel_id).await {
+                Ok(serenity::Channel::Guild(channel)) => channel,
+                Ok(_) => {
+                    warn!("Channel {} is not a guild channel", interaction.channel_id);
+                    return;
+                }
+                Err(e) => {
+                    warn!("Failed to get channel info: {}", e);
+                    return;
+                }
+            };
+
+            guild.user_permissions_in(&channel, &bot_member)
         }
         None => serenity::Permissions::all(), // In DMs, assume all permissions
     };

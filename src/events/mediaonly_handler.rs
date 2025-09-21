@@ -47,9 +47,30 @@ pub async fn handle_media_only_message(
         }
     };
 
-    // Check if bot has MANAGE_MESSAGES permission
-    if !bot_member.permissions.unwrap_or_default().manage_messages() {
-        warn!("Bot lacks MANAGE_MESSAGES permission in guild {} for media-only enforcement", guild_id);
+    let guild = match ctx.http.get_guild(guild_id).await {
+        Ok(guild) => guild,
+        Err(e) => {
+            warn!("Failed to get guild info: {}", e);
+            return;
+        }
+    };
+
+    let channel = match ctx.http.get_channel(channel_id).await {
+        Ok(serenity::Channel::Guild(channel)) => channel,
+        Ok(_) => {
+            warn!("Channel {} is not a guild channel", channel_id);
+            return;
+        }
+        Err(e) => {
+            warn!("Failed to get channel info: {}", e);
+            return;
+        }
+    };
+
+    let channel_permissions = guild.user_permissions_in(&channel, &bot_member);
+
+    if !channel_permissions.manage_messages() {
+        warn!("Bot lacks MANAGE_MESSAGES permission in channel {} for media-only enforcement", channel_id);
         return;
     }
 

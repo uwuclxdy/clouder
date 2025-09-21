@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Feature Request - Clouder Bot</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        {{COMMON_CSS}}
+        {{DASHBOARD_CSS}}
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <div class="navbar-left">
+                <div class="logo">clouder</div>
+                <div class="breadcrumb">
+                    <a href="/" class="breadcrumb-item">Dashboard</a>
+                    <span class="breadcrumb-separator">/</span>
+                    <span class="breadcrumb-item current">Feature Request</span>
+                </div>
+            </div>
+            <div class="navbar-right">
+                <a class="feature-request-btn" href="/feature-request">Feature Request</a>
+                <a class="add-server-btn" href="{{INVITE_URL}}" target="_blank">Add to Server</a>
+                <a class="logout-btn" href="/user/settings" style="margin-right: 10px;">Settings</a>
+                <a href="/auth/logout" class="logout-btn">Logout</a>
+            </div>
+        </div>
+    </nav>
+    <div class="container">
+        <div class="user-info">
+            <div class="user-info-left">
+                <img src="{{USER_AVATAR}}" alt="{{USER_NAME}}" class="user-avatar">
+                <div>
+                    <h3 class="welcome-username">{{USER_NAME}}</h3>
+                    <p class="welcome-subtitle">Suggest new features for Clouder Bot</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="settings-content">
+            <div class="settings-section">
+                <h2>Request a New Feature</h2>
+                <p>Have an idea for a new feature? Let us know! We'll review your suggestion and consider it for future development.</p>
+
+                <form id="featureRequestForm">
+                    <div class="feature-description-container">
+                        <textarea
+                            id="featureDescription"
+                            name="description"
+                            placeholder="Describe your feature idea here..."
+                            maxlength="2000"
+                            rows="8"
+                            required
+                        ></textarea>
+                        <div class="char-counter">
+                            <span id="charCount">0</span>/2000 characters
+                        </div>
+                    </div>
+
+                    <div class="setting-item submit-section">
+                        <button id="submitFeatureRequest" type="submit" class="btn primary-btn">Submit Feature Request</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        {{COMMON_JS}}
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const textarea = document.getElementById('featureDescription');
+            const charCount = document.getElementById('charCount');
+            const form = document.getElementById('featureRequestForm');
+            const submitBtn = document.getElementById('submitFeatureRequest');
+
+            // Update character count
+            textarea.addEventListener('input', function() {
+                charCount.textContent = textarea.value.length;
+            });
+
+            // Handle form submission
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
+
+                const description = textarea.value.trim();
+                if (!description) {
+                    showMessage('Please enter a feature description.', 'error');
+                    return;
+                }
+
+                setButtonLoading(submitBtn, true, 'Submitting...');
+
+                try {
+                    const response = await fetch('/api/feature-request', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            description: description
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        showMessage('Feature request submitted successfully!', 'success');
+                        // Redirect to main page after a short delay
+                        setTimeout(() => {
+                            window.location.href = '/';
+                        }, 1500);
+                    } else {
+                        throw new Error(data.message || 'Failed to submit feature request');
+                    }
+                } catch (error) {
+                    console.error('Failed to submit feature request:', error);
+                    showMessage(error.message || 'Failed to submit feature request. Please try again.', 'error');
+                } finally {
+                    setButtonLoading(submitBtn, false, 'Submit Feature Request');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

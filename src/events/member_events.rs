@@ -161,6 +161,20 @@ async fn send_welcome_message(
         }
     };
 
+    // Check if bot has SEND_MESSAGES permission in the welcome channel
+    let bot_member = match crate::web::get_bot_member_info(&ctx.http, guild_channel.guild_id).await {
+        Ok(member) => member,
+        Err(e) => {
+            tracing::error!("Failed to get bot member info for welcome channel: {}", e);
+            return Err(format!("Failed to get bot member info: {}", e).into());
+        }
+    };
+
+    if !bot_member.permissions.unwrap_or_default().send_messages() {
+        tracing::warn!("Bot lacks SEND_MESSAGES permission in welcome channel {}", channel_id);
+        return Err("Bot lacks SEND_MESSAGES permission".into());
+    }
+
     match config.welcome_message_type.as_str() {
         "embed" => {
             let mut embed = CreateEmbed::new();
@@ -265,6 +279,20 @@ async fn send_goodbye_message(
             return Err("Channel is not a guild channel".into());
         }
     };
+
+    // Check if bot has SEND_MESSAGES permission in the goodbye channel
+    let bot_member = match crate::web::get_bot_member_info(&ctx.http, guild_channel.guild_id).await {
+        Ok(member) => member,
+        Err(e) => {
+            tracing::error!("Failed to get bot member info for goodbye channel: {}", e);
+            return Err(format!("Failed to get bot member info: {}", e).into());
+        }
+    };
+
+    if !bot_member.permissions.unwrap_or_default().send_messages() {
+        tracing::warn!("Bot lacks SEND_MESSAGES permission in goodbye channel {}", channel_id);
+        return Err("Bot lacks SEND_MESSAGES permission".into());
+    }
 
     match config.goodbye_message_type.as_str() {
         "embed" => {

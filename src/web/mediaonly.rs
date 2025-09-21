@@ -64,8 +64,8 @@ pub async fn get_mediaonly_page(
         .1
         .ok_or_else(|| Redirect::temporary("/auth/login"))?;
 
-    // Check if user has administrator permission for this guild
-    if !user.has_administrator_in_guild(&guild_id) {
+    // Check if user has MANAGE_ROLES permission for this guild
+    if !user.has_manage_roles_in_guild(&guild_id) {
         return Err(Redirect::temporary("/"));
     }
 
@@ -88,8 +88,9 @@ pub async fn get_mediaonly_page(
     let channels = match get_guild_text_channels(&state, &guild_id).await {
         Ok(channels) => channels,
         Err(e) => {
-            tracing::error!("Failed to get guild channels: {}", e);
-            return Err(Redirect::temporary("/"));
+            tracing::error!("Failed to get guild channels for guild {}: {}. Bot may not be in guild or lack permissions.", guild_id, e);
+            // Return empty channels list instead of redirecting, show friendly error in UI
+            Vec::new()
         }
     };
 
@@ -105,17 +106,22 @@ pub async fn get_mediaonly_page(
         .unwrap_or_else(|| "https://cdn.discordapp.com/embed/avatars/0.png".to_string());
 
     let invite_url = format!(
-        "https://discord.com/oauth2/authorize?client_id={}&permissions=8&response_type=code&redirect_uri={}&integration_type=0&scope=bot",
+        "https://discord.com/oauth2/authorize?client_id={}&permissions=268697088&response_type=code&redirect_uri={}&integration_type=0&scope=bot",
         state.config.web.oauth.client_id, state.config.web.oauth.redirect_uri
     );
 
     // Build channels options HTML
     let mut channels_html = String::new();
-    for channel in &channels {
-        channels_html.push_str(&format!(
-            r#"<option value="{}"># {}</option>"#,
-            channel.id, channel.name
-        ));
+    if channels.is_empty() {
+        // Show helpful message when bot is not in guild
+        channels_html.push_str(r#"<option value="" disabled>Bot not in server - please invite bot first</option>"#);
+    } else {
+        for channel in &channels {
+            channels_html.push_str(&format!(
+                r#"<option value="{}"># {}</option>"#,
+                channel.id, channel.name
+            ));
+        }
     }
 
     // Create display configs with channel names
@@ -158,6 +164,7 @@ pub async fn get_mediaonly_page(
         .replace("{{INVITE_URL}}", &invite_url)
         .replace("{{GUILD_ID}}", &guild_id)
         .replace("{{CHANNELS_HTML}}", &channels_html)
+        .replace("{{BOT_MISSING}}", if channels.is_empty() { "true" } else { "false" })
         .replace("{{CONFIGS_JSON}}", &configs_json);
 
     Ok(Html(template))
@@ -174,7 +181,7 @@ pub async fn list_configs(
 
     let user = session.1.ok_or(StatusCode::UNAUTHORIZED)?;
 
-    if !user.has_administrator_in_guild(&guild_id) {
+    if !user.has_manage_roles_in_guild(&guild_id) {
         return Err(StatusCode::FORBIDDEN);
     }
 
@@ -233,7 +240,7 @@ pub async fn create_or_update_config(
 
     let user = session.1.ok_or(StatusCode::UNAUTHORIZED)?;
 
-    if !user.has_administrator_in_guild(&guild_id) {
+    if !user.has_manage_roles_in_guild(&guild_id) {
         return Err(StatusCode::FORBIDDEN);
     }
 
@@ -322,7 +329,7 @@ pub async fn update_permissions(
 
     let user = session.1.ok_or(StatusCode::UNAUTHORIZED)?;
 
-    if !user.has_administrator_in_guild(&guild_id) {
+    if !user.has_manage_roles_in_guild(&guild_id) {
         return Err(StatusCode::FORBIDDEN);
     }
 
@@ -366,7 +373,7 @@ pub async fn delete_config(
 
     let user = session.1.ok_or(StatusCode::UNAUTHORIZED)?;
 
-    if !user.has_administrator_in_guild(&guild_id) {
+    if !user.has_manage_roles_in_guild(&guild_id) {
         return Err(StatusCode::FORBIDDEN);
     }
 

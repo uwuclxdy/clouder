@@ -222,6 +222,25 @@ pub async fn handle_selfrole_interaction(
         }
     };
 
+    // Check if bot has MANAGE_ROLES permission
+    if !bot_member.permissions.unwrap_or_default().manage_roles() {
+        tracing::warn!("Bot lacks MANAGE_ROLES permission in guild {} for self-role operations", guild_id);
+        if let Err(e) = interaction
+            .create_response(
+                &ctx.http,
+                CreateInteractionResponse::Message(
+                    CreateInteractionResponseMessage::new()
+                        .content("❌ i don't have permission to manage roles in this server.")
+                        .ephemeral(true),
+                ),
+            )
+            .await
+        {
+            tracing::error!("Failed to respond to permission error: {}", e);
+        }
+        return;
+    }
+
     let bot_role_positions = crate::utils::get_bot_role_positions(&bot_member, &guild_roles);
 
     let target_role = match guild_roles.iter().find(|r| r.id.get() == role_id_u64) {

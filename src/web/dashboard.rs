@@ -6,6 +6,17 @@ use axum::{
     response::{Html, Redirect},
 };
 
+/// Check if the bot is present in a guild
+async fn is_bot_in_guild(state: &AppState, guild_id: &str) -> bool {
+    if let Ok(guild_id_u64) = guild_id.parse::<u64>() {
+        crate::web::get_bot_member_info(&state.http, guild_id_u64.into())
+            .await
+            .is_ok()
+    } else {
+        false
+    }
+}
+
 pub async fn server_list(
     headers: HeaderMap,
     State(state): State<AppState>,
@@ -19,8 +30,16 @@ pub async fn server_list(
         .ok_or_else(|| Redirect::temporary("/auth/login"))?;
     let manageable_guilds = user.get_manageable_guilds();
 
-    let mut guilds_html = String::new();
+    // Filter guilds to only show those where the bot is also present
+    let mut bot_accessible_guilds = Vec::new();
     for guild in manageable_guilds {
+        if is_bot_in_guild(&state, &guild.id).await {
+            bot_accessible_guilds.push(guild);
+        }
+    }
+
+    let mut guilds_html = String::new();
+    for guild in &bot_accessible_guilds {
         let icon_url = guild
             .icon
             .as_ref()
@@ -40,11 +59,21 @@ pub async fn server_list(
     }
 
     if guilds_html.is_empty() {
-        guilds_html = if !user.guilds.is_empty() {
-            include_str!("templates/partials/no_manageable_servers.html").to_string()
+        let manageable_count = user.get_manageable_guilds().len();
+        if manageable_count > 0 {
+            // User has manageable guilds, but bot is not in any of them
+            guilds_html = r#"<div class="no-servers">
+                <h3>Bot Not Added to Your Servers</h3>
+                <p>You have servers with the required permissions, but the bot hasn't been added to them yet.</p>
+                <p>Click "Add to Server" above to invite the bot to your servers.</p>
+            </div>"#.to_string();
+        } else if !user.guilds.is_empty() {
+            // User has guilds but no manage permissions
+            guilds_html = include_str!("templates/partials/no_manageable_servers.html").to_string();
         } else {
-            include_str!("templates/partials/guild_load_error.html").to_string()
-        };
+            // User has no guilds at all
+            guilds_html = include_str!("templates/partials/guild_load_error.html").to_string();
+        }
     }
 
     let user_avatar = user
@@ -59,9 +88,9 @@ pub async fn server_list(
         })
         .unwrap_or_else(|| "https://cdn.discordapp.com/embed/avatars/0.png".to_string());
 
-    // Generate Discord invite URL with Administrator permission
+    // Generate Discord invite URL with full permissions for Clouder bot
     let invite_url = format!(
-        "https://discord.com/oauth2/authorize?client_id={}&permissions=8&response_type=code&redirect_uri={}&integration_type=0&scope=bot",
+        "https://discord.com/oauth2/authorize?client_id={}&permissions=268697088&response_type=code&redirect_uri={}&integration_type=0&scope=bot",
         state.config.web.oauth.client_id, state.config.web.oauth.redirect_uri
     );
 
@@ -103,9 +132,9 @@ pub async fn user_settings(
         })
         .unwrap_or_else(|| "https://cdn.discordapp.com/embed/avatars/0.png".to_string());
 
-    // Generate Discord invite URL with Administrator permission
+    // Generate Discord invite URL with full permissions for Clouder bot
     let invite_url = format!(
-        "https://discord.com/oauth2/authorize?client_id={}&permissions=8&response_type=code&redirect_uri={}&integration_type=0&scope=bot",
+        "https://discord.com/oauth2/authorize?client_id={}&permissions=268697088&response_type=code&redirect_uri={}&integration_type=0&scope=bot",
         state.config.web.oauth.client_id, state.config.web.oauth.redirect_uri
     );
 
@@ -349,9 +378,9 @@ pub async fn guild_dashboard(
         .map(|icon| format!("https://cdn.discordapp.com/icons/{}/{}.png", guild.id, icon))
         .unwrap_or_else(|| "https://cdn.discordapp.com/embed/avatars/0.png".to_string());
 
-    // Generate Discord invite URL with Administrator permission
+    // Generate Discord invite URL with full permissions for Clouder bot
     let invite_url = format!(
-        "https://discord.com/api/oauth2/authorize?client_id={}&permissions=8&scope=bot%20applications.commands",
+        "https://discord.com/api/oauth2/authorize?client_id={}&permissions=268697088&scope=bot%20applications.commands",
         _state.config.web.oauth.client_id
     );
 
@@ -388,9 +417,9 @@ pub async fn selfroles_list(
 
     let guild = user.guilds.iter().find(|g| g.id == guild_id).unwrap();
 
-    // Generate Discord invite URL with Administrator permission
+    // Generate Discord invite URL with full permissions for Clouder bot
     let invite_url = format!(
-        "https://discord.com/api/oauth2/authorize?client_id={}&permissions=8&scope=bot%20applications.commands",
+        "https://discord.com/api/oauth2/authorize?client_id={}&permissions=268697088&scope=bot%20applications.commands",
         _state.config.web.oauth.client_id
     );
 
@@ -476,9 +505,9 @@ fn render_selfroles_form(
             )
         };
 
-    // Generate Discord invite URL with Administrator permission
+    // Generate Discord invite URL with full permissions for Clouder bot
     let invite_url = format!(
-        "https://discord.com/api/oauth2/authorize?client_id={}&permissions=8&scope=bot%20applications.commands",
+        "https://discord.com/api/oauth2/authorize?client_id={}&permissions=268697088&scope=bot%20applications.commands",
         state.config.web.oauth.client_id
     );
 

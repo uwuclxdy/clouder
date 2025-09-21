@@ -160,6 +160,26 @@ async fn handle_openai_request(
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let user_id = message.author.id.get();
 
+    // Check if bot has SEND_MESSAGES permission in this channel
+    let bot_permissions = match message.guild_id {
+        Some(guild_id) => {
+            let bot_member = match crate::web::get_bot_member_info(&ctx.http, guild_id).await {
+                Ok(member) => member,
+                Err(e) => {
+                    warn!("Failed to get bot member info: {}", e);
+                    return Ok(()); // Silently ignore if can't check permissions
+                }
+            };
+            bot_member.permissions.unwrap_or_default()
+        }
+        None => serenity::Permissions::all(), // In DMs, assume all permissions
+    };
+
+    if !bot_permissions.send_messages() {
+        debug!("Bot lacks SEND_MESSAGES permission in channel {}", message.channel_id);
+        return Ok(()); // Silently ignore if no permission
+    }
+
     // Check cooldown unless user is in no-cooldown list
     if !data.config.openai.no_cooldown_users.contains(&user_id) {
         let cooldown_duration = Duration::from_secs(10);
@@ -276,6 +296,26 @@ async fn send_ephemeral_error(
     message: &serenity::Message,
     _error_msg: String,
 ) {
+    // Check if bot has ADD_REACTIONS permission in this channel
+    let bot_permissions = match message.guild_id {
+        Some(guild_id) => {
+            let bot_member = match crate::web::get_bot_member_info(&ctx.http, guild_id).await {
+                Ok(member) => member,
+                Err(e) => {
+                    warn!("Failed to get bot member info for reaction: {}", e);
+                    return; // Silently ignore if can't check permissions
+                }
+            };
+            bot_member.permissions.unwrap_or_default()
+        }
+        None => serenity::Permissions::all(), // In DMs, assume all permissions
+    };
+
+    if !bot_permissions.add_reactions() {
+        debug!("Bot lacks ADD_REACTIONS permission in channel {}", message.channel_id);
+        return; // Silently ignore if no permission
+    }
+
     // Try to react with an error emoji to indicate something went wrong
     if let Err(e) = message.react(&ctx.http, '❌').await {
         warn!("Failed to react to message with error: {}", e);
@@ -287,6 +327,26 @@ async fn send_help_as_message(
     message: &serenity::Message,
     data: &AppState,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    // Check if bot has SEND_MESSAGES permission in this channel
+    let bot_permissions = match message.guild_id {
+        Some(guild_id) => {
+            let bot_member = match crate::web::get_bot_member_info(&ctx.http, guild_id).await {
+                Ok(member) => member,
+                Err(e) => {
+                    warn!("Failed to get bot member info for help message: {}", e);
+                    return Ok(()); // Silently ignore if can't check permissions
+                }
+            };
+            bot_member.permissions.unwrap_or_default()
+        }
+        None => serenity::Permissions::all(), // In DMs, assume all permissions
+    };
+
+    if !bot_permissions.send_messages() {
+        debug!("Bot lacks SEND_MESSAGES permission in channel {}", message.channel_id);
+        return Ok(()); // Silently ignore if no permission
+    }
+
     let commands = crate::commands::help::get_all_commands();
     let embed = crate::commands::help::create_help_embed(&commands, data);
 
@@ -309,6 +369,25 @@ pub async fn handle_ai_retry_interaction(
     interaction: &serenity::ComponentInteraction,
     data: &AppState,
 ) {
+    // Check if bot has SEND_MESSAGES permission in this channel
+    let bot_permissions = match interaction.guild_id {
+        Some(guild_id) => {
+            let bot_member = match crate::web::get_bot_member_info(&ctx.http, guild_id).await {
+                Ok(member) => member,
+                Err(e) => {
+                    warn!("Failed to get bot member info for retry interaction: {}", e);
+                    return; // Silently ignore if can't check permissions
+                }
+            };
+            bot_member.permissions.unwrap_or_default()
+        }
+        None => serenity::Permissions::all(), // In DMs, assume all permissions
+    };
+
+    if !bot_permissions.send_messages() {
+        debug!("Bot lacks SEND_MESSAGES permission in channel {}", interaction.channel_id);
+        return; // Silently ignore if no permission
+    }
     // Parse custom_id: "ai_retry_{user_id}_{prompt_hash}_{original_message_id}"
     let parts: Vec<&str> = interaction.data.custom_id.split('_').collect();
     if parts.len() != 5 || parts[0] != "ai" || parts[1] != "retry" {

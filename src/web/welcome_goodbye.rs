@@ -141,8 +141,8 @@ pub async fn show_welcome_goodbye_config(
         .1
         .ok_or_else(|| Redirect::temporary("/auth/login"))?;
 
-    // Check if user has administrator permission for this guild
-    if !user.has_administrator_in_guild(&guild_id) {
+    // Check if user has MANAGE_ROLES permission for this guild
+    if !user.has_manage_roles_in_guild(&guild_id) {
         return Err(Redirect::temporary("/"));
     }
 
@@ -170,8 +170,9 @@ pub async fn show_welcome_goodbye_config(
     let channels = match get_guild_text_channels(&state, &guild_id).await {
         Ok(channels) => channels,
         Err(e) => {
-            tracing::error!("Failed to get guild channels: {}", e);
-            return Err(Redirect::temporary("/"));
+            tracing::error!("Failed to get guild channels for guild {}: {}. Bot may not be in guild or lack permissions.", guild_id, e);
+            // Return empty channels list instead of redirecting, show friendly error in UI
+            Vec::new()
         }
     };
 
@@ -187,7 +188,7 @@ pub async fn show_welcome_goodbye_config(
         .unwrap_or_else(|| "https://cdn.discordapp.com/embed/avatars/0.png".to_string());
 
     let invite_url = format!(
-        "https://discord.com/oauth2/authorize?client_id={}&permissions=8&response_type=code&redirect_uri={}&integration_type=0&scope=bot",
+        "https://discord.com/oauth2/authorize?client_id={}&permissions=268697088&response_type=code&redirect_uri={}&integration_type=0&scope=bot",
         state.config.web.oauth.client_id, state.config.web.oauth.redirect_uri
     );
 
@@ -195,14 +196,19 @@ pub async fn show_welcome_goodbye_config(
 
     // Build channels options HTML with selected values
     let mut channels_html = String::new();
-    for channel in &channels {
-        let welcome_selected = config_display.welcome_channel_id.as_ref() == Some(&channel.id);
-        let goodbye_selected = config_display.goodbye_channel_id.as_ref() == Some(&channel.id);
+    if channels.is_empty() {
+        // Show helpful message when bot is not in guild
+        channels_html.push_str(r#"<option value="" disabled>Bot not in server - please invite bot first</option>"#);
+    } else {
+        for channel in &channels {
+            let welcome_selected = config_display.welcome_channel_id.as_ref() == Some(&channel.id);
+            let goodbye_selected = config_display.goodbye_channel_id.as_ref() == Some(&channel.id);
 
-        channels_html.push_str(&format!(
-            r#"<option value="{}" data-welcome-selected="{}" data-goodbye-selected="{}"># {}</option>"#,
-            channel.id, welcome_selected, goodbye_selected, channel.name
-        ));
+            channels_html.push_str(&format!(
+                r#"<option value="{}" data-welcome-selected="{}" data-goodbye-selected="{}"># {}</option>"#,
+                channel.id, welcome_selected, goodbye_selected, channel.name
+            ));
+        }
     }
 
     let template = include_str!("templates/welcome_goodbye_config.html")
@@ -216,6 +222,7 @@ pub async fn show_welcome_goodbye_config(
         .replace("{{INVITE_URL}}", &invite_url)
         .replace("{{GUILD_ID}}", &guild_id)
         .replace("{{CHANNELS_HTML}}", &channels_html)
+        .replace("{{BOT_MISSING}}", if channels.is_empty() { "true" } else { "false" })
         .replace(
             "{{WELCOME_ENABLED}}",
             if config_display.welcome_enabled {
@@ -432,7 +439,7 @@ pub async fn save_welcome_goodbye_config(
 
     let user = session.1.ok_or(StatusCode::UNAUTHORIZED)?;
 
-    if !user.has_administrator_in_guild(&guild_id) {
+    if !user.has_manage_roles_in_guild(&guild_id) {
         return Err(StatusCode::FORBIDDEN);
     }
 
@@ -573,7 +580,7 @@ pub async fn send_test_welcome(
 
     let user = session.1.ok_or(StatusCode::UNAUTHORIZED)?;
 
-    if !user.has_administrator_in_guild(&guild_id) {
+    if !user.has_manage_roles_in_guild(&guild_id) {
         return Err(StatusCode::FORBIDDEN);
     }
 
@@ -640,7 +647,7 @@ pub async fn send_test_goodbye(
 
     let user = session.1.ok_or(StatusCode::UNAUTHORIZED)?;
 
-    if !user.has_administrator_in_guild(&guild_id) {
+    if !user.has_manage_roles_in_guild(&guild_id) {
         return Err(StatusCode::FORBIDDEN);
     }
 
@@ -708,7 +715,7 @@ pub async fn get_live_preview(
 
     let user = session.1.ok_or(StatusCode::UNAUTHORIZED)?;
 
-    if !user.has_administrator_in_guild(&guild_id) {
+    if !user.has_manage_roles_in_guild(&guild_id) {
         return Err(StatusCode::FORBIDDEN);
     }
 

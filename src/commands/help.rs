@@ -44,7 +44,7 @@ pub fn get_all_commands() -> Vec<CommandInfo> {
             description: "manage selfroles".to_string(),
             usage: Some("/selfroles".to_string()),
             category: CommandCategory::Management,
-            permissions: None,
+            permissions: Some("manage roles".to_string()),
         },
         CommandInfo {
             name: "/about bot".to_string(),
@@ -73,6 +73,13 @@ pub fn get_all_commands() -> Vec<CommandInfo> {
             usage: Some("/purge [number / message_id]".to_string()),
             category: CommandCategory::Management,
             permissions: Some("manage messages".to_string()),
+        },
+        CommandInfo {
+            name: "/mediaonly".to_string(),
+            description: "configure media-only channels".to_string(),
+            usage: Some("/mediaonly [channel] [enable/disable]".to_string()),
+            category: CommandCategory::Management,
+            permissions: Some("manage channels".to_string()),
         },
     ]
 }

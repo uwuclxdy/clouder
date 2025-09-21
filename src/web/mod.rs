@@ -458,11 +458,18 @@ async fn api_get_channels(
     }
 
     let guild_id_u64: u64 = guild_id.parse().map_err(|_| StatusCode::BAD_REQUEST)?;
-    let channels = state
-        .http
-        .get_channels(guild_id_u64.into())
-        .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let channels = match state.http.get_channels(guild_id_u64.into()).await {
+        Ok(channels) => channels,
+        Err(e) => {
+            tracing::error!("Failed to get channels for guild {}: {}. Bot may not be in guild or lack VIEW_CHANNEL permission.", guild_id, e);
+            return Ok(Json(serde_json::json!({
+                "success": false,
+                "error": "bot_not_in_guild",
+                "message": "Bot is not in this server or lacks required permissions. Please invite the bot first.",
+                "channels": []
+            })));
+        }
+    };
 
     let channel_data: Vec<serde_json::Value> = channels
         .into_iter()
@@ -559,11 +566,14 @@ async fn api_get_selfroles(
 
     let mut config_data = Vec::new();
     let guild_id_u64: u64 = guild_id.parse().map_err(|_| StatusCode::BAD_REQUEST)?;
-    let channels = state
-        .http
-        .get_channels(guild_id_u64.into())
-        .await
-        .unwrap_or_default();
+    let channels = match state.http.get_channels(guild_id_u64.into()).await {
+        Ok(channels) => channels,
+        Err(e) => {
+            tracing::error!("Failed to get channels for guild {}: {}. Bot may not be in guild or lack VIEW_CHANNEL permission.", guild_id, e);
+            // Return empty channels instead of failing
+            Vec::new()
+        }
+    };
 
     for config in configs {
         let roles = config.get_roles(&state.db).await.unwrap_or_default();

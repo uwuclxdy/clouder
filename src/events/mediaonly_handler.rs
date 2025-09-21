@@ -38,6 +38,21 @@ pub async fn handle_media_only_message(
         }
     };
 
+    // Check if bot has MANAGE_MESSAGES permission in this channel
+    let bot_member = match crate::web::get_bot_member_info(&ctx.http, guild_id).await {
+        Ok(member) => member,
+        Err(e) => {
+            warn!("Failed to get bot member info: {}", e);
+            return;
+        }
+    };
+
+    // Check if bot has MANAGE_MESSAGES permission
+    if !bot_member.permissions.unwrap_or_default().manage_messages() {
+        warn!("Bot lacks MANAGE_MESSAGES permission in guild {} for media-only enforcement", guild_id);
+        return;
+    }
+
     // Check if a message contains allowed content
     if has_allowed_content(
         message,

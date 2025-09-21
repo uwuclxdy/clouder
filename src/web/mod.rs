@@ -35,6 +35,7 @@ pub fn create_router(app_state: AppState) -> Router {
         .route("/auth/callback", get(auth::callback))
         .route("/auth/logout", get(auth::logout))
         .route("/user/settings", get(dashboard::user_settings))
+        .route("/feature-request", get(dashboard::feature_request))
         .route("/dashboard/{guild_id}", get(dashboard::guild_dashboard))
         .route(
             "/dashboard/{guild_id}/selfroles",
@@ -93,6 +94,7 @@ pub fn create_router(app_state: AppState) -> Router {
             "/api/mediaonly/{guild_id}/{channel_id}",
             put(mediaonly::update_permissions).delete(mediaonly::delete_config),
         )
+        .route("/api/feature-request", post(api_submit_feature_request))
         .layer(axum::middleware::from_fn(middleware::session_middleware))
         .with_state(app_state)
 }
@@ -116,6 +118,11 @@ struct SelfRoleData {
 struct UpdateUserSettingsRequest {
     timezone: String,
     dm_reminders_enabled: bool,
+}
+
+#[derive(Serialize, Deserialize)]
+struct FeatureRequest {
+    description: String,
 }
 
 fn validate_selfrole_request(payload: &CreateSelfRoleRequest) -> Result<(), &'static str> {
@@ -182,7 +189,7 @@ async fn api_create_selfroles(
         .map_err(|_| StatusCode::UNAUTHORIZED)?;
     let user = user.ok_or(StatusCode::UNAUTHORIZED)?;
 
-    if !user.has_manage_roles_in_guild(&guild_id) {
+    if !user.has_manage_roles_in_guild(&guild_id) && !user.has_administrator_in_guild(&guild_id) {
         return Err(StatusCode::FORBIDDEN);
     }
 
@@ -314,7 +321,7 @@ async fn api_update_selfroles(
         .map_err(|_| StatusCode::UNAUTHORIZED)?;
     let user = user.ok_or(StatusCode::UNAUTHORIZED)?;
 
-    if !user.has_manage_roles_in_guild(&guild_id) {
+    if !user.has_manage_roles_in_guild(&guild_id) && !user.has_administrator_in_guild(&guild_id) {
         return Err(StatusCode::FORBIDDEN);
     }
 
@@ -453,7 +460,7 @@ async fn api_get_channels(
         .map_err(|_| StatusCode::UNAUTHORIZED)?;
     let user = user.ok_or(StatusCode::UNAUTHORIZED)?;
 
-    if !user.has_manage_roles_in_guild(&guild_id) {
+    if !user.has_manage_roles_in_guild(&guild_id) && !user.has_administrator_in_guild(&guild_id) {
         return Err(StatusCode::FORBIDDEN);
     }
 
@@ -496,7 +503,7 @@ async fn api_get_roles(
         .map_err(|_| StatusCode::UNAUTHORIZED)?;
     let user = user.ok_or(StatusCode::UNAUTHORIZED)?;
 
-    if !user.has_manage_roles_in_guild(&guild_id) {
+    if !user.has_manage_roles_in_guild(&guild_id) && !user.has_administrator_in_guild(&guild_id) {
         return Err(StatusCode::FORBIDDEN);
     }
 
@@ -556,7 +563,7 @@ async fn api_get_selfroles(
         .map_err(|_| StatusCode::UNAUTHORIZED)?;
     let user = user.ok_or(StatusCode::UNAUTHORIZED)?;
 
-    if !user.has_manage_roles_in_guild(&guild_id) {
+    if !user.has_manage_roles_in_guild(&guild_id) && !user.has_administrator_in_guild(&guild_id) {
         return Err(StatusCode::FORBIDDEN);
     }
 
@@ -612,7 +619,7 @@ async fn api_get_selfrole_config(
         .map_err(|_| StatusCode::UNAUTHORIZED)?;
     let user = user.ok_or(StatusCode::UNAUTHORIZED)?;
 
-    if !user.has_manage_roles_in_guild(&guild_id) {
+    if !user.has_manage_roles_in_guild(&guild_id) && !user.has_administrator_in_guild(&guild_id) {
         return Err(StatusCode::FORBIDDEN);
     }
 
@@ -657,7 +664,7 @@ async fn api_delete_selfroles(
         .map_err(|_| StatusCode::UNAUTHORIZED)?;
     let user = user.ok_or(StatusCode::UNAUTHORIZED)?;
 
-    if !user.has_manage_roles_in_guild(&guild_id) {
+    if !user.has_manage_roles_in_guild(&guild_id) && !user.has_administrator_in_guild(&guild_id) {
         return Err(StatusCode::FORBIDDEN);
     }
 
@@ -721,4 +728,65 @@ async fn api_update_user_settings(
         "success": true,
         "message": "Settings saved successfully"
     })))
+}
+
+async fn api_submit_feature_request(
+    headers: HeaderMap,
+    State(state): State<AppState>,
+    Json(payload): Json<FeatureRequest>,
+) -> Result<Json<serde_json::Value>, StatusCode> {
+    let (_, user) = extract_session_data(&headers)
+        .await
+        .map_err(|_| StatusCode::UNAUTHORIZED)?;
+    let user = user.ok_or(StatusCode::UNAUTHORIZED)?;
+
+    // Validate description
+    if payload.description.trim().is_empty() {
+        return Ok(Json(serde_json::json!({
+            "success": false,
+            "message": "Feature description cannot be empty"
+        })));
+    }
+
+    if payload.description.len() > 2000 {
+        return Ok(Json(serde_json::json!({
+            "success": false,
+            "message": "Feature description must be less than 2000 characters"
+        })));
+    }
+
+    // Send DM to bot owner
+    let dm_content = format!(
+        "**New Feature Request**\n\n**From:** {} (ID: {})\n**Description:**\n{}",
+        user.user.username,
+        user.user.id,
+        payload.description
+    );
+
+    match state.http.create_private_channel(&serde_json::json!({"recipient_id": state.config.discord.bot_owner})).await {
+        Ok(channel) => {
+            match state.http.send_message(channel.id, Vec::new(), &serenity::all::CreateMessage::new().content(&dm_content)).await {
+                Ok(_) => {
+                    Ok(Json(serde_json::json!({
+                        "success": true,
+                        "message": "Feature request submitted successfully!"
+                    })))
+                }
+                Err(e) => {
+                    tracing::error!("Failed to send DM to bot owner: {}", e);
+                    Ok(Json(serde_json::json!({
+                        "success": false,
+                        "message": "Failed to send feature request. Please try again later."
+                    })))
+                }
+            }
+        }
+        Err(e) => {
+            tracing::error!("Failed to create DM channel with bot owner: {}", e);
+            Ok(Json(serde_json::json!({
+                "success": false,
+                "message": "Failed to send feature request. Please try again later."
+            })))
+        }
+    }
 }

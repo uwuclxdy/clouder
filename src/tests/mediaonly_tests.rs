@@ -36,6 +36,7 @@ mod tests {
             allow_attachments: true,
             allow_gifs: false,
             allow_stickers: true,
+            enabled: Some(true),
         };
 
         let json = serde_json::to_string(&request).unwrap();
@@ -45,6 +46,7 @@ mod tests {
         assert_eq!(deserialized.allow_attachments, true);
         assert_eq!(deserialized.allow_gifs, false);
         assert_eq!(deserialized.allow_stickers, true);
+        assert_eq!(deserialized.enabled, Some(true));
     }
 
     #[test]

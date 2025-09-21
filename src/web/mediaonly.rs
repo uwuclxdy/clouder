@@ -29,6 +29,8 @@ pub struct MediaOnlyConfigUpdateRequest {
     pub allow_attachments: bool,
     pub allow_gifs: bool,
     pub allow_stickers: bool,
+    #[serde(default)]
+    pub enabled: Option<bool>,
 }
 
 #[derive(Debug, Serialize)]
@@ -65,7 +67,7 @@ pub async fn get_mediaonly_page(
         .ok_or_else(|| Redirect::temporary("/auth/login"))?;
 
     // Check if user has MANAGE_ROLES permission for this guild
-    if !user.has_manage_roles_in_guild(&guild_id) {
+    if !user.has_manage_roles_in_guild(&guild_id) && !user.has_administrator_in_guild(&guild_id) {
         return Err(Redirect::temporary("/"));
     }
 
@@ -181,7 +183,7 @@ pub async fn list_configs(
 
     let user = session.1.ok_or(StatusCode::UNAUTHORIZED)?;
 
-    if !user.has_manage_roles_in_guild(&guild_id) {
+    if !user.has_manage_roles_in_guild(&guild_id) && !user.has_administrator_in_guild(&guild_id) {
         return Err(StatusCode::FORBIDDEN);
     }
 
@@ -240,7 +242,7 @@ pub async fn create_or_update_config(
 
     let user = session.1.ok_or(StatusCode::UNAUTHORIZED)?;
 
-    if !user.has_manage_roles_in_guild(&guild_id) {
+    if !user.has_manage_roles_in_guild(&guild_id) && !user.has_administrator_in_guild(&guild_id) {
         return Err(StatusCode::FORBIDDEN);
     }
 
@@ -329,13 +331,22 @@ pub async fn update_permissions(
 
     let user = session.1.ok_or(StatusCode::UNAUTHORIZED)?;
 
-    if !user.has_manage_roles_in_guild(&guild_id) {
+    if !user.has_manage_roles_in_guild(&guild_id) && !user.has_administrator_in_guild(&guild_id) {
         return Err(StatusCode::FORBIDDEN);
     }
 
     // Check if config exists
     match MediaOnlyConfig::get_by_channel(&state.db, &guild_id, &channel_id).await {
-        Ok(Some(_)) => {},
+        Ok(Some(mut config)) => {
+            // Update enabled if provided
+            if let Some(enabled) = request.enabled {
+                config.enabled = enabled;
+                if let Err(e) = MediaOnlyConfig::upsert(&state.db, &guild_id, &channel_id, enabled).await {
+                    tracing::error!("Failed to update enabled status: {}", e);
+                    return Ok(Json(json!({"success": false, "error": "Failed to update enabled status"})));
+                }
+            }
+        },
         Ok(None) => {
             return Ok(Json(json!({"success": false, "error": "Configuration not found"})));
         }
@@ -373,7 +384,7 @@ pub async fn delete_config(
 
     let user = session.1.ok_or(StatusCode::UNAUTHORIZED)?;
 
-    if !user.has_manage_roles_in_guild(&guild_id) {
+    if !user.has_manage_roles_in_guild(&guild_id) && !user.has_administrator_in_guild(&guild_id) {
         return Err(StatusCode::FORBIDDEN);
     }
 

@@ -556,7 +556,8 @@
                             allow_links: config.allow_links,
                             allow_attachments: config.allow_attachments,
                             allow_gifs: config.allow_gifs,
-                            allow_stickers: config.allow_stickers
+                            allow_stickers: config.allow_stickers,
+                            enabled: config.enabled
                         })
                     });
 
@@ -566,7 +567,7 @@
                     }
                 }
 
-                alert('All configurations saved successfully!');
+                window.location.href = `/dashboard/${guildId}`;
             } catch (error) {
                 alert(`Failed to save configurations: ${error.message}`);
             } finally {

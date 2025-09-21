@@ -366,7 +366,7 @@ pub async fn guild_dashboard(
         .1
         .ok_or_else(|| Redirect::temporary("/auth/login"))?;
 
-    if !user.has_manage_roles_in_guild(&guild_id) {
+    if !user.has_manage_roles_in_guild(&guild_id) && !user.has_administrator_in_guild(&guild_id) {
         return Err(Redirect::temporary("/"));
     }
 
@@ -411,7 +411,7 @@ pub async fn selfroles_list(
         .1
         .ok_or_else(|| Redirect::temporary("/auth/login"))?;
 
-    if !user.has_manage_roles_in_guild(&guild_id) {
+    if !user.has_manage_roles_in_guild(&guild_id) && !user.has_administrator_in_guild(&guild_id) {
         return Err(Redirect::temporary("/"));
     }
 
@@ -451,7 +451,7 @@ pub async fn selfroles_create(
         .1
         .ok_or_else(|| Redirect::temporary("/auth/login"))?;
 
-    if !user.has_manage_roles_in_guild(&guild_id) {
+    if !user.has_manage_roles_in_guild(&guild_id) && !user.has_administrator_in_guild(&guild_id) {
         return Err(Redirect::temporary("/"));
     }
 
@@ -472,7 +472,7 @@ pub async fn selfroles_edit(
         .1
         .ok_or_else(|| Redirect::temporary("/auth/login"))?;
 
-    if !user.has_manage_roles_in_guild(&guild_id) {
+    if !user.has_manage_roles_in_guild(&guild_id) && !user.has_administrator_in_guild(&guild_id) {
         return Err(Redirect::temporary("/"));
     }
 
@@ -550,19 +550,17 @@ pub async fn custom_commands(
         .1
         .ok_or_else(|| Redirect::temporary("/auth/login"))?;
 
-    if !user.has_manage_roles_in_guild(&guild_id) {
+    if !user.has_manage_roles_in_guild(&guild_id) && !user.has_administrator_in_guild(&guild_id) {
         return Err(Redirect::temporary("/"));
     }
 
-    // TODO: Implement custom commands functionality
+    // TODO: Implement server settings functionality
     Err(Redirect::temporary(&format!("/dashboard/{}", guild_id)))
 }
 
-#[allow(dead_code)]
-pub async fn server_settings(
-    Path(guild_id): Path<String>,
+pub async fn feature_request(
     headers: HeaderMap,
-    State(_state): State<AppState>,
+    State(state): State<AppState>,
 ) -> Result<Html<String>, Redirect> {
     let session = extract_session_data(&headers)
         .await
@@ -572,10 +570,35 @@ pub async fn server_settings(
         .1
         .ok_or_else(|| Redirect::temporary("/auth/login"))?;
 
-    if !user.has_manage_roles_in_guild(&guild_id) {
-        return Err(Redirect::temporary("/"));
-    }
+    let user_avatar = user
+        .user
+        .avatar
+        .as_ref()
+        .map(|avatar| {
+            format!(
+                "https://cdn.discordapp.com/avatars/{}/{}.png",
+                user.user.id, avatar
+            )
+        })
+        .unwrap_or_else(|| "https://cdn.discordapp.com/embed/avatars/0.png".to_string());
 
-    // TODO: Implement server settings functionality
-    Err(Redirect::temporary(&format!("/dashboard/{}", guild_id)))
+    // Generate Discord invite URL with full permissions for Clouder bot
+    let invite_url = format!(
+        "https://discord.com/oauth2/authorize?client_id={}&permissions=268697088&response_type=code&redirect_uri={}&integration_type=0&scope=bot",
+        state.config.web.oauth.client_id, state.config.web.oauth.redirect_uri
+    );
+
+    let template = include_str!("templates/feature_request.html")
+        .replace("{{COMMON_CSS}}", include_str!("static/css/common.css"))
+        .replace(
+            "{{DASHBOARD_CSS}}",
+            include_str!("static/css/dashboard.css"),
+        )
+        .replace("{{COMMON_JS}}", include_str!("static/js/common.js"))
+        .replace("{{USER_AVATAR}}", &user_avatar)
+        .replace("{{USER_NAME}}", &user.user.username)
+        .replace("{{USER_ID}}", &user.user.id.to_string())
+        .replace("{{INVITE_URL}}", &invite_url);
+
+    Ok(Html(template))
 }

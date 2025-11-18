@@ -63,39 +63,39 @@ pub async fn bot(ctx: Context<'_>) -> Result<(), Error> {
     let selfrole_configs = sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM selfrole_configs")
         .fetch_one(db.as_ref())
         .await
-        .unwrap_or_else(|_| 0);
+        .unwrap_or(0);
 
     let selfrole_roles = sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM selfrole_roles")
         .fetch_one(db.as_ref())
         .await
-        .unwrap_or_else(|_| 0);
+        .unwrap_or(0);
 
     let active_cooldowns = sqlx::query_scalar::<_, i64>(
         "SELECT COUNT(*) FROM selfrole_cooldowns WHERE expires_at > datetime('now')",
     )
     .fetch_one(db.as_ref())
     .await
-    .unwrap_or_else(|_| 0);
+    .unwrap_or(0);
 
     let db_guilds =
         sqlx::query_scalar::<_, i64>("SELECT COUNT(DISTINCT guild_id) FROM selfrole_configs")
             .fetch_one(db.as_ref())
             .await
-            .unwrap_or_else(|_| 0);
+            .unwrap_or(0);
 
     let recent_configs = sqlx::query_scalar::<_, i64>(
         "SELECT COUNT(*) FROM selfrole_configs WHERE created_at > datetime('now', '-7 days')",
     )
     .fetch_one(db.as_ref())
     .await
-    .unwrap_or_else(|_| 0);
+    .unwrap_or(0);
 
     let expired_cooldowns = sqlx::query_scalar::<_, i64>(
         "SELECT COUNT(*) FROM selfrole_cooldowns WHERE expires_at <= datetime('now')",
     )
     .fetch_one(db.as_ref())
     .await
-    .unwrap_or_else(|_| 0);
+    .unwrap_or(0);
 
     let db_stats = format!(
         "configs: **`{}`**
@@ -332,7 +332,7 @@ pub async fn server(ctx: Context<'_>) -> Result<(), Error> {
     }
 
     let mut embed = CreateEmbed::new()
-        .title(&format!("📊 `{}` info", full_guild.name))
+        .title(format!("📊 `{}` info", full_guild.name))
         .color(get_default_embed_color(ctx.data()))
         .field("👥 members", format!("**`{member_count}`**"), true);
 
@@ -344,11 +344,10 @@ pub async fn server(ctx: Context<'_>) -> Result<(), Error> {
         );
     }
 
-    if let Some(description) = &full_guild.description {
-        if !description.is_empty() {
+    if let Some(description) = &full_guild.description
+        && !description.is_empty() {
             embed = embed.field("📝 description", format!("*{}*", description), false);
         }
-    }
 
     let channel_breakdown = if stage_channels > 0 || forum_channels > 0 {
         format!(
@@ -428,8 +427,8 @@ pub async fn server(ctx: Context<'_>) -> Result<(), Error> {
         );
     }
 
-    if let Some(widget_enabled) = full_guild.widget_enabled {
-        if widget_enabled {
+    if let Some(widget_enabled) = full_guild.widget_enabled
+        && widget_enabled {
             embed = embed.field("🛠️ widget enabled", "**yes**", true);
             if let Some(widget_channel_id) = full_guild.widget_channel_id {
                 embed = embed.field(
@@ -439,7 +438,6 @@ pub async fn server(ctx: Context<'_>) -> Result<(), Error> {
                 );
             }
         }
-    }
 
     if let Some(application_id) = full_guild.application_id {
         embed = embed.field("🤖 created by app", format!("`{}`", application_id), true);
@@ -547,17 +545,15 @@ pub async fn server(ctx: Context<'_>) -> Result<(), Error> {
         }
     }
 
-    if let Some(welcome_screen) = &full_guild.welcome_screen {
-        if let Some(description) = &welcome_screen.description {
-            if !description.is_empty() {
+    if let Some(welcome_screen) = &full_guild.welcome_screen
+        && let Some(description) = &welcome_screen.description
+            && !description.is_empty() {
                 embed = embed.field(
                     "👋 welcome description",
                     format!("*{}*", description),
                     false,
                 );
             }
-        }
-    }
 
     if let Some(discovery_splash) = &full_guild.discovery_splash {
         let discovery_splash_url = format!(
@@ -609,10 +605,7 @@ pub async fn user(
     let target_user = user.unwrap_or_else(|| ctx.author().clone());
 
     let member_info = if let Some(guild_id) = ctx.guild_id() {
-        match guild_id.member(&ctx.http(), target_user.id).await {
-            Ok(member) => Some(member),
-            Err(_) => None,
-        }
+        (guild_id.member(&ctx.http(), target_user.id).await).ok()
     } else {
         None
     };
@@ -633,16 +626,16 @@ pub async fn user(
     let display_name = if let Some(global_name) = &full_user.global_name {
         format!("**`{}`** (global name)", global_name)
     } else {
-        format!("**`{}`**", target_user.display_name().to_string())
+        format!("**`{}`**", target_user.display_name())
     };
 
     let mut embed = CreateEmbed::new()
         .color(get_default_embed_color(ctx.data()))
-        .title(&format!("👤 `{}` info", target_user.tag()))
+        .title(format!("👤 `{}` info", target_user.tag()))
         .description(format!(
             "<@{}> `{}`",
             target_user.id,
-            target_user.id.to_string()
+            target_user.id
         ))
         .field("✍️ display name", display_name, true)
         .field("📅 account created", account_age, false);
@@ -675,11 +668,10 @@ pub async fn user(
         );
     }
 
-    if let Some(email) = &full_user.email {
-        if !email.is_empty() {
+    if let Some(email) = &full_user.email
+        && !email.is_empty() {
             embed = embed.field("📧 email", format!("**`{}`**", email), true);
         }
-    }
 
     if full_user.mfa_enabled {
         embed = embed.field("🔐 2FA enabled", "**yes**", true);
@@ -801,7 +793,7 @@ pub async fn user(
 
         if !roles.is_empty() {
             let roles_text = roles.join(" ");
-            embed = embed.field(&format!("🎭 roles: `{}`", roles.len()), roles_text, false);
+            embed = embed.field(format!("🎭 roles: `{}`", roles.len()), roles_text, false);
         }
 
         if let Some(premium_since) = member.premium_since {
@@ -812,15 +804,14 @@ pub async fn user(
             );
         }
 
-        if let Some(timed_out_until) = member.communication_disabled_until {
-            if timed_out_until > serenity::Timestamp::now() {
+        if let Some(timed_out_until) = member.communication_disabled_until
+            && timed_out_until > serenity::Timestamp::now() {
                 embed = embed.field(
                     "⏰ timed out",
                     format!("until <t:{}:R>", timed_out_until.timestamp()),
                     true,
                 );
             }
-        }
 
         if let Some(nick) = &member.nick {
             embed = embed.field("📝 server nickname", format!("**`{}`**", nick), true);
@@ -979,7 +970,7 @@ pub async fn role(
     };
 
     let mut embed = CreateEmbed::new()
-        .title(&format!("🎭 `{}` info", role.name))
+        .title(format!("🎭 `{}` info", role.name))
         .description(format!("<@&{}> `{}`", role.id, role.id))
         .color(role.colour)
         .field("👥 members", format!("**`{}`**", member_count), true)
@@ -1099,7 +1090,7 @@ pub async fn channel(
     };
 
     let mut embed = CreateEmbed::new()
-        .title(&format!(
+        .title(format!(
             "{} `{}` info",
             match target_channel.kind {
                 serenity::ChannelType::Text => "📝",
@@ -1128,8 +1119,8 @@ pub async fn channel(
         true,
     );
 
-    if let Some(topic) = &target_channel.topic {
-        if !topic.is_empty() {
+    if let Some(topic) = &target_channel.topic
+        && !topic.is_empty() {
             let display_topic = if topic.len() > 100 {
                 format!("{}...", &topic[..97])
             } else {
@@ -1137,7 +1128,6 @@ pub async fn channel(
             };
             embed = embed.field("📋 description", format!("*{}*", display_topic), false);
         }
-    }
 
     if let Some(parent_id) = target_channel.parent_id {
         if let Ok(parent) = parent_id.to_channel(&ctx.http()).await {
@@ -1159,11 +1149,10 @@ pub async fn channel(
 
     match target_channel.kind {
         serenity::ChannelType::Text | serenity::ChannelType::News => {
-            if let Some(slowmode) = target_channel.rate_limit_per_user {
-                if slowmode > 0 {
+            if let Some(slowmode) = target_channel.rate_limit_per_user
+                && slowmode > 0 {
                     embed = embed.field("⏰ slowmode", format!("**{}s**", slowmode), true);
                 }
-            }
 
             if let Some(last_message_id) = target_channel.last_message_id {
                 embed = embed.field(
@@ -1221,11 +1210,10 @@ pub async fn channel(
             }
         }
         serenity::ChannelType::Forum => {
-            if let Some(slowmode) = target_channel.rate_limit_per_user {
-                if slowmode > 0 {
+            if let Some(slowmode) = target_channel.rate_limit_per_user
+                && slowmode > 0 {
                     embed = embed.field("⏰ slowmode", format!("**{}s**", slowmode), true);
                 }
-            }
 
             let tags = &target_channel.available_tags;
             if !tags.is_empty() {
@@ -1256,7 +1244,7 @@ pub async fn channel(
                     tag_names.join(", ")
                 };
 
-                embed = embed.field(&format!("🏷️ tags ({})", tag_count), display_tags, false);
+                embed = embed.field(format!("🏷️ tags ({})", tag_count), display_tags, false);
             }
 
             if let Some(default_reaction_emoji) = &target_channel.default_reaction_emoji {
@@ -1270,15 +1258,13 @@ pub async fn channel(
 
             if let Some(default_thread_rate_limit) =
                 target_channel.default_thread_rate_limit_per_user
-            {
-                if default_thread_rate_limit > 0 {
+                && default_thread_rate_limit > 0 {
                     embed = embed.field(
                         "🧵 thread slowmode",
                         format!("**{}s**", default_thread_rate_limit),
                         true,
                     );
                 }
-            }
 
             if let Some(default_sort_order) = target_channel.default_sort_order {
                 let sort_name = match default_sort_order {

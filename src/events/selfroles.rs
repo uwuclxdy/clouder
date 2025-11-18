@@ -224,7 +224,7 @@ pub async fn handle_selfrole_interaction(
 
     // Check if bot has MANAGE_ROLES permission by checking its roles
     let bot_has_manage_roles = bot_member.roles.iter().any(|role_id| {
-        guild_roles.iter().find(|r| r.id == *role_id).map_or(false, |role| {
+        guild_roles.iter().find(|r| r.id == *role_id).is_some_and(|role| {
             role.permissions.administrator() || role.permissions.manage_roles()
         })
     });

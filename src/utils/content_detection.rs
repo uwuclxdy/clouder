@@ -25,7 +25,7 @@ pub fn has_gif(message: &serenity::Message) -> bool {
         .iter()
         .any(|attachment| {
             attachment.filename.to_lowercase().ends_with(".gif") ||
-            attachment.content_type.as_ref().map_or(false, |ct| ct.starts_with("image/gif"))
+            attachment.content_type.as_ref().is_some_and(|ct| ct.starts_with("image/gif"))
         });
 
     if has_gif_attachment {
@@ -46,11 +46,11 @@ pub fn has_gif(message: &serenity::Message) -> bool {
 
     // Check for GIF embeds
     message.embeds.iter().any(|embed| {
-        embed.image.as_ref().map_or(false, |img| img.url.to_lowercase().contains(".gif")) ||
-        embed.video.as_ref().map_or(false, |video| {
+        embed.image.as_ref().is_some_and(|img| img.url.to_lowercase().contains(".gif")) ||
+        embed.video.as_ref().is_some_and(|video| {
             video.url.to_lowercase().contains(".gif")
         }) ||
-        embed.thumbnail.as_ref().map_or(false, |thumb| thumb.url.to_lowercase().contains(".gif"))
+        embed.thumbnail.as_ref().is_some_and(|thumb| thumb.url.to_lowercase().contains(".gif"))
     })
 }
 

@@ -179,7 +179,7 @@ async fn show_category_help(
     if category_commands.is_empty() {
         ctx.send(
             poise::CreateReply::default()
-                .content(&format!("❌ no commands for '{}' yet", category.as_str()))
+                .content(format!("❌ no commands for '{}' yet", category.as_str()))
                 .ephemeral(true),
         )
         .await?;
@@ -187,7 +187,7 @@ async fn show_category_help(
     }
 
     let mut embed = CreateEmbed::new()
-        .title(&format!("{} - details", category.as_str()))
+        .title(format!("{} - details", category.as_str()))
         .color(get_default_embed_color(ctx.data()));
 
     for cmd in &category_commands {
@@ -204,7 +204,7 @@ async fn show_category_help(
         embed = embed.field(&cmd.name, field_value, false);
     }
 
-    embed = embed.footer(CreateEmbedFooter::new(&format!(
+    embed = embed.footer(CreateEmbedFooter::new(format!(
         "{} commands in {} category • use /help for all categories",
         category_commands.len(),
         category_name

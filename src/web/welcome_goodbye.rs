@@ -463,20 +463,18 @@ pub async fn save_welcome_goodbye_config(
         }
 
         // Validate URLs if provided
-        if let Some(ref url) = request.welcome_embed_thumbnail {
-            if !url.is_empty() && !validate_url(url) {
+        if let Some(ref url) = request.welcome_embed_thumbnail
+            && !url.is_empty() && !validate_url(url) {
                 return Ok(Json(
                     json!({"success": false, "error": "Invalid welcome thumbnail URL"}),
                 ));
             }
-        }
-        if let Some(ref url) = request.welcome_embed_image {
-            if !url.is_empty() && !validate_url(url) {
+        if let Some(ref url) = request.welcome_embed_image
+            && !url.is_empty() && !validate_url(url) {
                 return Ok(Json(
                     json!({"success": false, "error": "Invalid welcome image URL"}),
                 ));
             }
-        }
     }
 
     if request.goodbye_enabled {
@@ -498,20 +496,18 @@ pub async fn save_welcome_goodbye_config(
         }
 
         // Validate URLs if provided
-        if let Some(ref url) = request.goodbye_embed_thumbnail {
-            if !url.is_empty() && !validate_url(url) {
+        if let Some(ref url) = request.goodbye_embed_thumbnail
+            && !url.is_empty() && !validate_url(url) {
                 return Ok(Json(
                     json!({"success": false, "error": "Invalid goodbye thumbnail URL"}),
                 ));
             }
-        }
-        if let Some(ref url) = request.goodbye_embed_image {
-            if !url.is_empty() && !validate_url(url) {
+        if let Some(ref url) = request.goodbye_embed_image
+            && !url.is_empty() && !validate_url(url) {
                 return Ok(Json(
                     json!({"success": false, "error": "Invalid goodbye image URL"}),
                 ));
             }
-        }
     }
 
     // Convert hex colors to integers
@@ -814,43 +810,38 @@ async fn send_test_message_to_channel(
         "embed" => {
             let mut embed = CreateEmbed::new();
 
-            if let Some(title) = embed_title {
-                if !title.trim().is_empty() {
+            if let Some(title) = embed_title
+                && !title.trim().is_empty() {
                     embed = embed.title(replace_placeholders(title, &placeholders));
                 }
-            }
 
-            if let Some(description) = embed_desc {
-                if !description.trim().is_empty() {
+            if let Some(description) = embed_desc
+                && !description.trim().is_empty() {
                     embed = embed.description(replace_placeholders(description, &placeholders));
                 }
-            }
 
             let color = embed_color
                 .map(|c| c as u64)
                 .unwrap_or_else(|| get_default_embed_color(state).0 as u64);
             embed = embed.color(color);
 
-            if let Some(footer) = embed_footer {
-                if !footer.trim().is_empty() {
+            if let Some(footer) = embed_footer
+                && !footer.trim().is_empty() {
                     embed = embed.footer(CreateEmbedFooter::new(replace_placeholders(
                         footer,
                         &placeholders,
                     )));
                 }
-            }
 
-            if let Some(thumbnail) = embed_thumb {
-                if !thumbnail.trim().is_empty() {
+            if let Some(thumbnail) = embed_thumb
+                && !thumbnail.trim().is_empty() {
                     embed = embed.thumbnail(replace_placeholders(thumbnail, &placeholders));
                 }
-            }
 
-            if let Some(image) = embed_image {
-                if !image.trim().is_empty() {
+            if let Some(image) = embed_image
+                && !image.trim().is_empty() {
                     embed = embed.image(replace_placeholders(image, &placeholders));
                 }
-            }
 
             if embed_timestamp {
                 embed = embed.timestamp(serenity::model::timestamp::Timestamp::now());

@@ -54,11 +54,8 @@ pub async fn handle_interaction_create(
     interaction: &serenity::Interaction,
     data: &AppState,
 ) {
-    match interaction {
-        serenity::Interaction::Component(component_interaction) => {
-            handle_component_interaction(ctx, component_interaction, data).await;
-        }
-        _ => {}
+    if let serenity::Interaction::Component(component_interaction) = interaction {
+        handle_component_interaction(ctx, component_interaction, data).await;
     }
 }
 

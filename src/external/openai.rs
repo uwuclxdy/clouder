@@ -115,11 +115,10 @@ impl OpenAIClient {
         let mut cooldowns = self.cooldowns.lock().unwrap();
         let now = Instant::now();
 
-        if let Some(&last_request) = cooldowns.get(&user_id) {
-            if now.duration_since(last_request) < cooldown_duration {
+        if let Some(&last_request) = cooldowns.get(&user_id)
+            && now.duration_since(last_request) < cooldown_duration {
                 return false; // User is still on cooldown
             }
-        }
 
         cooldowns.insert(user_id, now);
         true

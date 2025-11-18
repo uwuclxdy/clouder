@@ -22,9 +22,9 @@ pub async fn on_mention(ctx: &serenity::Context, message: &serenity::Message, da
 
     if is_mention || is_reply_to_bot {
         // Check if OpenAI is enabled and user is authorized
-        if data.config.openai.enabled {
-            if let Some(ref openai_client) = data.openai_client {
-                if is_user_authorized_for_openai(message, data).await {
+        if data.config.openai.enabled
+            && let Some(ref openai_client) = data.openai_client
+                && is_user_authorized_for_openai(message, data).await {
                     if let Err(e) = handle_openai_request(ctx, message, data, openai_client).await {
                         error!("Failed to handle OpenAI request: {}", e);
                         send_ephemeral_error(
@@ -36,15 +36,12 @@ pub async fn on_mention(ctx: &serenity::Context, message: &serenity::Message, da
                     }
                     return;
                 }
-            }
-        }
 
         // Fallback to a help message if OpenAI is not enabled or user not authorized (only for mentions)
-        if is_mention {
-            if let Err(e) = send_help_as_message(ctx, message, data).await {
+        if is_mention
+            && let Err(e) = send_help_as_message(ctx, message, data).await {
                 error!("Failed to send help message on mention: {}", e);
             }
-        }
     }
 }
 
@@ -292,12 +289,11 @@ fn split_message(content: &str, max_length: usize) -> Vec<String> {
     let mut current_chunk = String::new();
 
     for word in content.split_whitespace() {
-        if current_chunk.len() + word.len() + 1 > max_length {
-            if !current_chunk.is_empty() {
+        if current_chunk.len() + word.len() + 1 > max_length
+            && !current_chunk.is_empty() {
                 chunks.push(current_chunk);
                 current_chunk = String::new();
             }
-        }
 
         if !current_chunk.is_empty() {
             current_chunk.push(' ');

@@ -97,12 +97,11 @@ pub async fn handle_media_only_message(
             }
             Err(serenity::Error::Http(http_error)) => {
                 // Check if it's a "message not found" error (already deleted)
-                if let serenity::HttpError::UnsuccessfulRequest(error_response) = &http_error {
-                    if error_response.status_code == 404 {
+                if let serenity::HttpError::UnsuccessfulRequest(error_response) = &http_error
+                    && error_response.status_code == 404 {
                         // Message was already deleted, this is fine
                         return;
                     }
-                }
                 warn!("Failed to delete non-media message: {}", http_error);
             }
             Err(e) => {

@@ -74,7 +74,7 @@ pub async fn member_addition(ctx: &Context, guild_id: &GuildId, new_member: &Mem
         Some(new_member),
     );
 
-    if let Err(e) = send_welcome_message(&ctx, &channel_id, &config, &placeholders, &data).await {
+    if let Err(e) = send_welcome_message(ctx, &channel_id, &config, &placeholders, &data).await {
         tracing::error!("Failed to send welcome message: {}", e);
     }
 }
@@ -133,7 +133,7 @@ pub async fn member_removal(
         member_data_if_available.as_ref(),
     );
 
-    if let Err(e) = send_goodbye_message(&ctx, &channel_id, &config, &placeholders, &data).await {
+    if let Err(e) = send_goodbye_message(ctx, &channel_id, &config, &placeholders, &data).await {
         tracing::error!("Failed to send goodbye message: {}", e);
     }
 }
@@ -190,18 +190,16 @@ async fn send_welcome_message(
             let mut embed = CreateEmbed::new();
 
             // Set title if provided
-            if let Some(title) = &config.welcome_embed_title {
-                if !title.trim().is_empty() {
+            if let Some(title) = &config.welcome_embed_title
+                && !title.trim().is_empty() {
                     embed = embed.title(replace_placeholders(title, placeholders));
                 }
-            }
 
             // Set description if provided
-            if let Some(description) = &config.welcome_embed_description {
-                if !description.trim().is_empty() {
+            if let Some(description) = &config.welcome_embed_description
+                && !description.trim().is_empty() {
                     embed = embed.description(replace_placeholders(description, placeholders));
                 }
-            }
 
             // Set color
             let color = config
@@ -215,27 +213,24 @@ async fn send_welcome_message(
             embed = embed.color(color);
 
             // Set footer if provided
-            if let Some(footer) = &config.welcome_embed_footer {
-                if !footer.trim().is_empty() {
+            if let Some(footer) = &config.welcome_embed_footer
+                && !footer.trim().is_empty() {
                     embed = embed.footer(serenity::builder::CreateEmbedFooter::new(
                         replace_placeholders(footer, placeholders),
                     ));
                 }
-            }
 
             // Set thumbnail if provided
-            if let Some(thumbnail) = &config.welcome_embed_thumbnail {
-                if !thumbnail.trim().is_empty() {
+            if let Some(thumbnail) = &config.welcome_embed_thumbnail
+                && !thumbnail.trim().is_empty() {
                     embed = embed.thumbnail(replace_placeholders(thumbnail, placeholders));
                 }
-            }
 
             // Set image if provided
-            if let Some(image) = &config.welcome_embed_image {
-                if !image.trim().is_empty() {
+            if let Some(image) = &config.welcome_embed_image
+                && !image.trim().is_empty() {
                     embed = embed.image(replace_placeholders(image, placeholders));
                 }
-            }
 
             // Set timestamp if enabled
             if config.welcome_embed_timestamp {
@@ -319,18 +314,16 @@ async fn send_goodbye_message(
             let mut embed = CreateEmbed::new();
 
             // Set title if provided
-            if let Some(title) = &config.goodbye_embed_title {
-                if !title.trim().is_empty() {
+            if let Some(title) = &config.goodbye_embed_title
+                && !title.trim().is_empty() {
                     embed = embed.title(replace_placeholders(title, placeholders));
                 }
-            }
 
             // Set description if provided
-            if let Some(description) = &config.goodbye_embed_description {
-                if !description.trim().is_empty() {
+            if let Some(description) = &config.goodbye_embed_description
+                && !description.trim().is_empty() {
                     embed = embed.description(replace_placeholders(description, placeholders));
                 }
-            }
 
             // Set color
             let color = config
@@ -344,27 +337,24 @@ async fn send_goodbye_message(
             embed = embed.color(color);
 
             // Set footer if provided
-            if let Some(footer) = &config.goodbye_embed_footer {
-                if !footer.trim().is_empty() {
+            if let Some(footer) = &config.goodbye_embed_footer
+                && !footer.trim().is_empty() {
                     embed = embed.footer(serenity::builder::CreateEmbedFooter::new(
                         replace_placeholders(footer, placeholders),
                     ));
                 }
-            }
 
             // Set thumbnail if provided
-            if let Some(thumbnail) = &config.goodbye_embed_thumbnail {
-                if !thumbnail.trim().is_empty() {
+            if let Some(thumbnail) = &config.goodbye_embed_thumbnail
+                && !thumbnail.trim().is_empty() {
                     embed = embed.thumbnail(replace_placeholders(thumbnail, placeholders));
                 }
-            }
 
             // Set image if provided
-            if let Some(image) = &config.goodbye_embed_image {
-                if !image.trim().is_empty() {
+            if let Some(image) = &config.goodbye_embed_image
+                && !image.trim().is_empty() {
                     embed = embed.image(replace_placeholders(image, placeholders));
                 }
-            }
 
             // Set timestamp if enabled
             if config.goodbye_embed_timestamp {

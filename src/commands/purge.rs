@@ -33,21 +33,21 @@ pub async fn purge(
             return Ok(());
         }
 
-        let messages = channel_id
-            .messages(&ctx.http(), serenity::GetMessages::new().limit(count))
-            .await?;
+        
 
-        messages
+        channel_id
+            .messages(&ctx.http(), serenity::GetMessages::new().limit(count))
+            .await?
     } else if let Ok(message_id) = amount_or_id.parse::<u64>() {
         let target_id = MessageId::new(message_id);
-        let messages = channel_id
+        
+
+        channel_id
             .messages(
                 &ctx.http(),
                 serenity::GetMessages::new().after(target_id).limit(100),
             )
-            .await?;
-
-        messages
+            .await?
     } else {
         ctx.send(
             poise::CreateReply::default()
@@ -74,7 +74,7 @@ pub async fn purge(
             Err(e) => {
                 ctx.send(
                     poise::CreateReply::default()
-                        .content(&format!("❌ failed to delete message: {}", e))
+                        .content(format!("❌ failed to delete message: {}", e))
                         .ephemeral(true),
                 )
                 .await?;
@@ -97,7 +97,7 @@ pub async fn purge(
                 if success_count == 0 {
                     ctx.send(
                         poise::CreateReply::default()
-                            .content(&format!("❌ failed to delete messages: {}", e))
+                            .content(format!("❌ failed to delete messages: {}", e))
                             .ephemeral(true),
                     )
                     .await?;
@@ -108,7 +108,7 @@ pub async fn purge(
         }
     };
     let embed = CreateEmbed::new()
-        .description(&format!(
+        .description(format!(
             "🗑️ deleted **`{}`** message{} >_<",
             deleted_count,
             if deleted_count == 1 { "" } else { "s" }

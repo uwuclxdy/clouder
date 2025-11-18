@@ -264,7 +264,7 @@ async fn api_create_selfroles(
             .unwrap_or_else(|| format!("Role {}", role_data.role_id));
 
         let button = CreateButton::new(format!("selfrole_{}_{}", config.id, role_data.role_id))
-            .label(&format!("{} {}", role_data.emoji, role_name))
+            .label(format!("{} {}", role_data.emoji, role_name))
             .style(ButtonStyle::Primary);
 
         current_row.push(button);
@@ -419,7 +419,7 @@ async fn api_update_selfroles(
                 .unwrap_or_else(|| format!("Role {}", role_data.role_id));
 
             let button = CreateButton::new(format!("selfrole_{}_{}", config.id, role_data.role_id))
-                .label(&format!("{} {}", role_data.emoji, role_name))
+                .label(format!("{} {}", role_data.emoji, role_name))
                 .style(ButtonStyle::Primary);
 
             current_row.push(button);

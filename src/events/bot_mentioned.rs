@@ -1,5 +1,6 @@
 use crate::config::AppState;
 use crate::serenity;
+use crate::utils::bot_has_permission_in_channel;
 use std::time::Duration;
 use tracing::{debug, error, warn};
 
@@ -12,7 +13,7 @@ pub async fn on_mention(ctx: &serenity::Context, message: &serenity::Message, da
     let current_user = match ctx.http.get_current_user().await {
         Ok(user) => user,
         Err(e) => {
-            error!("Failed to get current user: {}", e);
+            error!("get current user: {}", e);
             return;
         }
     };
@@ -24,24 +25,24 @@ pub async fn on_mention(ctx: &serenity::Context, message: &serenity::Message, da
         // Check if OpenAI is enabled and user is authorized
         if data.config.openai.enabled
             && let Some(ref openai_client) = data.openai_client
-                && is_user_authorized_for_openai(message, data).await {
-                    if let Err(e) = handle_openai_request(ctx, message, data, openai_client).await {
-                        error!("Failed to handle OpenAI request: {}", e);
-                        send_ephemeral_error(
-                            ctx,
-                            message,
-                            "sorry, something went wrong with ai processing :(".to_string(),
-                        )
-                        .await;
-                    }
-                    return;
-                }
+            && is_user_authorized_for_openai(message, data).await
+        {
+            if let Err(e) = handle_openai_request(ctx, message, data, openai_client).await {
+                error!("openai request: {}", e);
+                send_ephemeral_error(
+                    ctx,
+                    message,
+                    "sorry, something went wrong with ai processing :(".to_string(),
+                )
+                .await;
+            }
+            return;
+        }
 
         // Fallback to a help message if OpenAI is not enabled or user not authorized (only for mentions)
-        if is_mention
-            && let Err(e) = send_help_as_message(ctx, message, data).await {
-                error!("Failed to send help message on mention: {}", e);
-            }
+        if is_mention && let Err(e) = send_help_as_message(ctx, message, data).await {
+            error!("send help: {}", e);
+        }
     }
 }
 
@@ -158,43 +159,12 @@ async fn handle_openai_request(
     let user_id = message.author.id.get();
 
     // Check if bot has SEND_MESSAGES permission in this channel
-    let bot_permissions = match message.guild_id {
-        Some(guild_id) => {
-            let bot_member = match crate::web::get_bot_member_info(&ctx.http, guild_id).await {
-                Ok(member) => member,
-                Err(e) => {
-                    warn!("Failed to get bot member info: {}", e);
-                    return Ok(()); // Silently ignore if can't check permissions
-                }
-            };
-
-            let guild = match ctx.http.get_guild(guild_id).await {
-                Ok(guild) => guild,
-                Err(e) => {
-                    warn!("Failed to get guild info: {}", e);
-                    return Ok(());
-                }
-            };
-
-            let channel = match ctx.http.get_channel(message.channel_id).await {
-                Ok(serenity::Channel::Guild(channel)) => channel,
-                Ok(_) => {
-                    warn!("Channel {} is not a guild channel", message.channel_id);
-                    return Ok(());
-                }
-                Err(e) => {
-                    warn!("Failed to get channel info: {}", e);
-                    return Ok(());
-                }
-            };
-
-            guild.user_permissions_in(&channel, &bot_member)
-        }
-        None => serenity::Permissions::all(), // In DMs, assume all permissions
-    };
-
-    if !bot_permissions.send_messages() {
-        debug!("Bot lacks SEND_MESSAGES permission in channel {}", message.channel_id);
+    if !bot_has_permission_in_channel(&ctx.http, message.guild_id, message.channel_id, |p| {
+        p.send_messages()
+    })
+    .await
+    {
+        debug!("no SEND_MESSAGES in channel {}", message.channel_id);
         return Ok(()); // Silently ignore if no permission
     }
 
@@ -203,7 +173,7 @@ async fn handle_openai_request(
         let cooldown_duration = Duration::from_secs(10);
 
         if !openai_client.check_and_update_cooldown(user_id, cooldown_duration) {
-            debug!("User {} is on cooldown for OpenAI", user_id);
+            debug!("user {} on cooldown", user_id);
             return Ok(()); // Silently ignore if on cooldown
         }
     }
@@ -216,7 +186,7 @@ async fn handle_openai_request(
         return Ok(()); // Silently ignore empty prompts
     }
 
-    debug!("Processing OpenAI request for user {}: {}", user_id, prompt);
+    debug!("openai user {}: {}", user_id, prompt);
 
     // Start typing indicator
     let typing = message.channel_id.start_typing(&ctx.http);
@@ -289,11 +259,10 @@ fn split_message(content: &str, max_length: usize) -> Vec<String> {
     let mut current_chunk = String::new();
 
     for word in content.split_whitespace() {
-        if current_chunk.len() + word.len() + 1 > max_length
-            && !current_chunk.is_empty() {
-                chunks.push(current_chunk);
-                current_chunk = String::new();
-            }
+        if current_chunk.len() + word.len() + 1 > max_length && !current_chunk.is_empty() {
+            chunks.push(current_chunk);
+            current_chunk = String::new();
+        }
 
         if !current_chunk.is_empty() {
             current_chunk.push(' ');
@@ -314,49 +283,18 @@ async fn send_ephemeral_error(
     _error_msg: String,
 ) {
     // Check if bot has ADD_REACTIONS permission in this channel
-    let bot_permissions = match message.guild_id {
-        Some(guild_id) => {
-            let bot_member = match crate::web::get_bot_member_info(&ctx.http, guild_id).await {
-                Ok(member) => member,
-                Err(e) => {
-                    warn!("Failed to get bot member info for reaction: {}", e);
-                    return; // Silently ignore if can't check permissions
-                }
-            };
-
-            let guild = match ctx.http.get_guild(guild_id).await {
-                Ok(guild) => guild,
-                Err(e) => {
-                    warn!("Failed to get guild info: {}", e);
-                    return;
-                }
-            };
-
-            let channel = match ctx.http.get_channel(message.channel_id).await {
-                Ok(serenity::Channel::Guild(channel)) => channel,
-                Ok(_) => {
-                    warn!("Channel {} is not a guild channel", message.channel_id);
-                    return;
-                }
-                Err(e) => {
-                    warn!("Failed to get channel info: {}", e);
-                    return;
-                }
-            };
-
-            guild.user_permissions_in(&channel, &bot_member)
-        }
-        None => serenity::Permissions::all(), // In DMs, assume all permissions
-    };
-
-    if !bot_permissions.add_reactions() {
-        debug!("Bot lacks ADD_REACTIONS permission in channel {}", message.channel_id);
+    if !bot_has_permission_in_channel(&ctx.http, message.guild_id, message.channel_id, |p| {
+        p.add_reactions()
+    })
+    .await
+    {
+        debug!("no ADD_REACTIONS in channel {}", message.channel_id);
         return; // Silently ignore if no permission
     }
 
     // Try to react with an error emoji to indicate something went wrong
     if let Err(e) = message.react(&ctx.http, '❌').await {
-        warn!("Failed to react to message with error: {}", e);
+        warn!("react to message: {}", e);
     }
 }
 
@@ -366,43 +304,12 @@ async fn send_help_as_message(
     data: &AppState,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     // Check if bot has SEND_MESSAGES permission in this channel
-    let bot_permissions = match message.guild_id {
-        Some(guild_id) => {
-            let bot_member = match crate::web::get_bot_member_info(&ctx.http, guild_id).await {
-                Ok(member) => member,
-                Err(e) => {
-                    warn!("Failed to get bot member info for help message: {}", e);
-                    return Ok(()); // Silently ignore if can't check permissions
-                }
-            };
-
-            let guild = match ctx.http.get_guild(guild_id).await {
-                Ok(guild) => guild,
-                Err(e) => {
-                    warn!("Failed to get guild info: {}", e);
-                    return Ok(());
-                }
-            };
-
-            let channel = match ctx.http.get_channel(message.channel_id).await {
-                Ok(serenity::Channel::Guild(channel)) => channel,
-                Ok(_) => {
-                    warn!("Channel {} is not a guild channel", message.channel_id);
-                    return Ok(());
-                }
-                Err(e) => {
-                    warn!("Failed to get channel info: {}", e);
-                    return Ok(());
-                }
-            };
-
-            guild.user_permissions_in(&channel, &bot_member)
-        }
-        None => serenity::Permissions::all(), // In DMs, assume all permissions
-    };
-
-    if !bot_permissions.send_messages() {
-        debug!("Bot lacks SEND_MESSAGES permission in channel {}", message.channel_id);
+    if !bot_has_permission_in_channel(&ctx.http, message.guild_id, message.channel_id, |p| {
+        p.send_messages()
+    })
+    .await
+    {
+        debug!("no SEND_MESSAGES in channel {}", message.channel_id);
         return Ok(()); // Silently ignore if no permission
     }
 
@@ -429,59 +336,28 @@ pub async fn handle_ai_retry_interaction(
     data: &AppState,
 ) {
     // Check if bot has SEND_MESSAGES permission in this channel
-    let bot_permissions = match interaction.guild_id {
-        Some(guild_id) => {
-            let bot_member = match crate::web::get_bot_member_info(&ctx.http, guild_id).await {
-                Ok(member) => member,
-                Err(e) => {
-                    warn!("Failed to get bot member info for retry interaction: {}", e);
-                    return; // Silently ignore if can't check permissions
-                }
-            };
-
-            let guild = match ctx.http.get_guild(guild_id).await {
-                Ok(guild) => guild,
-                Err(e) => {
-                    warn!("Failed to get guild info: {}", e);
-                    return;
-                }
-            };
-
-            let channel = match ctx.http.get_channel(interaction.channel_id).await {
-                Ok(serenity::Channel::Guild(channel)) => channel,
-                Ok(_) => {
-                    warn!("Channel {} is not a guild channel", interaction.channel_id);
-                    return;
-                }
-                Err(e) => {
-                    warn!("Failed to get channel info: {}", e);
-                    return;
-                }
-            };
-
-            guild.user_permissions_in(&channel, &bot_member)
-        }
-        None => serenity::Permissions::all(), // In DMs, assume all permissions
-    };
-
-    if !bot_permissions.send_messages() {
-        debug!("Bot lacks SEND_MESSAGES permission in channel {}", interaction.channel_id);
+    if !bot_has_permission_in_channel(
+        &ctx.http,
+        interaction.guild_id,
+        interaction.channel_id,
+        |p| p.send_messages(),
+    )
+    .await
+    {
+        debug!("no SEND_MESSAGES in channel {}", interaction.channel_id);
         return; // Silently ignore if no permission
     }
     // Parse custom_id: "ai_retry_{user_id}_{prompt_hash}_{original_message_id}"
     let parts: Vec<&str> = interaction.data.custom_id.split('_').collect();
     if parts.len() != 5 || parts[0] != "ai" || parts[1] != "retry" {
-        error!(
-            "Invalid AI retry custom_id format: {}",
-            interaction.data.custom_id
-        );
+        error!("invalid custom_id format: {}", interaction.data.custom_id);
         return;
     }
 
     let requesting_user_id = match parts[2].parse::<u64>() {
         Ok(id) => id,
         Err(_) => {
-            error!("Invalid user_id in AI retry custom_id: {}", parts[2]);
+            error!("invalid user_id in custom_id: {}", parts[2]);
             return;
         }
     };
@@ -489,10 +365,7 @@ pub async fn handle_ai_retry_interaction(
     let original_message_id = match parts[4].parse::<u64>() {
         Ok(id) => id,
         Err(_) => {
-            error!(
-                "Invalid original_message_id in AI retry custom_id: {}",
-                parts[4]
-            );
+            error!("invalid message_id in custom_id: {}", parts[4]);
             return;
         }
     };
@@ -504,27 +377,27 @@ pub async fn handle_ai_retry_interaction(
                 &ctx.http,
                 serenity::CreateInteractionResponse::Message(
                     serenity::CreateInteractionResponseMessage::new()
-                        .content("❌ Only the person who triggered this AI response can retry it.")
+                        .content("only the person who triggered this can retry")
                         .ephemeral(true),
                 ),
             )
             .await
         {
-            error!("Failed to send unauthorized retry response: {}", e);
+            error!("send unauthorized response: {}", e);
         }
         return;
     }
 
     // Check if OpenAI is enabled and get client
     if !data.config.openai.enabled {
-        error!("OpenAI not enabled for retry request");
+        error!("openai not enabled for retry");
         return;
     }
 
     let openai_client = match &data.openai_client {
         Some(client) => client,
         None => {
-            error!("OpenAI client not available for retry request");
+            error!("no openai client for retry");
             return;
         }
     };
@@ -544,13 +417,13 @@ pub async fn handle_ai_retry_interaction(
                     &ctx.http,
                     serenity::CreateInteractionResponse::Message(
                         serenity::CreateInteractionResponseMessage::new()
-                            .content("⏱️ Please wait before retrying.")
+                            .content("please wait before retrying")
                             .ephemeral(true),
                     ),
                 )
                 .await
             {
-                error!("Failed to send cooldown retry response: {}", e);
+                error!("send cooldown response: {}", e);
             }
             return;
         }
@@ -567,7 +440,7 @@ pub async fn handle_ai_retry_interaction(
         )
         .await
     {
-        error!("Failed to acknowledge AI retry interaction: {}", e);
+        error!("acknowledge retry interaction: {}", e);
         return;
     }
 
@@ -581,24 +454,19 @@ pub async fn handle_ai_retry_interaction(
         Ok(msg) => msg,
         Err(e) => {
             error!(
-                "Failed to fetch original user message {} for retry: {}",
+                "fetch original message {} for retry: {}",
                 original_message_id, e
             );
             if let Err(edit_err) = interaction
                 .edit_response(
                     &ctx.http,
                     serenity::EditInteractionResponse::new()
-                        .content(
-                            "❌ Could not find the original message. It may have been deleted.",
-                        )
+                        .content("could not find the original message, it may have been deleted")
                         .components(vec![]),
                 )
                 .await
             {
-                error!(
-                    "Failed to send error response about missing message: {}",
-                    edit_err
-                );
+                error!("send missing message error: {}", edit_err);
             }
             return;
         }
@@ -607,7 +475,7 @@ pub async fn handle_ai_retry_interaction(
     // Verify that the user who clicked the button is the same as the author of the original message
     if user_message.author.id.get() != requesting_user_id {
         error!(
-            "User ID mismatch: button user {} vs message author {}",
+            "user id mismatch: button {} vs author {}",
             requesting_user_id,
             user_message.author.id.get()
         );
@@ -615,12 +483,12 @@ pub async fn handle_ai_retry_interaction(
             .edit_response(
                 &ctx.http,
                 serenity::EditInteractionResponse::new()
-                    .content("❌ User verification failed. Please send a new message instead.")
+                    .content("user verification failed, please send a new message instead")
                     .components(vec![]),
             )
             .await
         {
-            error!("Failed to send user verification error response: {}", e);
+            error!("send verification error: {}", e);
         }
         return;
     }
@@ -629,7 +497,7 @@ pub async fn handle_ai_retry_interaction(
     let current_user = match ctx.http.get_current_user().await {
         Ok(user) => user,
         Err(e) => {
-            error!("Failed to get current user for retry: {}", e);
+            error!("get current user for retry: {}", e);
             return;
         }
     };
@@ -637,36 +505,37 @@ pub async fn handle_ai_retry_interaction(
     let prompt = match build_conversation_context(ctx, &user_message, &current_user).await {
         Ok(p) => p,
         Err(e) => {
-            error!("Failed to build conversation context for retry: {}", e);
-            if let Err(edit_err) = interaction.edit_response(&ctx.http,
-                serenity::EditInteractionResponse::new()
-                    .content("❌ Failed to rebuild conversation context. Please send a new message instead.")
-                    .components(vec![])
-            ).await {
-                error!("Failed to send context building error response: {}", edit_err);
+            error!("build context for retry: {}", e);
+            if let Err(edit_err) = interaction
+                .edit_response(
+                    &ctx.http,
+                    serenity::EditInteractionResponse::new()
+                        .content("failed to rebuild context, please send a new message instead")
+                        .components(vec![]),
+                )
+                .await
+            {
+                error!("send context error: {}", edit_err);
             }
             return;
         }
     };
 
     if prompt.trim().is_empty() {
-        error!("Empty prompt for retry");
+        error!("empty prompt for retry");
         if let Err(e) = interaction.edit_response(&ctx.http,
             serenity::EditInteractionResponse::new()
-                .content("❌ Could not extract content from the original message. Please send a new message instead.")
+                .content("could not extract content from original message, please send a new message instead")
                 .components(vec![])
         ).await {
-            error!("Failed to send empty prompt error response: {}", e);
+            error!("send empty prompt error: {}", e);
         }
         return;
     }
 
+    debug!("retry user {}: {}", requesting_user_id, prompt);
     debug!(
-        "Processing AI retry for user {}: {}",
-        requesting_user_id, prompt
-    );
-    debug!(
-        "Original user message ID: {}, content preview: {}",
+        "original message {}, preview: {}",
         user_message.id,
         user_message.content.chars().take(50).collect::<String>()
     );
@@ -704,14 +573,14 @@ pub async fn handle_ai_retry_interaction(
     {
         Ok(response) => response,
         Err(e) => {
-            error!("Failed to generate AI retry response: {}", e);
+            error!("generate retry response: {}", e);
 
             // Update message to show error
             if let Err(edit_err) = interaction
                 .edit_response(
                     &ctx.http,
                     serenity::EditInteractionResponse::new()
-                        .content("❌ Failed to generate new response. Please try again later.")
+                        .content("failed to generate new response, please try again later")
                         .components(vec![create_retry_button(
                             requesting_user_id,
                             &prompt,
@@ -720,7 +589,7 @@ pub async fn handle_ai_retry_interaction(
                 )
                 .await
             {
-                error!("Failed to update message after AI error: {}", edit_err);
+                error!("update message after error: {}", edit_err);
             }
             return;
         }
@@ -749,7 +618,7 @@ pub async fn handle_ai_retry_interaction(
         )
         .await
     {
-        error!("Failed to update message with new AI response: {}", e);
+        error!("update message with response: {}", e);
     }
 }
 
@@ -775,7 +644,7 @@ fn create_retry_button(
     );
 
     let retry_button = CreateButton::new(custom_id)
-        .label("🔄 try again")
+        .label("try again")
         .style(ButtonStyle::Secondary);
 
     CreateActionRow::Buttons(vec![retry_button])
@@ -785,7 +654,7 @@ fn create_disabled_retry_button() -> serenity::CreateActionRow {
     use serenity::all::{ButtonStyle, CreateActionRow, CreateButton};
 
     let retry_button = CreateButton::new("ai_retry_disabled")
-        .label("🔄 Generating...")
+        .label("generating...")
         .style(ButtonStyle::Secondary)
         .disabled(true);
 

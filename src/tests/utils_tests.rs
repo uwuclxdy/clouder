@@ -1,6 +1,7 @@
 #[cfg(test)]
 mod tests {
     use crate::utils::*;
+    use serenity::all::{Http, Permissions};
 
     #[test]
     fn test_format_duration() {
@@ -52,7 +53,7 @@ mod tests {
 
         // Test edge case: same position should fail
         let same_position_role = 3;
-        assert!(!(user_highest_position > same_position_role));
+        assert!((user_highest_position <= same_position_role));
     }
 
     #[test]
@@ -60,7 +61,7 @@ mod tests {
         // Test the core logic without complex mock objects
         // This represents the logic from can_bot_manage_role
 
-        let bot_roles = vec![
+        let bot_roles = [
             (1, 10), // (role_id, position)
             (2, 5),
             (3, 2),
@@ -74,11 +75,11 @@ mod tests {
 
         // Test with role position equal to bot's highest - should fail
         let equal_position_role = 10;
-        assert!(!(bot_highest_position > equal_position_role));
+        assert!((bot_highest_position <= equal_position_role));
 
         // Test with role position higher than bot's highest - should fail
         let higher_position_role = 15;
-        assert!(!(bot_highest_position > higher_position_role));
+        assert!((bot_highest_position <= higher_position_role));
     }
 
     #[test]
@@ -209,6 +210,148 @@ mod tests {
         assert!(can_bot_manage_role(&bot_positions, 0));
     }
 
+    // Tests for get_bot_invite_url
+
+    #[test]
+    fn test_get_bot_invite_url_without_redirect() {
+        let client_id = "123456789012345678";
+        let url = get_bot_invite_url(client_id, None);
+
+        assert!(url.contains(client_id));
+        assert!(url.starts_with("https://discord.com/oauth2/authorize"));
+        assert!(url.contains("permissions=268697088"));
+        assert!(url.contains("scope=bot%20applications.commands"));
+        assert!(!url.contains("redirect_uri"));
+        assert!(!url.contains("response_type"));
+    }
+
+    #[test]
+    fn test_get_bot_invite_url_with_redirect() {
+        let client_id = "123456789012345678";
+        let redirect_uri = "https://example.com/callback";
+        let url = get_bot_invite_url(client_id, Some(redirect_uri));
+
+        assert!(url.contains(client_id));
+        assert!(url.starts_with("https://discord.com/oauth2/authorize"));
+        assert!(url.contains("permissions=268697088"));
+        assert!(url.contains("response_type=code"));
+        assert!(url.contains(&format!("redirect_uri={}", redirect_uri)));
+        assert!(url.contains("integration_type=0"));
+        assert!(url.contains("scope=bot"));
+    }
+
+    #[test]
+    fn test_get_bot_invite_url_different_client_ids() {
+        let ids = ["1", "999999999999999999", "123456789012345678"];
+
+        for id in ids {
+            let url = get_bot_invite_url(id, None);
+            assert!(
+                url.contains(&format!("client_id={}", id)),
+                "url should contain client_id={}",
+                id
+            );
+        }
+    }
+
+    #[test]
+    fn test_get_bot_invite_url_special_chars_in_redirect() {
+        let client_id = "123456789012345678";
+        let redirect_uri = "https://example.com/callback?foo=bar&baz=qux";
+        let url = get_bot_invite_url(client_id, Some(redirect_uri));
+
+        // URL should contain the redirect_uri (though not URL-encoded by the function)
+        assert!(url.contains(redirect_uri));
+    }
+
+    // Tests for BotChannelPermissions struct
+
+    #[test]
+    fn test_bot_channel_permissions_struct() {
+        let perms = BotChannelPermissions {
+            permissions: Permissions::SEND_MESSAGES | Permissions::READ_MESSAGE_HISTORY,
+        };
+
+        assert!(perms.permissions.send_messages());
+        assert!(perms.permissions.read_message_history());
+        assert!(!perms.permissions.administrator());
+    }
+
+    // Tests for bot_has_permission_in_channel logic
+
+    #[tokio::test]
+    async fn test_bot_has_permission_dm_always_true() {
+        let http = Http::new("test_token");
+
+        // DMs (guild_id = None) should always return true
+        let result = bot_has_permission_in_channel(
+            &http,
+            None, // DM context
+            serenity::all::ChannelId::new(123456789),
+            |p| p.send_messages(),
+        )
+        .await;
+
+        assert!(result, "DMs should always have permission");
+    }
+
+    #[tokio::test]
+    async fn test_bot_has_permission_invalid_guild() {
+        let http = Http::new("invalid_token");
+
+        // Invalid guild should return false (API call fails)
+        let result = bot_has_permission_in_channel(
+            &http,
+            Some(serenity::all::GuildId::new(999999999999)),
+            serenity::all::ChannelId::new(123456789),
+            |p| p.send_messages(),
+        )
+        .await;
+
+        assert!(
+            !result,
+            "invalid guild/token should return false due to API failure"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_get_bot_channel_permissions_invalid_token() {
+        let http = Http::new("invalid_token");
+
+        let result = get_bot_channel_permissions(
+            &http,
+            serenity::all::GuildId::new(123456789),
+            serenity::all::ChannelId::new(987654321),
+        )
+        .await;
+
+        // Should return None due to invalid token
+        assert!(result.is_none());
+    }
+
+    // Tests for permission check callback patterns
+
+    #[test]
+    fn test_permission_check_callbacks() {
+        let full_perms = Permissions::all();
+        let limited_perms = Permissions::SEND_MESSAGES | Permissions::VIEW_CHANNEL;
+        let no_perms = Permissions::empty();
+
+        // Test various permission checks
+        assert!(full_perms.send_messages());
+        assert!(limited_perms.send_messages());
+        assert!(!no_perms.send_messages());
+
+        assert!(full_perms.administrator());
+        assert!(!limited_perms.administrator());
+
+        // Combined permission check
+        let combined_check = |p: &Permissions| p.send_messages() && p.view_channel();
+        assert!(combined_check(&full_perms));
+        assert!(combined_check(&limited_perms));
+        assert!(!combined_check(&no_perms));
+    }
+
     #[test]
     fn test_role_hierarchy_edge_cases() {
         // Test empty roles
@@ -217,17 +360,89 @@ mod tests {
         assert_eq!(highest, 0);
 
         // Test single role
-        let single_role = vec![("Only Role", 5)];
+        let single_role = [("Only Role", 5)];
         let single_highest = single_role.iter().map(|(_, pos)| *pos).max().unwrap_or(0);
         assert_eq!(single_highest, 5);
 
         // Test negative positions (edge case)
-        let negative_roles = vec![("Negative", -1), ("Zero", 0), ("Positive", 1)];
+        let negative_roles = [("Negative", -1), ("Zero", 0), ("Positive", 1)];
         let negative_highest = negative_roles
             .iter()
             .map(|(_, pos)| *pos)
             .max()
             .unwrap_or(0);
         assert_eq!(negative_highest, 1);
+    }
+
+    // Tests for get_guild_text_channels signature accepting &Http
+
+    #[tokio::test]
+    async fn test_get_guild_text_channels_accepts_http_reference() {
+        // Verify the function signature accepts &Http directly (not &AppState)
+        let http = Http::new("test_token");
+
+        // Call with invalid guild ID to test the error path
+        let result = get_guild_text_channels(&http, "invalid_guild_id").await;
+
+        // Should error on invalid guild ID parse
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_get_guild_text_channels_invalid_guild_id_format() {
+        let http = Http::new("test_token");
+
+        // Test various invalid guild ID formats
+        let invalid_ids = vec!["", "abc", "12.34", "not-a-number"];
+
+        for invalid_id in invalid_ids {
+            let result = get_guild_text_channels(&http, invalid_id).await;
+            assert!(
+                result.is_err(),
+                "expected error for invalid guild id: {}",
+                invalid_id
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn test_get_guild_text_channels_valid_guild_id_format() {
+        let http = Http::new("test_token");
+
+        // Test with valid format but non-existent guild (will fail at API level)
+        let result = get_guild_text_channels(&http, "123456789012345678").await;
+
+        // Should error because the token is invalid/guild doesn't exist
+        // but the guild_id parsing should succeed
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_channel_info_struct() {
+        // Test ChannelInfo struct creation and serialization
+        let channel = ChannelInfo {
+            id: "123456789".to_string(),
+            name: "general".to_string(),
+        };
+
+        assert_eq!(channel.id, "123456789");
+        assert_eq!(channel.name, "general");
+
+        // Test serialization
+        let json = serde_json::to_string(&channel).unwrap();
+        assert!(json.contains("123456789"));
+        assert!(json.contains("general"));
+    }
+
+    #[test]
+    fn test_channel_info_clone() {
+        let channel = ChannelInfo {
+            id: "987654321".to_string(),
+            name: "test-channel".to_string(),
+        };
+
+        let cloned = channel.clone();
+        assert_eq!(cloned.id, channel.id);
+        assert_eq!(cloned.name, channel.name);
     }
 }

@@ -175,13 +175,13 @@ mod tests {
         .await
         .unwrap();
 
-        let role = SelfRoleRole::create(&db, config.id, "111222333", "🎮")
+        let role = SelfRoleRole::create(&db, config.id, "111222333", "a")
             .await
             .unwrap();
 
         assert_eq!(role.config_id, config.id);
         assert_eq!(role.role_id, "111222333");
-        assert_eq!(role.emoji, "🎮");
+        assert_eq!(role.emoji, "a");
     }
 
     #[tokio::test]
@@ -199,11 +199,11 @@ mod tests {
         .await
         .unwrap();
 
-        let _role1 = SelfRoleRole::create(&db, config.id, "111222333", "🎮")
+        let _role1 = SelfRoleRole::create(&db, config.id, "111222333", "a")
             .await
             .unwrap();
 
-        let _role2 = SelfRoleRole::create(&db, config.id, "444555666", "🎨")
+        let _role2 = SelfRoleRole::create(&db, config.id, "444555666", "b")
             .await
             .unwrap();
 
@@ -365,13 +365,13 @@ mod tests {
         .unwrap();
 
         // Create multiple roles
-        let _role1 = SelfRoleRole::create(&db, config.id, "role1", "🎮")
+        let _role1 = SelfRoleRole::create(&db, config.id, "role1", "a")
             .await
             .unwrap();
-        let _role2 = SelfRoleRole::create(&db, config.id, "role2", "🎨")
+        let _role2 = SelfRoleRole::create(&db, config.id, "role2", "b")
             .await
             .unwrap();
-        let _role3 = SelfRoleRole::create(&db, config.id, "role3", "🎵")
+        let _role3 = SelfRoleRole::create(&db, config.id, "role3", "c")
             .await
             .unwrap();
 
@@ -506,12 +506,12 @@ mod tests {
         .unwrap();
 
         // Create a role
-        let _role1 = SelfRoleRole::create(&db, config.id, "role123", "🎮")
+        let _role1 = SelfRoleRole::create(&db, config.id, "role123", "a")
             .await
             .unwrap();
 
         // Try to create the same role again - should work if no unique constraint
-        let role2_result = SelfRoleRole::create(&db, config.id, "role123", "🎨").await;
+        let role2_result = SelfRoleRole::create(&db, config.id, "role123", "b").await;
         assert!(role2_result.is_ok()); // Database allows duplicates, business logic should prevent
 
         let roles = config.get_roles(&db).await.unwrap();
@@ -744,10 +744,10 @@ mod tests {
         .unwrap();
 
         // Create some roles for this config
-        let _role1 = SelfRoleRole::create(&db, config.id, "role1", "🎮")
+        let _role1 = SelfRoleRole::create(&db, config.id, "role1", "a")
             .await
             .unwrap();
-        let _role2 = SelfRoleRole::create(&db, config.id, "role2", "🎨")
+        let _role2 = SelfRoleRole::create(&db, config.id, "role2", "b")
             .await
             .unwrap();
 

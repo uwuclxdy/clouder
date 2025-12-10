@@ -32,15 +32,13 @@ mod tests {
     async fn test_app_state_creation() {
         let config = Arc::new(Config::test_config());
         let db = Arc::new(crate::tests::create_test_db().await);
-        let cache = Arc::new(serenity::all::Cache::new());
         let http = Arc::new(serenity::all::Http::new("test_token"));
 
-        let app_state = AppState::new(config.clone(), db.clone(), cache.clone(), http.clone());
+        let app_state = AppState::new(config.clone(), db.clone(), http.clone());
 
         assert_eq!(app_state.config.discord.token, "test_token");
         assert!(Arc::ptr_eq(&app_state.config, &config));
         assert!(Arc::ptr_eq(&app_state.db, &db));
-        assert!(Arc::ptr_eq(&app_state.cache, &cache));
         assert!(Arc::ptr_eq(&app_state.http, &http));
     }
 

@@ -1,9 +1,12 @@
 use crate::{
     config::AppState,
     database::welcome_goodbye::WelcomeGoodbyeConfig,
+    logging::{error, info},
     utils::{
-        get_default_embed_color,
-        welcome_goodbye::{validate_message_config, validate_url},
+        get_bot_invite_url, get_default_embed_color, get_guild_icon_url, get_guild_text_channels,
+        welcome_goodbye::{
+            build_embed, replace_placeholders, validate_message_config, validate_url, EmbedConfig,
+        },
     },
     web::{models::SessionUser, session_extractor::extract_session_data},
 };
@@ -15,10 +18,7 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use serenity::{
-    builder::{CreateEmbed, CreateEmbedFooter, CreateMessage},
-    model::channel::ChannelType,
-};
+use serenity::builder::CreateMessage;
 use std::collections::HashMap;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -122,12 +122,6 @@ impl From<WelcomeGoodbyeConfig> for WelcomeGoodbyeConfigDisplay {
     }
 }
 
-#[derive(Debug, Serialize)]
-struct ChannelInfo {
-    id: String,
-    name: String,
-}
-
 pub async fn show_welcome_goodbye_config(
     Path(guild_id): Path<String>,
     headers: HeaderMap,
@@ -155,41 +149,31 @@ pub async fn show_welcome_goodbye_config(
     // Get current configuration
     let config = match WelcomeGoodbyeConfig::get_config(&state.db, &guild_id).await {
         Ok(Some(config)) => config,
-        Ok(None) => {
-            let mut default_config = WelcomeGoodbyeConfig::default();
-            default_config.guild_id = guild_id.clone();
-            default_config
-        }
+        Ok(None) => WelcomeGoodbyeConfig {
+            guild_id: guild_id.clone(),
+            ..Default::default()
+        },
         Err(e) => {
-            tracing::error!("Failed to get welcome/goodbye config: {}", e);
+            error!("get welcome/goodbye config: {}", e);
             return Err(Redirect::temporary("/"));
         }
     };
 
     // Get channels for the guild
-    let channels = match get_guild_text_channels(&state, &guild_id).await {
+    let channels = match get_guild_text_channels(&state.http, &guild_id).await {
         Ok(channels) => channels,
         Err(e) => {
-            tracing::error!("Failed to get guild channels for guild {}: {}. Bot may not be in guild or lack permissions.", guild_id, e);
+            error!("get channels for {}: {}", guild_id, e);
             // Return empty channels list instead of redirecting, show friendly error in UI
             Vec::new()
         }
     };
 
-    let guild_icon = guild_info
-        .icon
-        .as_ref()
-        .map(|icon| {
-            format!(
-                "https://cdn.discordapp.com/icons/{}/{}.png",
-                guild_info.id, icon
-            )
-        })
-        .unwrap_or_else(|| "https://cdn.discordapp.com/embed/avatars/0.png".to_string());
+    let guild_icon = get_guild_icon_url(&guild_info.id, guild_info.icon.as_ref());
 
-    let invite_url = format!(
-        "https://discord.com/oauth2/authorize?client_id={}&permissions=268697088&response_type=code&redirect_uri={}&integration_type=0&scope=bot",
-        state.config.web.oauth.client_id, state.config.web.oauth.redirect_uri
+    let invite_url = get_bot_invite_url(
+        &state.config.web.oauth.client_id,
+        Some(&state.config.web.oauth.redirect_uri),
     );
 
     let config_display = WelcomeGoodbyeConfigDisplay::from(config);
@@ -198,7 +182,9 @@ pub async fn show_welcome_goodbye_config(
     let mut channels_html = String::new();
     if channels.is_empty() {
         // Show helpful message when bot is not in guild
-        channels_html.push_str(r#"<option value="" disabled>Bot not in server - please invite bot first</option>"#);
+        channels_html.push_str(
+            r#"<option value="" disabled>Bot not in server - please invite bot first</option>"#,
+        );
     } else {
         for channel in &channels {
             let welcome_selected = config_display.welcome_channel_id.as_ref() == Some(&channel.id);
@@ -222,7 +208,10 @@ pub async fn show_welcome_goodbye_config(
         .replace("{{INVITE_URL}}", &invite_url)
         .replace("{{GUILD_ID}}", &guild_id)
         .replace("{{CHANNELS_HTML}}", &channels_html)
-        .replace("{{BOT_MISSING}}", if channels.is_empty() { "true" } else { "false" })
+        .replace(
+            "{{BOT_MISSING}}",
+            if channels.is_empty() { "true" } else { "false" },
+        )
         .replace(
             "{{WELCOME_ENABLED}}",
             if config_display.welcome_enabled {
@@ -464,17 +453,21 @@ pub async fn save_welcome_goodbye_config(
 
         // Validate URLs if provided
         if let Some(ref url) = request.welcome_embed_thumbnail
-            && !url.is_empty() && !validate_url(url) {
-                return Ok(Json(
-                    json!({"success": false, "error": "Invalid welcome thumbnail URL"}),
-                ));
-            }
+            && !url.is_empty()
+            && !validate_url(url)
+        {
+            return Ok(Json(
+                json!({"success": false, "error": "Invalid welcome thumbnail URL"}),
+            ));
+        }
         if let Some(ref url) = request.welcome_embed_image
-            && !url.is_empty() && !validate_url(url) {
-                return Ok(Json(
-                    json!({"success": false, "error": "Invalid welcome image URL"}),
-                ));
-            }
+            && !url.is_empty()
+            && !validate_url(url)
+        {
+            return Ok(Json(
+                json!({"success": false, "error": "Invalid welcome image URL"}),
+            ));
+        }
     }
 
     if request.goodbye_enabled {
@@ -497,17 +490,21 @@ pub async fn save_welcome_goodbye_config(
 
         // Validate URLs if provided
         if let Some(ref url) = request.goodbye_embed_thumbnail
-            && !url.is_empty() && !validate_url(url) {
-                return Ok(Json(
-                    json!({"success": false, "error": "Invalid goodbye thumbnail URL"}),
-                ));
-            }
+            && !url.is_empty()
+            && !validate_url(url)
+        {
+            return Ok(Json(
+                json!({"success": false, "error": "Invalid goodbye thumbnail URL"}),
+            ));
+        }
         if let Some(ref url) = request.goodbye_embed_image
-            && !url.is_empty() && !validate_url(url) {
-                return Ok(Json(
-                    json!({"success": false, "error": "Invalid goodbye image URL"}),
-                ));
-            }
+            && !url.is_empty()
+            && !validate_url(url)
+        {
+            return Ok(Json(
+                json!({"success": false, "error": "Invalid goodbye image URL"}),
+            ));
+        }
     }
 
     // Convert hex colors to integers
@@ -553,11 +550,11 @@ pub async fn save_welcome_goodbye_config(
 
     match WelcomeGoodbyeConfig::upsert_config(&state.db, &config).await {
         Ok(_) => {
-            tracing::info!("Updated welcome/goodbye config for guild {}", guild_id);
+            info!("welcome/goodbye config updated: guild {}", guild_id);
             Ok(Json(json!({"success": true})))
         }
         Err(e) => {
-            tracing::error!("Failed to save welcome/goodbye config: {}", e);
+            error!("save welcome/goodbye config: {}", e);
             Ok(Json(
                 json!({"success": false, "error": "Failed to save configuration"}),
             ))
@@ -590,7 +587,7 @@ pub async fn send_test_welcome(
             })));
         }
         Err(e) => {
-            tracing::error!("Failed to get welcome/goodbye config: {}", e);
+            error!("get welcome/goodbye config: {}", e);
             return Ok(Json(json!({
                 "success": false,
                 "error": "Failed to retrieve configuration"
@@ -615,15 +612,11 @@ pub async fn send_test_welcome(
     // Send test welcome message using the logged-in user as test subject
     match send_test_message_to_channel(&state, &config, &user, &guild_id, "welcome").await {
         Ok(_) => {
-            tracing::info!(
-                "Test welcome message sent for guild {} by user {}",
-                guild_id,
-                user.user.id
-            );
+            info!("test welcome: guild {} user {}", guild_id, user.user.id);
             Ok(Json(json!({"success": true})))
         }
         Err(e) => {
-            tracing::error!("Failed to send test welcome message: {}", e);
+            error!("send test welcome: {}", e);
             Ok(Json(json!({
                 "success": false,
                 "error": format!("Failed to send test message: {}", e)
@@ -657,7 +650,7 @@ pub async fn send_test_goodbye(
             })));
         }
         Err(e) => {
-            tracing::error!("Failed to get welcome/goodbye config: {}", e);
+            error!("get welcome/goodbye config: {}", e);
             return Ok(Json(json!({
                 "success": false,
                 "error": "Failed to retrieve configuration"
@@ -682,15 +675,11 @@ pub async fn send_test_goodbye(
     // Send test goodbye message using the logged-in user as test subject
     match send_test_message_to_channel(&state, &config, &user, &guild_id, "goodbye").await {
         Ok(_) => {
-            tracing::info!(
-                "Test goodbye message sent for guild {} by user {}",
-                guild_id,
-                user.user.id
-            );
+            info!("test goodbye: guild {} user {}", guild_id, user.user.id);
             Ok(Json(json!({"success": true})))
         }
         Err(e) => {
-            tracing::error!("Failed to send test goodbye message: {}", e);
+            error!("send test goodbye: {}", e);
             Ok(Json(json!({
                 "success": false,
                 "error": format!("Failed to send test message: {}", e)
@@ -720,25 +709,6 @@ pub async fn get_live_preview(
         "success": true,
         "preview": "Live preview functionality coming soon"
     })))
-}
-
-async fn get_guild_text_channels(
-    state: &AppState,
-    guild_id: &str,
-) -> Result<Vec<ChannelInfo>, Box<dyn std::error::Error + Send + Sync>> {
-    let guild_id_u64: u64 = guild_id.parse()?;
-    let channels = state.http.get_channels(guild_id_u64.into()).await?;
-
-    let text_channels: Vec<ChannelInfo> = channels
-        .into_iter()
-        .filter(|channel| matches!(channel.kind, ChannelType::Text))
-        .map(|channel| ChannelInfo {
-            id: channel.id.to_string(),
-            name: channel.name,
-        })
-        .collect();
-
-    Ok(text_channels)
 }
 
 async fn send_test_message_to_channel(
@@ -808,45 +778,20 @@ async fn send_test_message_to_channel(
 
     match msg_type.as_str() {
         "embed" => {
-            let mut embed = CreateEmbed::new();
+            let default_color = get_default_embed_color(state).0 as u64;
 
-            if let Some(title) = embed_title
-                && !title.trim().is_empty() {
-                    embed = embed.title(replace_placeholders(title, &placeholders));
-                }
+            let embed_config = EmbedConfig {
+                title: embed_title,
+                description: embed_desc,
+                color: embed_color,
+                footer: embed_footer,
+                thumbnail: embed_thumb,
+                image: embed_image,
+                timestamp: embed_timestamp,
+                default_color,
+            };
 
-            if let Some(description) = embed_desc
-                && !description.trim().is_empty() {
-                    embed = embed.description(replace_placeholders(description, &placeholders));
-                }
-
-            let color = embed_color
-                .map(|c| c as u64)
-                .unwrap_or_else(|| get_default_embed_color(state).0 as u64);
-            embed = embed.color(color);
-
-            if let Some(footer) = embed_footer
-                && !footer.trim().is_empty() {
-                    embed = embed.footer(CreateEmbedFooter::new(replace_placeholders(
-                        footer,
-                        &placeholders,
-                    )));
-                }
-
-            if let Some(thumbnail) = embed_thumb
-                && !thumbnail.trim().is_empty() {
-                    embed = embed.thumbnail(replace_placeholders(thumbnail, &placeholders));
-                }
-
-            if let Some(image) = embed_image
-                && !image.trim().is_empty() {
-                    embed = embed.image(replace_placeholders(image, &placeholders));
-                }
-
-            if embed_timestamp {
-                embed = embed.timestamp(serenity::model::timestamp::Timestamp::now());
-            }
-
+            let embed = build_embed(&embed_config, &placeholders);
             let message = CreateMessage::new().embed(embed);
             state
                 .http
@@ -871,12 +816,4 @@ async fn send_test_message_to_channel(
     }
 
     Ok(())
-}
-
-fn replace_placeholders(content: &str, placeholders: &HashMap<String, String>) -> String {
-    let mut result = content.to_string();
-    for (key, value) in placeholders {
-        result = result.replace(&format!("{{{}}}", key), value);
-    }
-    result
 }

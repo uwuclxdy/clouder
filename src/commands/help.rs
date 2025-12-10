@@ -28,11 +28,11 @@ pub enum CommandCategory {
 impl CommandCategory {
     pub fn as_str(&self) -> &str {
         match self {
-            CommandCategory::Core => "🔧 core",
-            CommandCategory::Info => "ℹ️ info",
-            CommandCategory::ApiIntegration => "🌐 api stuff",
-            CommandCategory::Management => "⚙️ management",
-            CommandCategory::Utility => "🛠️ utility",
+            CommandCategory::Core => "core",
+            CommandCategory::Info => "info",
+            CommandCategory::ApiIntegration => "api stuff",
+            CommandCategory::Management => "management",
+            CommandCategory::Utility => "utility",
         }
     }
 }
@@ -117,7 +117,7 @@ pub fn create_help_embed(commands: &[CommandInfo], app_state: &AppState) -> Crea
     }
 
     let mut embed = CreateEmbed::new()
-        .title("✍️ command list")
+        .title("command list")
         .description("`/help [category]` for more details")
         .color(get_default_embed_color(app_state));
 
@@ -164,7 +164,7 @@ async fn show_category_help(
         "utility" | "util" => CommandCategory::Utility,
         _ => {
             ctx.send(poise::CreateReply::default()
-                .content("❌ invalid category! available: `core`, `info`, `management`, `api`, `utility`")
+                .content("invalid category! available: `core`, `info`, `management`, `api`, `utility`")
                 .ephemeral(true))
                 .await?;
             return Ok(());
@@ -179,7 +179,7 @@ async fn show_category_help(
     if category_commands.is_empty() {
         ctx.send(
             poise::CreateReply::default()
-                .content(format!("❌ no commands for '{}' yet", category.as_str()))
+                .content(format!("no commands for '{}' yet", category.as_str()))
                 .ephemeral(true),
         )
         .await?;
@@ -229,17 +229,4 @@ pub fn truncate_description(desc: &str, max_len: usize) -> String {
     } else {
         format!("{}...", &desc[..max_len.saturating_sub(3)])
     }
-}
-
-#[allow(dead_code)]
-pub fn register_command(command: CommandInfo) -> Vec<CommandInfo> {
-    let mut commands = get_all_commands();
-    commands.push(command);
-    commands.sort_by(|a, b| {
-        a.category
-            .as_str()
-            .cmp(b.category.as_str())
-            .then_with(|| a.name.cmp(&b.name))
-    });
-    commands
 }

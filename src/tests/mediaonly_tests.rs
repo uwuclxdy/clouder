@@ -2,7 +2,9 @@
 mod tests {
     use crate::database::mediaonly::MediaOnlyConfig;
     use crate::tests::create_test_db;
-    use crate::web::mediaonly::{MediaOnlyConfigDisplay, MediaOnlyConfigRequest, MediaOnlyConfigUpdateRequest};
+    use crate::web::mediaonly::{
+        MediaOnlyConfigDisplay, MediaOnlyConfigRequest, MediaOnlyConfigUpdateRequest,
+    };
     use serde_json::json;
 
     #[test]
@@ -21,11 +23,11 @@ mod tests {
         let deserialized: MediaOnlyConfigRequest = serde_json::from_str(&json).unwrap();
 
         assert_eq!(deserialized.channel_id, "123456789");
-        assert_eq!(deserialized.enabled, true);
-        assert_eq!(deserialized.allow_links, true);
-        assert_eq!(deserialized.allow_attachments, false);
-        assert_eq!(deserialized.allow_gifs, true);
-        assert_eq!(deserialized.allow_stickers, false);
+        assert!(deserialized.enabled);
+        assert!(deserialized.allow_links);
+        assert!(!deserialized.allow_attachments);
+        assert!(deserialized.allow_gifs);
+        assert!(!deserialized.allow_stickers);
     }
 
     #[test]
@@ -42,10 +44,10 @@ mod tests {
         let json = serde_json::to_string(&request).unwrap();
         let deserialized: MediaOnlyConfigUpdateRequest = serde_json::from_str(&json).unwrap();
 
-        assert_eq!(deserialized.allow_links, false);
-        assert_eq!(deserialized.allow_attachments, true);
-        assert_eq!(deserialized.allow_gifs, false);
-        assert_eq!(deserialized.allow_stickers, true);
+        assert!(!deserialized.allow_links);
+        assert!(deserialized.allow_attachments);
+        assert!(!deserialized.allow_gifs);
+        assert!(deserialized.allow_stickers);
         assert_eq!(deserialized.enabled, Some(true));
     }
 
@@ -96,8 +98,7 @@ mod tests {
 
         // Test MediaOnlyConfig upsert (create)
         MediaOnlyConfig::upsert(
-            &db,
-            "12345", // guild_id
+            &db, "12345", // guild_id
             "67890", // channel_id
             true,    // enabled
         )
@@ -105,16 +106,18 @@ mod tests {
         .unwrap();
 
         // Test getting config by channel
-        let config = MediaOnlyConfig::get_by_channel(&db, "12345", "67890").await.unwrap();
+        let config = MediaOnlyConfig::get_by_channel(&db, "12345", "67890")
+            .await
+            .unwrap();
         assert!(config.is_some());
         let config = config.unwrap();
         assert_eq!(config.guild_id, "12345");
         assert_eq!(config.channel_id, "67890");
-        assert_eq!(config.enabled, true);
-        assert_eq!(config.allow_links, true); // Default value
-        assert_eq!(config.allow_attachments, true); // Default value
-        assert_eq!(config.allow_gifs, true); // Default value
-        assert_eq!(config.allow_stickers, true); // Default value
+        assert!(config.enabled);
+        assert!(config.allow_links); // Default value
+        assert!(config.allow_attachments); // Default value
+        assert!(config.allow_gifs); // Default value
+        assert!(config.allow_stickers); // Default value
 
         // Test getting config by guild
         let configs = MediaOnlyConfig::get_by_guild(&db, "12345").await.unwrap();
@@ -123,10 +126,7 @@ mod tests {
 
         // Test updating permissions
         MediaOnlyConfig::update_permissions(
-            &db,
-            "12345",
-            "67890",
-            false, // allow_links
+            &db, "12345", "67890", false, // allow_links
             true,  // allow_attachments
             false, // allow_gifs
             true,  // allow_stickers
@@ -134,14 +134,19 @@ mod tests {
         .await
         .unwrap();
 
-        let updated_config = MediaOnlyConfig::get_by_channel(&db, "12345", "67890").await.unwrap().unwrap();
-        assert_eq!(updated_config.allow_links, false);
-        assert_eq!(updated_config.allow_attachments, true);
-        assert_eq!(updated_config.allow_gifs, false);
-        assert_eq!(updated_config.allow_stickers, true);
+        let updated_config = MediaOnlyConfig::get_by_channel(&db, "12345", "67890")
+            .await
+            .unwrap()
+            .unwrap();
+        assert!(!updated_config.allow_links);
+        assert!(updated_config.allow_attachments);
+        assert!(!updated_config.allow_gifs);
+        assert!(updated_config.allow_stickers);
 
         // Test deletion
-        MediaOnlyConfig::delete(&db, "12345", "67890").await.unwrap();
+        MediaOnlyConfig::delete(&db, "12345", "67890")
+            .await
+            .unwrap();
 
         let configs_after = MediaOnlyConfig::get_by_guild(&db, "12345").await.unwrap();
         assert_eq!(configs_after.len(), 0);
@@ -161,10 +166,14 @@ mod tests {
         assert!(result.is_ok()); // upsert doesn't validate, just inserts
 
         // Test getting non-existent configs
-        let result = MediaOnlyConfig::get_by_guild(&db, "nonexistent").await.unwrap();
+        let result = MediaOnlyConfig::get_by_guild(&db, "nonexistent")
+            .await
+            .unwrap();
         assert_eq!(result.len(), 0);
 
-        let result = MediaOnlyConfig::get_by_channel(&db, "nonexistent", "nonexistent").await.unwrap();
+        let result = MediaOnlyConfig::get_by_channel(&db, "nonexistent", "nonexistent")
+            .await
+            .unwrap();
         assert!(result.is_none());
 
         // Clean up test data
@@ -177,8 +186,12 @@ mod tests {
         let db = create_test_db().await;
 
         // Create multiple configs for the same guild
-        MediaOnlyConfig::upsert(&db, "12345", "67890", true).await.unwrap();
-        MediaOnlyConfig::upsert(&db, "12345", "67891", false).await.unwrap();
+        MediaOnlyConfig::upsert(&db, "12345", "67890", true)
+            .await
+            .unwrap();
+        MediaOnlyConfig::upsert(&db, "12345", "67891", false)
+            .await
+            .unwrap();
 
         // Test getting all configs by guild
         let configs = MediaOnlyConfig::get_by_guild(&db, "12345").await.unwrap();
@@ -189,15 +202,24 @@ mod tests {
         assert!(channel_ids.contains(&"67891".to_string()));
 
         // Test toggle functionality
-        let enabled = MediaOnlyConfig::toggle(&db, "12345", "67891").await.unwrap();
-        assert_eq!(enabled, true); // Was false, now true
+        let enabled = MediaOnlyConfig::toggle(&db, "12345", "67891")
+            .await
+            .unwrap();
+        assert!(enabled); // Was false, now true
 
-        let config = MediaOnlyConfig::get_by_channel(&db, "12345", "67891").await.unwrap().unwrap();
-        assert_eq!(config.enabled, true);
+        let config = MediaOnlyConfig::get_by_channel(&db, "12345", "67891")
+            .await
+            .unwrap()
+            .unwrap();
+        assert!(config.enabled);
 
         // Clean up
-        MediaOnlyConfig::delete(&db, "12345", "67890").await.unwrap();
-        MediaOnlyConfig::delete(&db, "12345", "67891").await.unwrap();
+        MediaOnlyConfig::delete(&db, "12345", "67890")
+            .await
+            .unwrap();
+        MediaOnlyConfig::delete(&db, "12345", "67891")
+            .await
+            .unwrap();
     }
 
     #[tokio::test]
@@ -209,23 +231,37 @@ mod tests {
         let channel_id = "67890";
 
         // Test upsert (enable)
-        MediaOnlyConfig::upsert(&db, guild_id, channel_id, true).await.unwrap();
-        let config = MediaOnlyConfig::get_by_channel(&db, guild_id, channel_id).await.unwrap().unwrap();
-        assert_eq!(config.enabled, true);
+        MediaOnlyConfig::upsert(&db, guild_id, channel_id, true)
+            .await
+            .unwrap();
+        let config = MediaOnlyConfig::get_by_channel(&db, guild_id, channel_id)
+            .await
+            .unwrap()
+            .unwrap();
+        assert!(config.enabled);
 
         // Test toggle (should disable)
-        let enabled = MediaOnlyConfig::toggle(&db, guild_id, channel_id).await.unwrap();
-        assert_eq!(enabled, false);
+        let enabled = MediaOnlyConfig::toggle(&db, guild_id, channel_id)
+            .await
+            .unwrap();
+        assert!(!enabled);
 
-        let config = MediaOnlyConfig::get_by_channel(&db, guild_id, channel_id).await.unwrap().unwrap();
-        assert_eq!(config.enabled, false);
+        let config = MediaOnlyConfig::get_by_channel(&db, guild_id, channel_id)
+            .await
+            .unwrap()
+            .unwrap();
+        assert!(!config.enabled);
 
         // Test toggle again (should enable)
-        let enabled = MediaOnlyConfig::toggle(&db, guild_id, channel_id).await.unwrap();
-        assert_eq!(enabled, true);
+        let enabled = MediaOnlyConfig::toggle(&db, guild_id, channel_id)
+            .await
+            .unwrap();
+        assert!(enabled);
 
         // Clean up
-        MediaOnlyConfig::delete(&db, guild_id, channel_id).await.unwrap();
+        MediaOnlyConfig::delete(&db, guild_id, channel_id)
+            .await
+            .unwrap();
     }
 
     #[tokio::test]
@@ -237,27 +273,39 @@ mod tests {
         let channel_id = "67890";
 
         // Test that handler ignores channels without config
-        let config = MediaOnlyConfig::get_by_channel(&db, guild_id, channel_id).await.unwrap();
+        let config = MediaOnlyConfig::get_by_channel(&db, guild_id, channel_id)
+            .await
+            .unwrap();
         assert!(config.is_none()); // No config, should be ignored
 
         // Create a config
-        MediaOnlyConfig::upsert(&db, guild_id, channel_id, true).await.unwrap();
+        MediaOnlyConfig::upsert(&db, guild_id, channel_id, true)
+            .await
+            .unwrap();
 
         // Test that handler would process channels with enabled config
-        let config = MediaOnlyConfig::get_by_channel(&db, guild_id, channel_id).await.unwrap();
+        let config = MediaOnlyConfig::get_by_channel(&db, guild_id, channel_id)
+            .await
+            .unwrap();
         assert!(config.is_some());
         let config = config.unwrap();
-        assert_eq!(config.enabled, true);
+        assert!(config.enabled);
 
         // Test that handler would ignore disabled configs
-        MediaOnlyConfig::upsert(&db, guild_id, channel_id, false).await.unwrap();
-        let config = MediaOnlyConfig::get_by_channel(&db, guild_id, channel_id).await.unwrap();
+        MediaOnlyConfig::upsert(&db, guild_id, channel_id, false)
+            .await
+            .unwrap();
+        let config = MediaOnlyConfig::get_by_channel(&db, guild_id, channel_id)
+            .await
+            .unwrap();
         assert!(config.is_some());
         let config = config.unwrap();
-        assert_eq!(config.enabled, false);
+        assert!(!config.enabled);
 
         // Clean up
-        MediaOnlyConfig::delete(&db, guild_id, channel_id).await.unwrap();
+        MediaOnlyConfig::delete(&db, guild_id, channel_id)
+            .await
+            .unwrap();
     }
 
     #[tokio::test]
@@ -269,26 +317,32 @@ mod tests {
         let channel_id = "67890";
 
         // Create config with different permission settings
-        MediaOnlyConfig::upsert(&db, guild_id, channel_id, true).await.unwrap();
+        MediaOnlyConfig::upsert(&db, guild_id, channel_id, true)
+            .await
+            .unwrap();
 
         // Test updating permissions (this is what the event handler uses)
         MediaOnlyConfig::update_permissions(
-            &db,
-            guild_id,
-            channel_id,
-            true,  // allow_links
+            &db, guild_id, channel_id, true,  // allow_links
             false, // allow_attachments
             true,  // allow_gifs
             false, // allow_stickers
-        ).await.unwrap();
+        )
+        .await
+        .unwrap();
 
-        let config = MediaOnlyConfig::get_by_channel(&db, guild_id, channel_id).await.unwrap().unwrap();
-        assert_eq!(config.allow_links, true);
-        assert_eq!(config.allow_attachments, false);
-        assert_eq!(config.allow_gifs, true);
-        assert_eq!(config.allow_stickers, false);
+        let config = MediaOnlyConfig::get_by_channel(&db, guild_id, channel_id)
+            .await
+            .unwrap()
+            .unwrap();
+        assert!(config.allow_links);
+        assert!(!config.allow_attachments);
+        assert!(config.allow_gifs);
+        assert!(!config.allow_stickers);
 
         // Clean up
-        MediaOnlyConfig::delete(&db, guild_id, channel_id).await.unwrap();
+        MediaOnlyConfig::delete(&db, guild_id, channel_id)
+            .await
+            .unwrap();
     }
 }

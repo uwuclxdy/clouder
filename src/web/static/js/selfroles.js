@@ -104,7 +104,7 @@ class SelfRoleManager {
         const rolesList = document.getElementById('rolesList');
         rolesList.innerHTML = `
             <div style="color: #ffcccb; padding: 15px; background: rgba(220, 53, 69, 0.2); border-radius: 8px; margin-bottom: 15px;">
-                <strong>❌ Role Loading Error</strong><br>
+                <strong>Role Loading Error</strong><br>
                 ${escapeHtml(message)}
                 <br><br>
                 <button onclick="location.reload()" class="btn" style="margin-top: 10px;">Retry</button>
@@ -116,7 +116,7 @@ class SelfRoleManager {
         const rolesList = document.getElementById('rolesList');
         rolesList.innerHTML = `
             <div style="color: #fff3cd; padding: 15px; background: rgba(255, 193, 7, 0.2); border-radius: 8px; margin-bottom: 15px;">
-                <strong>ℹ️ No Manageable Roles Found</strong><br>
+                <strong>No Manageable Roles Found</strong><br>
                 The bot cannot manage any roles in this server. This could be because:
                 <ul style="margin: 10px 0;">
                     <li>All server roles are positioned above the bot's highest role</li>
@@ -132,7 +132,7 @@ class SelfRoleManager {
         const rolesList = document.getElementById('rolesList');
         rolesList.innerHTML = `
             <div style="color: #ffcccb; padding: 15px; background: rgba(220, 53, 69, 0.2); border-radius: 8px;">
-                <strong>❌ Network Error</strong><br>
+                <strong>Network Error</strong><br>
                 Failed to load roles due to a network error. Please check your connection and try again.
                 <br><br>
                 <button onclick="location.reload()" class="btn" style="margin-top: 10px;">Retry</button>
@@ -147,7 +147,7 @@ class SelfRoleManager {
         roleItem.innerHTML = `
             <input type="checkbox" class="role-checkbox" data-role-id="${role.id}" onchange="selfRoleManager.updatePreview(); selfRoleManager.updateRoleItemState(this)" onclick="event.stopPropagation()">
             <div class="emoji-button" data-role-id="${role.id}">
-                <span class="emoji-text">🎮</span>
+                <span class="emoji-text"></span>
             </div>
             <div class="role-name">${role.name}</div>
             <div class="role-color-indicator" style="background-color: #${role.color.toString(16).padStart(6, '0')}"></div>
@@ -273,7 +273,7 @@ class SelfRoleManager {
             const roleId = checkbox.dataset.roleId;
             const role = this.roles.find(r => r.id === roleId);
             const emojiButton = checkbox.parentElement.querySelector('.emoji-button .emoji-text');
-            const emoji = emojiButton ? emojiButton.textContent : '📝';
+            const emoji = emojiButton ? emojiButton.textContent : '';
 
             if (role) {
                 const button = document.createElement('button');
@@ -359,7 +359,7 @@ class SelfRoleManager {
             document.querySelectorAll('.role-checkbox:checked').forEach(checkbox => {
                 const roleId = checkbox.dataset.roleId;
                 const emojiButton = checkbox.parentElement.querySelector('.emoji-button .emoji-text');
-                const emoji = emojiButton ? emojiButton.textContent : '📝';
+                const emoji = emojiButton ? emojiButton.textContent : '';
                 selectedRoles.push({ role_id: roleId, emoji: emoji });
             });
 
@@ -461,7 +461,7 @@ function createMessageCard(config, guildId) {
 function displayNoMessages(messagesGrid, guildId) {
     messagesGrid.innerHTML = `
         <div class="no-messages">
-            <div style="font-size: 4em; margin-bottom: 20px; opacity: 0.6;">📝</div>
+            <div style="font-size: 4em; margin-bottom: 20px; opacity: 0.6;"></div>
             <h3>No self-role messages yet</h3>
             <p>Create your first interactive role assignment message to get started!</p>
             <a href="/dashboard/${guildId}/selfroles/new" class="create-btn">+ Create First Message</a>
@@ -472,7 +472,7 @@ function displayNoMessages(messagesGrid, guildId) {
 function displayLoadError(messagesGrid) {
     messagesGrid.innerHTML = `
         <div class="no-messages">
-            <div style="font-size: 4em; margin-bottom: 20px; opacity: 0.6;">⚠️</div>
+            <div style="font-size: 4em; margin-bottom: 20px; opacity: 0.6;"></div>
             <h3>Failed to load messages</h3>
             <p>There was an error loading your self-role messages. Please try refreshing the page.</p>
             <button class="btn" onclick="location.reload()">Refresh Page</button>
@@ -483,7 +483,7 @@ function displayLoadError(messagesGrid) {
 async function deleteMessage(event, configId, title, guildId) {
     event.stopPropagation();
 
-    const confirmed = confirm(`⚠️ Delete "${title}"?\n\nThis will permanently remove:\n• The self-role message from Discord\n• All role assignment data\n• Cannot be undone\n\nAre you sure?`);
+    const confirmed = confirm(`Delete "${title}"?\n\nThis will permanently remove:\n• The self-role message from Discord\n• All role assignment data\n• Cannot be undone\n\nAre you sure?`);
 
     if (!confirmed) {
         return;

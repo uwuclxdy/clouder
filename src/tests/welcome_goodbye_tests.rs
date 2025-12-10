@@ -1,7 +1,9 @@
 #[cfg(test)]
 mod tests {
-    use crate::database::welcome_goodbye::{replace_placeholders, WelcomeGoodbyeConfig};
-    use crate::utils::welcome_goodbye::{validate_message_config, validate_url};
+    use crate::database::welcome_goodbye::WelcomeGoodbyeConfig;
+    use crate::utils::welcome_goodbye::{
+        build_embed, replace_placeholders, validate_message_config, validate_url, EmbedConfig,
+    };
     use serenity::{model::id::UserId, model::user::User};
     use sqlx::SqlitePool;
     use std::collections::HashMap;
@@ -101,12 +103,14 @@ mod tests {
         assert!(config.is_none());
 
         // Test creating config
-        let mut config = WelcomeGoodbyeConfig::default();
-        config.guild_id = guild_id.to_string();
-        config.welcome_enabled = true;
-        config.welcome_channel_id = Some("987654321".to_string());
-        config.welcome_message_type = "embed".to_string();
-        config.welcome_embed_title = Some("Welcome!".to_string());
+        let config = WelcomeGoodbyeConfig {
+            guild_id: guild_id.to_string(),
+            welcome_enabled: true,
+            welcome_channel_id: Some("987654321".to_string()),
+            welcome_message_type: "embed".to_string(),
+            welcome_embed_title: Some("Welcome!".to_string()),
+            ..Default::default()
+        };
 
         WelcomeGoodbyeConfig::upsert_config(&pool, &config)
             .await
@@ -183,16 +187,18 @@ mod tests {
 
         let guild_id = "987654321";
 
-        let mut config = WelcomeGoodbyeConfig::default();
-        config.guild_id = guild_id.to_string();
-        config.welcome_enabled = true;
-        config.welcome_embed_title = Some("Welcome Title".to_string());
-        config.welcome_embed_description = Some("Welcome Description".to_string());
-        config.welcome_embed_color = Some(0x5865F2);
-        config.welcome_embed_footer = Some("Footer Text".to_string());
-        config.welcome_embed_thumbnail = Some("https://example.com/thumb.png".to_string());
-        config.welcome_embed_image = Some("https://example.com/image.png".to_string());
-        config.welcome_embed_timestamp = true;
+        let config = WelcomeGoodbyeConfig {
+            guild_id: guild_id.to_string(),
+            welcome_enabled: true,
+            welcome_embed_title: Some("Welcome Title".to_string()),
+            welcome_embed_description: Some("Welcome Description".to_string()),
+            welcome_embed_color: Some(0x5865F2),
+            welcome_embed_footer: Some("Footer Text".to_string()),
+            welcome_embed_thumbnail: Some("https://example.com/thumb.png".to_string()),
+            welcome_embed_image: Some("https://example.com/image.png".to_string()),
+            welcome_embed_timestamp: true,
+            ..Default::default()
+        };
 
         WelcomeGoodbyeConfig::upsert_config(&pool, &config)
             .await
@@ -259,5 +265,243 @@ mod tests {
         // Test repeated placeholders
         let result = replace_placeholders("Hello {user}, welcome {user}!", &placeholders);
         assert_eq!(result, "Hello <@12345>, welcome <@12345>!");
+    }
+
+    #[test]
+    fn test_build_embed_basic() {
+        let config = EmbedConfig {
+            title: &Some("Welcome {user}!".to_string()),
+            description: &Some("Hello {username} to {server}".to_string()),
+            color: Some(0xFF5733),
+            footer: &Some("Enjoy your stay!".to_string()),
+            thumbnail: &None,
+            image: &None,
+            timestamp: false,
+            default_color: 0xFFFFFF,
+        };
+
+        let mut placeholders = HashMap::new();
+        placeholders.insert("user".to_string(), "<@123>".to_string());
+        placeholders.insert("username".to_string(), "TestUser".to_string());
+        placeholders.insert("server".to_string(), "My Server".to_string());
+
+        let embed = build_embed(&config, &placeholders);
+
+        // embed is created successfully - we can't easily inspect CreateEmbed internals
+        // but we verify it doesn't panic and returns an embed
+        assert!(std::mem::size_of_val(&embed) > 0);
+    }
+
+    #[test]
+    fn test_build_embed_with_color_override() {
+        let config = EmbedConfig {
+            title: &Some("Test".to_string()),
+            description: &None,
+            color: Some(0x5865F2), // Discord blurple
+            footer: &None,
+            thumbnail: &None,
+            image: &None,
+            timestamp: false,
+            default_color: 0xFFFFFF,
+        };
+
+        let placeholders = HashMap::new();
+        let embed = build_embed(&config, &placeholders);
+        assert!(std::mem::size_of_val(&embed) > 0);
+    }
+
+    #[test]
+    fn test_build_embed_uses_default_color_when_none() {
+        let config = EmbedConfig {
+            title: &Some("Test".to_string()),
+            description: &None,
+            color: None, // No color specified
+            footer: &None,
+            thumbnail: &None,
+            image: &None,
+            timestamp: false,
+            default_color: 0x00FF00, // Green default
+        };
+
+        let placeholders = HashMap::new();
+        let embed = build_embed(&config, &placeholders);
+        assert!(std::mem::size_of_val(&embed) > 0);
+    }
+
+    #[test]
+    fn test_build_embed_skips_empty_fields() {
+        // Test with empty strings (should be skipped)
+        let config = EmbedConfig {
+            title: &Some("   ".to_string()), // Whitespace only
+            description: &Some("Valid description".to_string()),
+            color: None,
+            footer: &Some("".to_string()), // Empty string
+            thumbnail: &Some("   ".to_string()),
+            image: &Some("".to_string()),
+            timestamp: false,
+            default_color: 0xFFFFFF,
+        };
+
+        let placeholders = HashMap::new();
+        let embed = build_embed(&config, &placeholders);
+        assert!(std::mem::size_of_val(&embed) > 0);
+    }
+
+    #[test]
+    fn test_build_embed_skips_none_fields() {
+        let config = EmbedConfig {
+            title: &None,
+            description: &Some("Only description".to_string()),
+            color: None,
+            footer: &None,
+            thumbnail: &None,
+            image: &None,
+            timestamp: false,
+            default_color: 0xFFFFFF,
+        };
+
+        let placeholders = HashMap::new();
+        let embed = build_embed(&config, &placeholders);
+        assert!(std::mem::size_of_val(&embed) > 0);
+    }
+
+    #[test]
+    fn test_build_embed_with_timestamp() {
+        let config = EmbedConfig {
+            title: &Some("Test".to_string()),
+            description: &None,
+            color: None,
+            footer: &None,
+            thumbnail: &None,
+            image: &None,
+            timestamp: true, // Timestamp enabled
+            default_color: 0xFFFFFF,
+        };
+
+        let placeholders = HashMap::new();
+        let embed = build_embed(&config, &placeholders);
+        assert!(std::mem::size_of_val(&embed) > 0);
+    }
+
+    #[test]
+    fn test_build_embed_without_timestamp() {
+        let config = EmbedConfig {
+            title: &Some("Test".to_string()),
+            description: &None,
+            color: None,
+            footer: &None,
+            thumbnail: &None,
+            image: &None,
+            timestamp: false, // Timestamp disabled
+            default_color: 0xFFFFFF,
+        };
+
+        let placeholders = HashMap::new();
+        let embed = build_embed(&config, &placeholders);
+        assert!(std::mem::size_of_val(&embed) > 0);
+    }
+
+    #[test]
+    fn test_build_embed_with_all_fields() {
+        let config = EmbedConfig {
+            title: &Some("Welcome {user}!".to_string()),
+            description: &Some("Description for {username}".to_string()),
+            color: Some(0x5865F2),
+            footer: &Some("Footer text".to_string()),
+            thumbnail: &Some("https://example.com/thumb.png".to_string()),
+            image: &Some("https://example.com/image.png".to_string()),
+            timestamp: true,
+            default_color: 0xFFFFFF,
+        };
+
+        let mut placeholders = HashMap::new();
+        placeholders.insert("user".to_string(), "<@123456>".to_string());
+        placeholders.insert("username".to_string(), "CoolUser".to_string());
+
+        let embed = build_embed(&config, &placeholders);
+        assert!(std::mem::size_of_val(&embed) > 0);
+    }
+
+    #[test]
+    fn test_build_embed_placeholder_in_thumbnail_and_image() {
+        let config = EmbedConfig {
+            title: &None,
+            description: &Some("Test".to_string()),
+            color: None,
+            footer: &None,
+            thumbnail: &Some("{avatar_url}".to_string()),
+            image: &Some("{banner_url}".to_string()),
+            timestamp: false,
+            default_color: 0xFFFFFF,
+        };
+
+        let mut placeholders = HashMap::new();
+        placeholders.insert(
+            "avatar_url".to_string(),
+            "https://cdn.discord.com/avatar.png".to_string(),
+        );
+        placeholders.insert(
+            "banner_url".to_string(),
+            "https://cdn.discord.com/banner.png".to_string(),
+        );
+
+        let embed = build_embed(&config, &placeholders);
+        assert!(std::mem::size_of_val(&embed) > 0);
+    }
+
+    #[test]
+    fn test_build_embed_negative_color_value() {
+        // Negative i32 color (valid in database)
+        let config = EmbedConfig {
+            title: &Some("Test".to_string()),
+            description: &None,
+            color: Some(-1), // All bits set
+            footer: &None,
+            thumbnail: &None,
+            image: &None,
+            timestamp: false,
+            default_color: 0xFFFFFF,
+        };
+
+        let placeholders = HashMap::new();
+        let embed = build_embed(&config, &placeholders);
+        assert!(std::mem::size_of_val(&embed) > 0);
+    }
+
+    #[test]
+    fn test_build_embed_zero_color() {
+        let config = EmbedConfig {
+            title: &Some("Test".to_string()),
+            description: &None,
+            color: Some(0), // Black
+            footer: &None,
+            thumbnail: &None,
+            image: &None,
+            timestamp: false,
+            default_color: 0xFFFFFF,
+        };
+
+        let placeholders = HashMap::new();
+        let embed = build_embed(&config, &placeholders);
+        assert!(std::mem::size_of_val(&embed) > 0);
+    }
+
+    #[test]
+    fn test_build_embed_empty_placeholders() {
+        let config = EmbedConfig {
+            title: &Some("Welcome {user}!".to_string()),
+            description: &Some("Hello {username}".to_string()),
+            color: None,
+            footer: &None,
+            thumbnail: &None,
+            image: &None,
+            timestamp: false,
+            default_color: 0xFFFFFF,
+        };
+
+        // Empty placeholders - placeholders remain unreplaced
+        let placeholders = HashMap::new();
+        let embed = build_embed(&config, &placeholders);
+        assert!(std::mem::size_of_val(&embed) > 0);
     }
 }

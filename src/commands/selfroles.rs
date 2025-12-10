@@ -5,11 +5,7 @@ use poise::serenity_prelude as serenity;
 type Error = Box<dyn std::error::Error + Send + Sync>;
 type Context<'a> = poise::Context<'a, AppState, Error>;
 
-#[poise::command(
-    slash_command,
-    required_permissions = "MANAGE_ROLES",
-    guild_only
-)]
+#[poise::command(slash_command, required_permissions = "MANAGE_ROLES", guild_only)]
 pub async fn selfroles(ctx: Context<'_>) -> Result<(), Error> {
     let base_url = &ctx.data().config.web.base_url;
     let guild_id = ctx.guild_id().unwrap().to_string();

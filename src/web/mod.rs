@@ -1,4 +1,5 @@
 use crate::config::AppState;
+use crate::logging::error;
 use crate::utils::get_default_embed_color;
 use axum::{
     extract::{Path, State}, http::{HeaderMap, StatusCode},
@@ -468,7 +469,7 @@ async fn api_get_channels(
     let channels = match state.http.get_channels(guild_id_u64.into()).await {
         Ok(channels) => channels,
         Err(e) => {
-            tracing::error!("Failed to get channels for guild {}: {}. Bot may not be in guild or lack VIEW_CHANNEL permission.", guild_id, e);
+            error!("get channels for {}: {}", guild_id, e);
             return Ok(Json(serde_json::json!({
                 "success": false,
                 "error": "bot_not_in_guild",
@@ -576,7 +577,7 @@ async fn api_get_selfroles(
     let channels = match state.http.get_channels(guild_id_u64.into()).await {
         Ok(channels) => channels,
         Err(e) => {
-            tracing::error!("Failed to get channels for guild {}: {}. Bot may not be in guild or lack VIEW_CHANNEL permission.", guild_id, e);
+            error!("get channels for {}: {}", guild_id, e);
             // Return empty channels instead of failing
             Vec::new()
         }
@@ -758,22 +759,32 @@ async fn api_submit_feature_request(
     // Send DM to bot owner
     let dm_content = format!(
         "**New Feature Request**\n\n**From:** {} (ID: {})\n**Description:**\n{}",
-        user.user.username,
-        user.user.id,
-        payload.description
+        user.user.username, user.user.id, payload.description
     );
 
-    match state.http.create_private_channel(&serde_json::json!({"recipient_id": state.config.discord.bot_owner})).await {
+    match state
+        .http
+        .create_private_channel(
+            &serde_json::json!({"recipient_id": state.config.discord.bot_owner}),
+        )
+        .await
+    {
         Ok(channel) => {
-            match state.http.send_message(channel.id, Vec::new(), &serenity::all::CreateMessage::new().content(&dm_content)).await {
-                Ok(_) => {
-                    Ok(Json(serde_json::json!({
-                        "success": true,
-                        "message": "Feature request submitted successfully!"
-                    })))
-                }
+            match state
+                .http
+                .send_message(
+                    channel.id,
+                    Vec::new(),
+                    &serenity::all::CreateMessage::new().content(&dm_content),
+                )
+                .await
+            {
+                Ok(_) => Ok(Json(serde_json::json!({
+                    "success": true,
+                    "message": "Feature request submitted successfully!"
+                }))),
                 Err(e) => {
-                    tracing::error!("Failed to send DM to bot owner: {}", e);
+                    error!("send dm to owner: {}", e);
                     Ok(Json(serde_json::json!({
                         "success": false,
                         "message": "Failed to send feature request. Please try again later."
@@ -782,7 +793,7 @@ async fn api_submit_feature_request(
             }
         }
         Err(e) => {
-            tracing::error!("Failed to create DM channel with bot owner: {}", e);
+            error!("create dm channel with owner: {}", e);
             Ok(Json(serde_json::json!({
                 "success": false,
                 "message": "Failed to send feature request. Please try again later."

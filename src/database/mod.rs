@@ -2,6 +2,8 @@ use anyhow::Result;
 use sqlx::{migrate::MigrateDatabase, sqlite::SqlitePool, Sqlite};
 use std::path::Path;
 
+use crate::logging::info;
+
 pub mod mediaonly;
 pub mod selfroles;
 pub mod welcome_goodbye;
@@ -16,7 +18,7 @@ pub async fn initialize_database(db_url: &str) -> Result<SqlitePool> {
 
     if !Sqlite::database_exists(db_path).await? {
         Sqlite::create_database(db_path).await?;
-        tracing::info!("Created new database at {}", db_path);
+        info!("created db: {}", db_path);
     }
 
     let pool = SqlitePool::connect(db_path).await?;
@@ -36,7 +38,13 @@ async fn run_migrations(pool: &SqlitePool) -> Result<()> {
     ];
 
     for (index, migration_content) in migrations.iter().enumerate() {
-        tracing::info!("Running migration {}", index + 1);
+        info!(
+            "running migration {}",
+            migrations[index]
+                .split('/')
+                .next_back()
+                .unwrap_or("unknown")
+        );
         for statement in migration_content.split(';') {
             let statement = statement.trim();
             if !statement.is_empty() {
@@ -45,6 +53,6 @@ async fn run_migrations(pool: &SqlitePool) -> Result<()> {
         }
     }
 
-    tracing::info!("Database migrations executed successfully");
+    info!("db migrations ok");
     Ok(())
 }

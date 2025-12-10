@@ -11,7 +11,7 @@ mod tests {
 
         // Create a test self-role config
         let config = SelfRoleConfig::create(
-            &*app_state.db,
+            &app_state.db,
             "12345",
             "67890",
             "Test Self Roles",
@@ -24,28 +24,28 @@ mod tests {
         // Update with message ID
         let mut config_copy = config;
         config_copy
-            .update_message_id(&*app_state.db, "11111")
+            .update_message_id(&app_state.db, "11111")
             .await
             .unwrap();
 
         // Test that the config exists
-        let configs = SelfRoleConfig::get_by_guild(&*app_state.db, "12345")
+        let configs = SelfRoleConfig::get_by_guild(&app_state.db, "12345")
             .await
             .unwrap();
         assert_eq!(configs.len(), 1);
 
         // Simulate message deletion by calling the database cleanup directly
-        let result = SelfRoleConfig::get_by_message_id(&*app_state.db, "11111")
+        let result = SelfRoleConfig::get_by_message_id(&app_state.db, "11111")
             .await
             .unwrap();
         assert!(result.is_some());
 
         if let Some(found_config) = result {
-            found_config.delete(&*app_state.db).await.unwrap();
+            found_config.delete(&app_state.db).await.unwrap();
         }
 
         // Verify the config was deleted
-        let configs_after = SelfRoleConfig::get_by_guild(&*app_state.db, "12345")
+        let configs_after = SelfRoleConfig::get_by_guild(&app_state.db, "12345")
             .await
             .unwrap();
         assert_eq!(configs_after.len(), 0);
@@ -244,10 +244,10 @@ mod tests {
         config2_copy.update_message_id(&db, "msg2").await.unwrap();
 
         // Add roles to configs
-        let _role1 = SelfRoleRole::create(&db, config1_copy.id, "role1", "🎮")
+        let _role1 = SelfRoleRole::create(&db, config1_copy.id, "role1", "a")
             .await
             .unwrap();
-        let _role2 = SelfRoleRole::create(&db, config2_copy.id, "role2", "🎨")
+        let _role2 = SelfRoleRole::create(&db, config2_copy.id, "role2", "b")
             .await
             .unwrap();
 
@@ -311,7 +311,7 @@ mod tests {
         .await
         .unwrap();
 
-        let _role = SelfRoleRole::create(&db, config.id, "role123", "🎮")
+        let _role = SelfRoleRole::create(&db, config.id, "role123", "a")
             .await
             .unwrap();
 
@@ -365,7 +365,7 @@ mod tests {
 
         // Create multiple roles
         for i in 1..=5 {
-            SelfRoleRole::create(&db, config.id, &format!("role{}", i), "🎮")
+            SelfRoleRole::create(&db, config.id, &format!("role{}", i), "a")
                 .await
                 .unwrap();
         }
@@ -379,7 +379,7 @@ mod tests {
                 &db,
                 &format!("user{}", user_id),
                 &role_id,
-                &guild_id,
+                guild_id,
             )
             .await
             .unwrap();
@@ -396,7 +396,7 @@ mod tests {
                 &db,
                 &format!("user{}", user_id),
                 &role_id,
-                &guild_id,
+                guild_id,
                 expires_at,
             )
             .await
@@ -407,7 +407,7 @@ mod tests {
                 &db,
                 &format!("user{}", user_id),
                 &role_id,
-                &guild_id,
+                guild_id,
             )
             .await
             .unwrap();
@@ -470,12 +470,13 @@ mod tests {
     fn parse_selfrole_custom_id(custom_id: &str) -> Option<(i64, String)> {
         if let Some(suffix) = custom_id.strip_prefix("selfrole_") {
             let parts: Vec<&str> = suffix.split('_').collect();
-            if parts.len() == 2 && parts[1].starts_with("role") {
-                if let Ok(config_id) = parts[0].parse::<i64>() {
-                    let role_id = parts[1][4..].to_string(); // Remove "role" prefix
-                    if !role_id.is_empty() {
-                        return Some((config_id, role_id));
-                    }
+            if parts.len() == 2
+                && parts[1].starts_with("role")
+                && let Ok(config_id) = parts[0].parse::<i64>()
+            {
+                let role_id = parts[1][4..].to_string(); // Remove "role" prefix
+                if !role_id.is_empty() {
+                    return Some((config_id, role_id));
                 }
             }
         }

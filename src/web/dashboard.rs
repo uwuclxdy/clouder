@@ -1,4 +1,5 @@
 use crate::config::AppState;
+use crate::utils::{get_bot_invite_url, get_guild_icon_url, get_user_avatar_url};
 use crate::web::session_extractor::extract_session_data;
 use axum::{
     extract::{Path, State},
@@ -120,22 +121,12 @@ pub async fn user_settings(
         .1
         .ok_or_else(|| Redirect::temporary("/auth/login"))?;
 
-    let user_avatar = user
-        .user
-        .avatar
-        .as_ref()
-        .map(|avatar| {
-            format!(
-                "https://cdn.discordapp.com/avatars/{}/{}.png",
-                user.user.id, avatar
-            )
-        })
-        .unwrap_or_else(|| "https://cdn.discordapp.com/embed/avatars/0.png".to_string());
+    let user_avatar = get_user_avatar_url(&user.user.id, user.user.avatar.as_ref());
 
     // Generate Discord invite URL with full permissions for Clouder bot
-    let invite_url = format!(
-        "https://discord.com/oauth2/authorize?client_id={}&permissions=268697088&response_type=code&redirect_uri={}&integration_type=0&scope=bot",
-        state.config.web.oauth.client_id, state.config.web.oauth.redirect_uri
+    let invite_url = get_bot_invite_url(
+        &state.config.web.oauth.client_id,
+        Some(&state.config.web.oauth.redirect_uri),
     );
 
     // TODO: Load actual user settings from database
@@ -220,7 +211,7 @@ pub async fn user_settings(
                 <h2>Reminder Management</h2>
 
                 <div class="reminders-notice">
-                    <p><strong>🚧 Coming Soon</strong></p>
+                    <p><strong>Coming Soon</strong></p>
                     <p>Reminder management features are currently under development. This section will show your subscribed reminders and allow you to manage them.</p>
                 </div>
             </div>
@@ -372,17 +363,10 @@ pub async fn guild_dashboard(
 
     let guild = user.guilds.iter().find(|g| g.id == guild_id).unwrap();
 
-    let guild_icon = guild
-        .icon
-        .as_ref()
-        .map(|icon| format!("https://cdn.discordapp.com/icons/{}/{}.png", guild.id, icon))
-        .unwrap_or_else(|| "https://cdn.discordapp.com/embed/avatars/0.png".to_string());
+    let guild_icon = get_guild_icon_url(&guild.id, guild.icon.as_ref());
 
     // Generate Discord invite URL with full permissions for Clouder bot
-    let invite_url = format!(
-        "https://discord.com/api/oauth2/authorize?client_id={}&permissions=268697088&scope=bot%20applications.commands",
-        _state.config.web.oauth.client_id
-    );
+    let invite_url = get_bot_invite_url(&_state.config.web.oauth.client_id, None);
 
     let template = include_str!("templates/guild_dashboard.html")
         .replace("{{COMMON_CSS}}", include_str!("static/css/common.css"))
@@ -418,10 +402,7 @@ pub async fn selfroles_list(
     let guild = user.guilds.iter().find(|g| g.id == guild_id).unwrap();
 
     // Generate Discord invite URL with full permissions for Clouder bot
-    let invite_url = format!(
-        "https://discord.com/api/oauth2/authorize?client_id={}&permissions=268697088&scope=bot%20applications.commands",
-        _state.config.web.oauth.client_id
-    );
+    let invite_url = get_bot_invite_url(&_state.config.web.oauth.client_id, None);
 
     let template = include_str!("templates/selfroles_list.html")
         .replace("{{COMMON_CSS}}", include_str!("static/css/common.css"))
@@ -506,10 +487,7 @@ fn render_selfroles_form(
         };
 
     // Generate Discord invite URL with full permissions for Clouder bot
-    let invite_url = format!(
-        "https://discord.com/api/oauth2/authorize?client_id={}&permissions=268697088&scope=bot%20applications.commands",
-        state.config.web.oauth.client_id
-    );
+    let invite_url = get_bot_invite_url(&state.config.web.oauth.client_id, None);
 
     let template = include_str!("templates/selfroles_form.html")
         .replace("{{COMMON_CSS}}", include_str!("static/css/common.css"))
@@ -535,29 +513,6 @@ fn render_selfroles_form(
     Ok(Html(template))
 }
 
-// Placeholder functions for future dashboard features
-#[allow(dead_code)]
-pub async fn custom_commands(
-    Path(guild_id): Path<String>,
-    headers: HeaderMap,
-    State(_state): State<AppState>,
-) -> Result<Html<String>, Redirect> {
-    let session = extract_session_data(&headers)
-        .await
-        .map_err(|_| Redirect::temporary("/auth/login"))?;
-
-    let user = session
-        .1
-        .ok_or_else(|| Redirect::temporary("/auth/login"))?;
-
-    if !user.has_manage_roles_in_guild(&guild_id) && !user.has_administrator_in_guild(&guild_id) {
-        return Err(Redirect::temporary("/"));
-    }
-
-    // TODO: Implement server settings functionality
-    Err(Redirect::temporary(&format!("/dashboard/{}", guild_id)))
-}
-
 pub async fn feature_request(
     headers: HeaderMap,
     State(state): State<AppState>,
@@ -570,22 +525,12 @@ pub async fn feature_request(
         .1
         .ok_or_else(|| Redirect::temporary("/auth/login"))?;
 
-    let user_avatar = user
-        .user
-        .avatar
-        .as_ref()
-        .map(|avatar| {
-            format!(
-                "https://cdn.discordapp.com/avatars/{}/{}.png",
-                user.user.id, avatar
-            )
-        })
-        .unwrap_or_else(|| "https://cdn.discordapp.com/embed/avatars/0.png".to_string());
+    let user_avatar = get_user_avatar_url(&user.user.id, user.user.avatar.as_ref());
 
     // Generate Discord invite URL with full permissions for Clouder bot
-    let invite_url = format!(
-        "https://discord.com/oauth2/authorize?client_id={}&permissions=268697088&response_type=code&redirect_uri={}&integration_type=0&scope=bot",
-        state.config.web.oauth.client_id, state.config.web.oauth.redirect_uri
+    let invite_url = get_bot_invite_url(
+        &state.config.web.oauth.client_id,
+        Some(&state.config.web.oauth.redirect_uri),
     );
 
     let template = include_str!("templates/feature_request.html")

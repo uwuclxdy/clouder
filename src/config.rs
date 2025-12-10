@@ -1,11 +1,11 @@
+use crate::logging::{debug, error, info, warn};
 use anyhow::Result;
 use dotenvy::dotenv;
 use serde::{Deserialize, Serialize};
-use serenity::all::{Cache, Http};
+use serenity::all::Http;
 use sqlx::SqlitePool;
 use std::env;
 use std::sync::Arc;
-use tracing::{error, info, warn};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
@@ -67,64 +67,42 @@ pub struct OpenAIConfig {
 impl Config {
     pub fn from_env() -> Result<Self, anyhow::Error> {
         if let Err(e) = dotenv() {
-            warn!(
-                "Could not load .env file: {}. Continuing with system environment variables.",
-                e
-            );
+            warn!("could not load .env file: {}", e);
         }
 
         let discord_token = match env::var("DISCORD_TOKEN") {
             Ok(token) => token,
-            Err(_) => {
-                error!(
-                    "DISCORD_TOKEN environment variable not set - this is required for the bot to function"
-                );
-                return Err(anyhow::anyhow!(
-                    "DISCORD_TOKEN environment variable not set"
-                ));
+            Err(err) => {
+                error!("DISCORD_TOKEN is not set");
+                return Err(anyhow::anyhow!("DISCORD_TOKEN: {}", err));
             }
         };
         let application_id = match env::var("DISCORD_APPLICATION_ID") {
             Ok(id_str) => match id_str.parse::<u64>() {
                 Ok(id) => id,
                 Err(e) => {
-                    error!(
-                        "DISCORD_APPLICATION_ID has invalid format '{}': {}",
-                        id_str, e
-                    );
-                    return Err(anyhow::anyhow!("Invalid DISCORD_APPLICATION_ID format"));
+                    error!("invalid DISCORD_APPLICATION_ID format '{}': {}", id_str, e);
+                    return Err(anyhow::anyhow!("invalid DISCORD_APPLICATION_ID format"));
                 }
             },
-            Err(_) => {
-                error!(
-                    "DISCORD_APPLICATION_ID environment variable not set - this is required for Discord interactions"
-                );
-                return Err(anyhow::anyhow!(
-                    "DISCORD_APPLICATION_ID environment variable not set"
-                ));
+            Err(err) => {
+                error!("DISCORD_APPLICATION_ID is not set");
+                return Err(anyhow::anyhow!("DISCORD_APPLICATION_ID: {}", err));
             }
         };
         let oauth_client_id = match env::var("DISCORD_CLIENT_ID") {
             Ok(id) => id,
-            Err(_) => {
-                error!(
-                    "DISCORD_CLIENT_ID environment variable not set - this is required for OAuth"
-                );
-                return Err(anyhow::anyhow!(
-                    "DISCORD_CLIENT_ID environment variable not set"
-                ));
+            Err(err) => {
+                error!("DISCORD_CLIENT_ID is not set");
+                return Err(anyhow::anyhow!("DISCORD_CLIENT_ID: {}", err));
             }
         };
 
         let oauth_client_secret = match env::var("DISCORD_CLIENT_SECRET") {
             Ok(secret) => secret,
-            Err(_) => {
-                error!(
-                    "DISCORD_CLIENT_SECRET environment variable not set - this is required for OAuth"
-                );
-                return Err(anyhow::anyhow!(
-                    "DISCORD_CLIENT_SECRET environment variable not set"
-                ));
+            Err(err) => {
+                error!("DISCORD_CLIENT_SECRET is not set");
+                return Err(anyhow::anyhow!("DISCORD_CLIENT_SECRET: {}", err));
             }
         };
 
@@ -132,40 +110,33 @@ impl Config {
             Ok(owner_str) => match owner_str.parse::<u64>() {
                 Ok(owner) => owner,
                 Err(e) => {
-                    error!(
-                        "BOT_OWNER has invalid format '{}': {}",
-                        owner_str, e
-                    );
-                    return Err(anyhow::anyhow!("Invalid BOT_OWNER format"));
+                    error!("invalid BOT_OWNER format '{}': {}", owner_str, e);
+                    return Err(anyhow::anyhow!("invalid BOT_OWNER format"));
                 }
             },
-            Err(_) => {
-                error!(
-                    "BOT_OWNER environment variable not set - this is required for feature requests"
-                );
-                return Err(anyhow::anyhow!(
-                    "BOT_OWNER environment variable not set"
-                ));
+            Err(err) => {
+                error!("BOT_OWNER is not set");
+                return Err(anyhow::anyhow!("BOT_OWNER: {}", err));
             }
         };
         let base_url = match env::var("BASE_URL") {
             Ok(url) => {
-                info!("Using custom BASE_URL: {}", url);
+                debug!("BASE_URL: {}", url);
                 url
             }
             Err(_) => {
-                info!("BASE_URL not set, using default: http://localhost:3000");
+                info!("BASE_URL not set, using http://localhost:3000");
                 "http://localhost:3000".to_string()
             }
         };
 
         let host = match env::var("HOST") {
             Ok(host) => {
-                info!("Using custom HOST: {}", host);
+                debug!("HOST: {}", host);
                 host
             }
             Err(_) => {
-                info!("HOST not set, using default: 127.0.0.1");
+                info!("HOST not set, using 127.0.0.1");
                 "127.0.0.1".to_string()
             }
         };
@@ -173,29 +144,26 @@ impl Config {
         let port = match env::var("PORT") {
             Ok(port_str) => match port_str.parse::<u16>() {
                 Ok(port) => {
-                    info!("Using custom PORT: {}", port);
+                    debug!("PORT: {}", port);
                     port
                 }
                 Err(e) => {
-                    warn!(
-                        "PORT '{}' has invalid format: {}. Using default port 3000",
-                        port_str, e
-                    );
+                    warn!("PORT '{}' invalid: {}, using 3000", port_str, e);
                     3000
                 }
             },
             Err(_) => {
-                info!("PORT not set, using default: 3000");
+                info!("PORT not set, using 3000");
                 3000
             }
         };
         let database_url = match env::var("DATABASE_URL") {
             Ok(url) => {
-                info!("Using custom DATABASE_URL: {}", url);
+                debug!("DATABASE_URL: {}", url);
                 url
             }
             Err(_) => {
-                info!("DATABASE_URL not set, using default: data/db.sqlite");
+                info!("DATABASE_URL not set, using data/db.sqlite");
                 "data/db.sqlite".to_string()
             }
         };
@@ -203,17 +171,20 @@ impl Config {
         let embed_default_color = match env::var("EMBED_DEFAULT_COLOR") {
             Ok(color_str) => {
                 let color_str = color_str.trim();
-                let parsed_color = if color_str.starts_with('#') {
-                    u32::from_str_radix(&color_str[1..], 16)
-                } else if color_str.starts_with("0x") || color_str.starts_with("0X") {
-                    u32::from_str_radix(&color_str[2..], 16)
+                let parsed_color = if let Some(hex) = color_str.strip_prefix('#') {
+                    u32::from_str_radix(hex, 16)
+                } else if let Some(hex) = color_str
+                    .strip_prefix("0x")
+                    .or_else(|| color_str.strip_prefix("0X"))
+                {
+                    u32::from_str_radix(hex, 16)
                 } else {
                     color_str.parse::<u32>()
                 };
 
                 match parsed_color {
                     Ok(color) => {
-                        info!("Using custom EMBED_DEFAULT_COLOR: {:#06X}", color);
+                        info!("EMBED_DEFAULT_COLOR: {:#06X}", color);
                         color
                     }
                     Err(_) => 0xFFFFFF,
@@ -234,7 +205,7 @@ impl Config {
             env::var("OPENAI_BASE_URL").unwrap_or_else(|_| "https://api.openai.com/v1".to_string());
 
         let openai_api_key = env::var("OPENAI_API_KEY").unwrap_or_else(|_| {
-            warn!("OPENAI_API_KEY not set - OpenAI integration will not work without an API key");
+            warn!("OPENAI_API_KEY not set");
             String::new()
         });
 
@@ -255,9 +226,8 @@ impl Config {
             .parse::<u64>()
             .unwrap_or(30);
 
-        let openai_system_prompt = env::var("OPENAI_SYSTEM_PROMPT").unwrap_or_else(|_| {
-            "You are a helpful Discord bot assistant. Respond concisely and friendly.".to_string()
-        });
+        let openai_system_prompt =
+            env::var("OPENAI_SYSTEM_PROMPT").unwrap_or_else(|_| "".to_string());
 
         let openai_stop = env::var("OPENAI_STOP").unwrap_or_else(|_| String::new());
 
@@ -358,19 +328,12 @@ impl Config {
 pub struct AppState {
     pub config: Arc<Config>,
     pub db: Arc<SqlitePool>,
-    #[allow(dead_code)]
-    pub cache: Arc<Cache>,
     pub http: Arc<Http>,
     pub openai_client: Option<crate::external::openai::OpenAIClient>,
 }
 
 impl AppState {
-    pub fn new(
-        config: Arc<Config>,
-        db: Arc<SqlitePool>,
-        cache: Arc<Cache>,
-        http: Arc<Http>,
-    ) -> Self {
+    pub fn new(config: Arc<Config>, db: Arc<SqlitePool>, http: Arc<Http>) -> Self {
         let openai_client = if config.openai.enabled {
             Some(crate::external::openai::OpenAIClient::new(
                 config.openai.base_url.clone(),
@@ -384,7 +347,6 @@ impl AppState {
         Self {
             config,
             db,
-            cache,
             http,
             openai_client,
         }

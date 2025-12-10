@@ -1,8 +1,9 @@
 use crate::config::AppState;
 use crate::database::mediaonly::MediaOnlyConfig;
+use crate::logging::{error, warn};
 use crate::utils::content_detection::has_allowed_content;
+use crate::utils::get_bot_channel_permissions;
 use poise::serenity_prelude as serenity;
-use tracing::{error, warn};
 
 /// Handle media-only channel message processing
 pub async fn handle_media_only_message(
@@ -33,44 +34,22 @@ pub async fn handle_media_only_message(
         Ok(Some(config)) if config.enabled => config,
         Ok(_) => return, // No config or disabled
         Err(e) => {
-            error!("Failed to fetch media-only config: {}", e);
+            error!("fetch media-only config: {}", e);
             return;
         }
     };
 
     // Check if bot has MANAGE_MESSAGES permission in this channel
-    let bot_member = match crate::web::get_bot_member_info(&ctx.http, guild_id).await {
-        Ok(member) => member,
-        Err(e) => {
-            warn!("Failed to get bot member info: {}", e);
+    let perms = match get_bot_channel_permissions(&ctx.http, guild_id, channel_id).await {
+        Some(p) => p,
+        None => {
+            warn!("get channel permissions for {}", channel_id);
             return;
         }
     };
 
-    let guild = match ctx.http.get_guild(guild_id).await {
-        Ok(guild) => guild,
-        Err(e) => {
-            warn!("Failed to get guild info: {}", e);
-            return;
-        }
-    };
-
-    let channel = match ctx.http.get_channel(channel_id).await {
-        Ok(serenity::Channel::Guild(channel)) => channel,
-        Ok(_) => {
-            warn!("Channel {} is not a guild channel", channel_id);
-            return;
-        }
-        Err(e) => {
-            warn!("Failed to get channel info: {}", e);
-            return;
-        }
-    };
-
-    let channel_permissions = guild.user_permissions_in(&channel, &bot_member);
-
-    if !channel_permissions.manage_messages() {
-        warn!("Bot lacks MANAGE_MESSAGES permission in channel {} for media-only enforcement", channel_id);
+    if !perms.permissions.manage_messages() {
+        warn!("no MANAGE_MESSAGES in channel {}", channel_id);
         return;
     }
 
@@ -98,14 +77,15 @@ pub async fn handle_media_only_message(
             Err(serenity::Error::Http(http_error)) => {
                 // Check if it's a "message not found" error (already deleted)
                 if let serenity::HttpError::UnsuccessfulRequest(error_response) = &http_error
-                    && error_response.status_code == 404 {
-                        // Message was already deleted, this is fine
-                        return;
-                    }
-                warn!("Failed to delete non-media message: {}", http_error);
+                    && error_response.status_code == 404
+                {
+                    // Message was already deleted, this is fine
+                    return;
+                }
+                warn!("delete non-media message: {}", http_error);
             }
             Err(e) => {
-                warn!("Failed to delete non-media message: {}", e);
+                warn!("delete non-media message: {}", e);
             }
         }
     });

@@ -120,7 +120,7 @@ pub async fn bot(ctx: Context<'_>) -> Result<(), Error> {
     let kernel_version = System::kernel_version().unwrap_or_else(|| "Unknown".to_string());
 
     let embed = CreateEmbed::new()
-        .title("🤖 system info")
+        .title("info")
         .description(format!(
             "<@{}> `{}`
             v{}",
@@ -129,7 +129,7 @@ pub async fn bot(ctx: Context<'_>) -> Result<(), Error> {
         .color(get_default_embed_color(ctx.data()))
         .thumbnail(bot_user.face())
         .field(
-            "⚡ performance",
+            "performance",
             format!(
                 "uptime: **`{}`**
                 api: **`{}ms`**
@@ -141,19 +141,19 @@ pub async fn bot(ctx: Context<'_>) -> Result<(), Error> {
             true,
         )
         .field(
-            "📊 discord stats",
+            "discord stats",
             format!(
                 "servers: **`{}`**
-                **🗃️ cached:**
+                **cached:**
                 users: **`{}`**
                 channels: **`{}`**",
                 guild_count, cached_users, cached_channels
             ),
             true,
         )
-        .field("🗄️ database", db_stats, true)
+        .field("database", db_stats, true)
         .field(
-            "⚙️ CPU",
+            "CPU",
             format!(
                 "usage: **{:.1}%**
                 cores: **`{}`**
@@ -165,7 +165,7 @@ pub async fn bot(ctx: Context<'_>) -> Result<(), Error> {
             true,
         )
         .field(
-            "💾 memory",
+            "memory",
             format!(
                 "used: **{:.1}% ({}MB)**
                 free: **{:.3}MB**
@@ -175,7 +175,7 @@ pub async fn bot(ctx: Context<'_>) -> Result<(), Error> {
             true,
         )
         .field(
-            "🖥️ system",
+            "system",
             format!(
                 "**`{}`**
                 **`{}`**
@@ -185,7 +185,7 @@ pub async fn bot(ctx: Context<'_>) -> Result<(), Error> {
             true,
         )
         .field(
-            "📦 build info",
+            "build",
             format!(
                 "**Rust** (Serenity + Poise)
                 arch: **`{}`**",
@@ -194,9 +194,9 @@ pub async fn bot(ctx: Context<'_>) -> Result<(), Error> {
             true,
         )
         .field(
-            "👨‍💻 vibecoder",
-            "the retard in question: **[uwuclxdy](https://github.com/uwuclxdy)**
-            ts bot is FOSS btw: **[clouder](https://github.com/uwuclxdy/clouder)**
+            "vibecoder",
+            "**[uwuclxdy](https://github.com/uwuclxdy)**
+            bot is FOSS btw: **[clouder](https://github.com/uwuclxdy/clouder)**
             **Claude 4 Sonnet <3**",
             true,
         )
@@ -213,7 +213,7 @@ pub async fn server(ctx: Context<'_>) -> Result<(), Error> {
         None => {
             ctx.send(
                 poise::CreateReply::default()
-                    .content("❌ this command can only be used in a server!")
+                    .content("this command can only be used in a server!")
                     .ephemeral(true),
             )
             .await?;
@@ -228,7 +228,7 @@ pub async fn server(ctx: Context<'_>) -> Result<(), Error> {
             Err(_) => {
                 ctx.send(
                     poise::CreateReply::default()
-                        .content("❌ failed to fetch server info!")
+                        .content("could not fetch server info")
                         .ephemeral(true),
                 )
                 .await?;
@@ -248,11 +248,7 @@ pub async fn server(ctx: Context<'_>) -> Result<(), Error> {
     let created_at = guild_id.created_at();
     let created_timestamp = format!("<t:{}:F>", created_at.timestamp());
 
-    let channels = if let Ok(channels) = full_guild.channels(&ctx.http()).await {
-        channels
-    } else {
-        std::collections::HashMap::new()
-    };
+    let channels = full_guild.channels(&ctx.http()).await.unwrap_or_default();
 
     let text_channels = channels
         .values()
@@ -310,88 +306,85 @@ pub async fn server(ctx: Context<'_>) -> Result<(), Error> {
     let mut features = Vec::new();
     for feature in &full_guild.features {
         let feature_str = match feature.as_str() {
-            "COMMUNITY" => "🏛️ Community",
-            "PARTNERED" => "🤝 Partnered",
-            "VERIFIED" => "✅ Verified",
-            "DISCOVERABLE" => "🔍 Discoverable",
-            "VANITY_URL" => "🔗 Vanity URL",
-            "BANNER" => "🖼️ Banner",
-            "ANIMATED_BANNER" => "🎬 Animated Banner",
-            "INVITE_SPLASH" => "🌊 Invite Splash",
-            "VIP_REGIONS" => "👑 VIP Voice Regions",
-            "WELCOME_SCREEN_ENABLED" => "👋 Welcome Screen",
-            "THREADS_ENABLED" => "🧵 Threads",
-            "PRIVATE_THREADS" => "🔒 Private Threads",
-            "ROLE_ICONS" => "🏷️ Role Icons",
-            "NEWS" => "📰 News Channels",
-            "PUBLIC" => "🌐 Public",
-            "MONETIZATION_ENABLED" => "💰 Monetized",
+            "COMMUNITY" => "Community",
+            "PARTNERED" => "Partnered",
+            "VERIFIED" => "Verified",
+            "DISCOVERABLE" => "Discoverable",
+            "VANITY_URL" => "Vanity URL",
+            "BANNER" => "Banner",
+            "ANIMATED_BANNER" => "Animated Banner",
+            "INVITE_SPLASH" => "Invite Splash",
+            "VIP_REGIONS" => "VIP Voice Regions",
+            "WELCOME_SCREEN_ENABLED" => "Welcome Screen",
+            "THREADS_ENABLED" => "Threads",
+            "PRIVATE_THREADS" => "Private Threads",
+            "ROLE_ICONS" => "Role Icons",
+            "NEWS" => "News Channels",
+            "PUBLIC" => "Public",
+            "MONETIZATION_ENABLED" => "Monetized",
             _ => continue,
         };
         features.push(feature_str);
     }
 
     let mut embed = CreateEmbed::new()
-        .title(format!("📊 `{}` info", full_guild.name))
+        .title(format!("`{}` info", full_guild.name))
         .color(get_default_embed_color(ctx.data()))
-        .field("👥 members", format!("**`{member_count}`**"), true);
+        .field("members", format!("**`{member_count}`**"), true);
 
     if let Some(approximate_presence_count) = full_guild.approximate_presence_count {
         embed = embed.field(
-            "🟢 online",
+            "online",
             format!("**~`{}`**", approximate_presence_count),
             true,
         );
     }
 
     if let Some(description) = &full_guild.description
-        && !description.is_empty() {
-            embed = embed.field("📝 description", format!("*{}*", description), false);
-        }
+        && !description.is_empty()
+    {
+        embed = embed.field("description", format!("*{}*", description), false);
+    }
 
     let channel_breakdown = if stage_channels > 0 || forum_channels > 0 {
         format!(
-            "**`{total_channels}`** total\n📝 **`{text_channels}`** text\n🔊 **`{voice_channels}`** voice\n🎙️ **`{stage_channels}`** stage\n💬 **`{forum_channels}`** forum\n📁 **`{category_channels}`** categories"
+            "**`{total_channels}`** total\n**`{text_channels}`** text\n**`{voice_channels}`** voice\n**`{stage_channels}`** stage\n**`{forum_channels}`** forum\n**`{category_channels}`** categories"
         )
     } else {
         format!(
-            "**`{total_channels}`** total\n📝 **`{text_channels}`** text\n🔊 **`{voice_channels}`** voice\n📁 **`{category_channels}`** categories"
+            "**`{total_channels}`** total\n**`{text_channels}`** text\n**`{voice_channels}`** voice\n**`{category_channels}`** categories"
         )
     };
 
-    embed = embed.field("💬 channels", channel_breakdown, true).field(
-        "🎭 roles",
+    embed = embed.field("channels", channel_breakdown, true).field(
+        "roles",
         format!("**`{role_count}`**"),
         true,
     );
 
     if emoji_count > 0 || sticker_count > 0 {
         embed = embed.field(
-            "😀 emojis & stickers",
+            "emojis & stickers",
             format!("emojis: **`{emoji_count}`**\nstickers: **`{sticker_count}`**"),
             true,
         );
     }
 
     embed = embed
-        .field("👑 owner", owner, false)
-        .field("📅 created", created_timestamp, false)
+        .field("owner", owner, false)
+        .field("created", created_timestamp, false)
         .field(
-            "🚀 boost level",
+            "boost level",
             format!("boosts: **`{boost_count}`**\nlevel: **`{boost_level}`**"),
             true,
         );
 
     if let Some(vanity_url) = &full_guild.vanity_url_code {
-        embed = embed.field(
-            "🔗 vanity url",
-            format!("**discord.gg/{}**", vanity_url),
-            true,
-        );
+        embed = embed.field("vanity url", format!("**discord.gg/{}**", vanity_url), true);
     }
 
     embed = embed.field(
-        "🛡️ security",
+        "security",
         format!(
             "verification: **{}**\nfilter: **{}**\nnotifications: **{}**",
             verification_level, explicit_filter, notification_level
@@ -400,20 +393,20 @@ pub async fn server(ctx: Context<'_>) -> Result<(), Error> {
     );
 
     if !features.is_empty() && features.len() <= 6 {
-        embed = embed.field("✨ features", features.join(" "), false);
+        embed = embed.field("features", features.join(" "), false);
     }
 
     if let Some(max_members) = full_guild.max_members {
-        embed = embed.field("👥 max members", format!("**`{}`**", max_members), true);
+        embed = embed.field("max members", format!("**`{}`**", max_members), true);
     }
 
     if let Some(max_presences) = full_guild.max_presences {
-        embed = embed.field("🟢 max presences", format!("**`{}`**", max_presences), true);
+        embed = embed.field("max presences", format!("**`{}`**", max_presences), true);
     }
 
     if let Some(max_video_channel_users) = full_guild.max_video_channel_users {
         embed = embed.field(
-            "🎥 max video users",
+            "max video users",
             format!("**`{}`**", max_video_channel_users),
             true,
         );
@@ -421,34 +414,27 @@ pub async fn server(ctx: Context<'_>) -> Result<(), Error> {
 
     if let Some(max_stage_video_channel_users) = full_guild.max_stage_video_channel_users {
         embed = embed.field(
-            "🎤 max stage users",
+            "max stage users",
             format!("**`{}`**", max_stage_video_channel_users),
             true,
         );
     }
 
     if let Some(widget_enabled) = full_guild.widget_enabled
-        && widget_enabled {
-            embed = embed.field("🛠️ widget enabled", "**yes**", true);
-            if let Some(widget_channel_id) = full_guild.widget_channel_id {
-                embed = embed.field(
-                    "🛠️ widget channel",
-                    format!("<#{}>", widget_channel_id),
-                    true,
-                );
-            }
+        && widget_enabled
+    {
+        embed = embed.field("widget enabled", "**yes**", true);
+        if let Some(widget_channel_id) = full_guild.widget_channel_id {
+            embed = embed.field("widget channel", format!("<#{}>", widget_channel_id), true);
         }
+    }
 
     if let Some(application_id) = full_guild.application_id {
-        embed = embed.field("🤖 created by app", format!("`{}`", application_id), true);
+        embed = embed.field("created by app", format!("`{}`", application_id), true);
     }
 
     if let Some(system_channel_id) = full_guild.system_channel_id {
-        embed = embed.field(
-            "📨 system channel",
-            format!("<#{}>", system_channel_id),
-            true,
-        );
+        embed = embed.field("system channel", format!("<#{}>", system_channel_id), true);
 
         let system_flags = full_guild.system_channel_flags;
         let mut suppressed = Vec::new();
@@ -478,17 +464,17 @@ pub async fn server(ctx: Context<'_>) -> Result<(), Error> {
         }
 
         if !suppressed.is_empty() {
-            embed = embed.field("🔇 suppressed", suppressed.join(", "), true);
+            embed = embed.field("suppressed", suppressed.join(", "), true);
         }
     }
 
     if let Some(rules_channel_id) = full_guild.rules_channel_id {
-        embed = embed.field("📜 rules channel", format!("<#{}>", rules_channel_id), true);
+        embed = embed.field("rules channel", format!("<#{}>", rules_channel_id), true);
     }
 
     if let Some(public_updates_channel_id) = full_guild.public_updates_channel_id {
         embed = embed.field(
-            "📢 updates channel",
+            "updates channel",
             format!("<#{}>", public_updates_channel_id),
             true,
         );
@@ -499,7 +485,7 @@ pub async fn server(ctx: Context<'_>) -> Result<(), Error> {
         serenity::MfaLevel::Elevated => "Elevated (2FA required)",
         _ => "Unknown",
     };
-    embed = embed.field("🔐 2FA requirement", format!("**{}**", mfa_level), true);
+    embed = embed.field("2FA requirement", format!("**{}**", mfa_level), true);
 
     let nsfw_level = match full_guild.nsfw_level {
         serenity::NsfwLevel::Default => "Default",
@@ -508,23 +494,23 @@ pub async fn server(ctx: Context<'_>) -> Result<(), Error> {
         serenity::NsfwLevel::AgeRestricted => "Age Restricted",
         _ => "Unknown",
     };
-    embed = embed.field("🔞 NSFW level", format!("**{}**", nsfw_level), true);
+    embed = embed.field("NSFW level", format!("**{}**", nsfw_level), true);
 
     embed = embed.field(
-        "🌍 locale",
+        "locale",
         format!("**`{}`**", full_guild.preferred_locale),
         true,
     );
 
     if full_guild.premium_progress_bar_enabled {
-        embed = embed.field("🟣 progress bar", "**enabled**", true);
+        embed = embed.field("progress bar", "**enabled**", true);
     }
 
-    embed = embed.field("🏷️ server id", format!("**`{guild_id}`**"), true);
+    embed = embed.field("server id", format!("**`{guild_id}`**"), true);
 
     if let Some(afk_metadata) = &full_guild.afk_metadata {
         embed = embed.field(
-            "😴 AFK channel",
+            "AFK channel",
             format!("<#{}>", afk_metadata.afk_channel_id),
             true,
         );
@@ -537,23 +523,16 @@ pub async fn server(ctx: Context<'_>) -> Result<(), Error> {
             _ => 0,
         };
         if timeout_secs > 0 {
-            embed = embed.field(
-                "⏱️ AFK timeout",
-                format!("**{}min**", timeout_secs / 60),
-                true,
-            );
+            embed = embed.field("AFK timeout", format!("**{}min**", timeout_secs / 60), true);
         }
     }
 
     if let Some(welcome_screen) = &full_guild.welcome_screen
         && let Some(description) = &welcome_screen.description
-            && !description.is_empty() {
-                embed = embed.field(
-                    "👋 welcome description",
-                    format!("*{}*", description),
-                    false,
-                );
-            }
+        && !description.is_empty()
+    {
+        embed = embed.field("welcome description", format!("*{}*", description), false);
+    }
 
     if let Some(discovery_splash) = &full_guild.discovery_splash {
         let discovery_splash_url = format!(
@@ -561,7 +540,7 @@ pub async fn server(ctx: Context<'_>) -> Result<(), Error> {
             guild_id, discovery_splash
         );
         embed = embed.field(
-            "🔍 discovery splash",
+            "discovery splash",
             format!("[View Image]({})", discovery_splash_url),
             true,
         );
@@ -573,14 +552,14 @@ pub async fn server(ctx: Context<'_>) -> Result<(), Error> {
             guild_id, splash
         );
         embed = embed.field(
-            "🌊 invite splash",
+            "invite splash",
             format!("[View Image]({})", splash_url),
             true,
         );
     }
 
     if let Some(icon_hash) = &full_guild.icon_hash {
-        embed = embed.field("🆔 icon hash", format!("`{}`", icon_hash), true);
+        embed = embed.field("icon hash", format!("`{}`", icon_hash), true);
     }
 
     if let Some(icon_url) = full_guild.icon_url() {
@@ -631,50 +610,47 @@ pub async fn user(
 
     let mut embed = CreateEmbed::new()
         .color(get_default_embed_color(ctx.data()))
-        .title(format!("👤 `{}` info", target_user.tag()))
-        .description(format!(
-            "<@{}> `{}`",
-            target_user.id,
-            target_user.id
-        ))
-        .field("✍️ display name", display_name, true)
-        .field("📅 account created", account_age, false);
+        .title(format!("`{}` info", target_user.tag()))
+        .description(format!("<@{}> `{}`", target_user.id, target_user.id))
+        .field("display name", display_name, true)
+        .field("account created", account_age, false);
 
     if let Some(discriminator) = target_user.discriminator {
         embed = embed.field(
-            "🏷️ discriminator",
+            "discriminator",
             format!("**`#{:04}`**", discriminator),
             true,
         );
     }
 
     if target_user.bot {
-        embed = embed.field("🤖 bot", "yes", true);
+        embed = embed.field("bot", "yes", true);
     }
 
     if target_user.system {
-        embed = embed.field("⚙️ system user", "yes", true);
+        embed = embed.field("system user", "yes", true);
     }
 
     if let Some(locale) = &full_user.locale {
-        embed = embed.field("🌍 locale", format!("**`{}`**", locale), true);
+        embed = embed.field("locale", format!("**`{}`**", locale), true);
     }
 
     if let Some(verified) = full_user.verified {
         embed = embed.field(
-            "✅ email verified",
+            "email verified",
             if verified { "**yes**" } else { "**no**" },
             true,
         );
     }
 
     if let Some(email) = &full_user.email
-        && !email.is_empty() {
-            embed = embed.field("📧 email", format!("**`{}`**", email), true);
-        }
+        && !email.is_empty()
+    {
+        embed = embed.field("email", format!("**`{}`**", email), true);
+    }
 
     if full_user.mfa_enabled {
-        embed = embed.field("🔐 2FA enabled", "**yes**", true);
+        embed = embed.field("2FA enabled", "**yes**", true);
     }
 
     let flags = full_user.flags;
@@ -682,29 +658,29 @@ pub async fn user(
         let mut private_flags = Vec::new();
 
         if flags.contains(serenity::UserPublicFlags::DISCORD_EMPLOYEE) {
-            private_flags.push("🛡️ Staff");
+            private_flags.push("Staff");
         }
         if flags.contains(serenity::UserPublicFlags::PARTNERED_SERVER_OWNER) {
-            private_flags.push("🤝 Partner");
+            private_flags.push("Partner");
         }
         if flags.contains(serenity::UserPublicFlags::HYPESQUAD_EVENTS) {
-            private_flags.push("⚡ HypeSquad");
+            private_flags.push("HypeSquad");
         }
         if flags.contains(serenity::UserPublicFlags::BUG_HUNTER_LEVEL_1) {
-            private_flags.push("🐛 Bug Hunter L1");
+            private_flags.push("Bug Hunter L1");
         }
         if flags.contains(serenity::UserPublicFlags::BUG_HUNTER_LEVEL_2) {
-            private_flags.push("🐛 Bug Hunter L2");
+            private_flags.push("Bug Hunter L2");
         }
         if flags.contains(serenity::UserPublicFlags::EARLY_VERIFIED_BOT_DEVELOPER) {
-            private_flags.push("🔧 Verified Dev");
+            private_flags.push("Verified Dev");
         }
         if flags.contains(serenity::UserPublicFlags::DISCORD_CERTIFIED_MODERATOR) {
-            private_flags.push("🛡️ Cert. Mod");
+            private_flags.push("Cert. Mod");
         }
 
         if !private_flags.is_empty() {
-            embed = embed.field("🔒 user flags", private_flags.join(" "), false);
+            embed = embed.field("user flags", private_flags.join(" "), false);
         }
     }
 
@@ -712,58 +688,58 @@ pub async fn user(
     let mut badges = Vec::new();
 
     if user_flags.contains(serenity::UserPublicFlags::DISCORD_EMPLOYEE) {
-        badges.push("🛡️ Staff");
+        badges.push("Staff");
     }
     if user_flags.contains(serenity::UserPublicFlags::PARTNERED_SERVER_OWNER) {
-        badges.push("🤝 Partner");
+        badges.push("Partner");
     }
     if user_flags.contains(serenity::UserPublicFlags::HYPESQUAD_EVENTS) {
-        badges.push("⚡ HypeSquad Events");
+        badges.push("HypeSquad Events");
     }
     if user_flags.contains(serenity::UserPublicFlags::BUG_HUNTER_LEVEL_1) {
-        badges.push("🐛 Bug Hunter");
+        badges.push("Bug Hunter");
     }
     if user_flags.contains(serenity::UserPublicFlags::BUG_HUNTER_LEVEL_2) {
-        badges.push("🐛 Bug Hunter Gold");
+        badges.push("Bug Hunter Gold");
     }
     if user_flags.contains(serenity::UserPublicFlags::HOUSE_BRAVERY) {
-        badges.push("🦁 HypeSquad Bravery");
+        badges.push("HypeSquad Bravery");
     }
     if user_flags.contains(serenity::UserPublicFlags::HOUSE_BRILLIANCE) {
-        badges.push("💎 HypeSquad Brilliance");
+        badges.push("HypeSquad Brilliance");
     }
     if user_flags.contains(serenity::UserPublicFlags::HOUSE_BALANCE) {
-        badges.push("⚖️ HypeSquad Balance");
+        badges.push("HypeSquad Balance");
     }
     if user_flags.contains(serenity::UserPublicFlags::EARLY_SUPPORTER) {
-        badges.push("🎉 Early Supporter");
+        badges.push("Early Supporter");
     }
     if user_flags.contains(serenity::UserPublicFlags::EARLY_VERIFIED_BOT_DEVELOPER) {
-        badges.push("🔧 Verified Bot Developer");
+        badges.push("Verified Bot Developer");
     }
     if user_flags.contains(serenity::UserPublicFlags::DISCORD_CERTIFIED_MODERATOR) {
-        badges.push("🛡️ Certified Moderator");
+        badges.push("Certified Moderator");
     }
     if user_flags.contains(serenity::UserPublicFlags::ACTIVE_DEVELOPER) {
-        badges.push("⚡ Active Developer");
+        badges.push("Active Developer");
     }
 
     if !badges.is_empty() {
-        embed = embed.field("🏆 badges", badges.join(" "), false);
+        embed = embed.field("badges", badges.join(" "), false);
     }
 
     if full_user.premium_type != serenity::PremiumType::None {
         let nitro_type = match full_user.premium_type {
-            serenity::PremiumType::Nitro => "💎 Discord Nitro",
-            serenity::PremiumType::NitroClassic => "💎 Discord Nitro Classic",
-            _ => "💎 Premium",
+            serenity::PremiumType::Nitro => "Discord Nitro",
+            serenity::PremiumType::NitroClassic => "Discord Nitro Classic",
+            _ => "Premium",
         };
-        embed = embed.field("💎 subscription", nitro_type, true);
+        embed = embed.field("subscription", nitro_type, true);
     }
 
     if let Some(accent_color) = full_user.accent_colour {
         let color_hex = format!("#{:06X}", accent_color.0);
-        embed = embed.field("🎨 accent color", format!("**`{}`**", color_hex), true);
+        embed = embed.field("accent color", format!("**`{}`**", color_hex), true);
     }
 
     if let Some(member) = member_info {
@@ -773,7 +749,7 @@ pub async fn user(
                 joined_at.timestamp(),
                 joined_at.timestamp()
             );
-            embed = embed.field("📥 joined server", join_info, false);
+            embed = embed.field("joined server", join_info, false);
         }
 
         let roles: Vec<String> = member
@@ -793,40 +769,41 @@ pub async fn user(
 
         if !roles.is_empty() {
             let roles_text = roles.join(" ");
-            embed = embed.field(format!("🎭 roles: `{}`", roles.len()), roles_text, false);
+            embed = embed.field(format!("roles: `{}`", roles.len()), roles_text, false);
         }
 
         if let Some(premium_since) = member.premium_since {
             embed = embed.field(
-                "💎 boosting",
+                "boosting",
                 format!("since <t:{}:R>", premium_since.timestamp()),
                 true,
             );
         }
 
         if let Some(timed_out_until) = member.communication_disabled_until
-            && timed_out_until > serenity::Timestamp::now() {
-                embed = embed.field(
-                    "⏰ timed out",
-                    format!("until <t:{}:R>", timed_out_until.timestamp()),
-                    true,
-                );
-            }
+            && timed_out_until > serenity::Timestamp::now()
+        {
+            embed = embed.field(
+                "timed out",
+                format!("until <t:{}:R>", timed_out_until.timestamp()),
+                true,
+            );
+        }
 
         if let Some(nick) = &member.nick {
-            embed = embed.field("📝 server nickname", format!("**`{}`**", nick), true);
+            embed = embed.field("nickname", format!("**`{}`**", nick), true);
         }
 
         if member.pending {
-            embed = embed.field("⏳ membership pending", "yes", true);
+            embed = embed.field("membership pending", "yes", true);
         }
 
         if member.deaf {
-            embed = embed.field("🔇 server deafened", "yes", true);
+            embed = embed.field("server deafened", "yes", true);
         }
 
         if member.mute {
-            embed = embed.field("🔇 server muted", "yes", true);
+            embed = embed.field("server muted", "yes", true);
         }
 
         if let Some(avatar) = &member.avatar {
@@ -837,14 +814,14 @@ pub async fn user(
                 avatar
             );
             embed = embed.field(
-                "🖼️ server avatar",
+                "server avatar",
                 format!("[View Avatar]({})", server_avatar_url),
                 true,
             );
         }
     }
 
-    embed = embed.field("🏷️ user id", format!("`{}`", target_user.id), true);
+    embed = embed.field("user id", format!("`{}`", target_user.id), true);
 
     embed = embed.thumbnail(target_user.face());
 
@@ -866,7 +843,7 @@ pub async fn role(
     if ctx.guild_id().is_none() {
         ctx.send(
             poise::CreateReply::default()
-                .content("❌ this command can only be used in a server!")
+                .content("this command can only be used in a server!")
                 .ephemeral(true),
         )
         .await?;
@@ -896,46 +873,46 @@ pub async fn role(
         let mut perms = Vec::new();
 
         if role.permissions.administrator() {
-            perms.push("👑 Administrator");
+            perms.push("Administrator");
         } else {
             if role.permissions.manage_guild() {
-                perms.push("⚙️ Manage Server");
+                perms.push("Manage Server");
             }
             if role.permissions.manage_roles() {
-                perms.push("🎭 Manage Roles");
+                perms.push("Manage Roles");
             }
             if role.permissions.manage_channels() {
-                perms.push("💬 Manage Channels");
+                perms.push("Manage Channels");
             }
             if role.permissions.kick_members() {
-                perms.push("🦶 Kick Members");
+                perms.push("Kick Members");
             }
             if role.permissions.ban_members() {
-                perms.push("🔨 Ban Members");
+                perms.push("Ban Members");
             }
             if role.permissions.moderate_members() {
-                perms.push("⏰ Timeout Members");
+                perms.push("Timeout Members");
             }
             if role.permissions.manage_messages() {
-                perms.push("🗑️ Manage Messages");
+                perms.push("Manage Messages");
             }
             if role.permissions.mention_everyone() {
-                perms.push("📢 Mention Everyone");
+                perms.push("Mention Everyone");
             }
             if role.permissions.view_audit_log() {
-                perms.push("📋 View Audit Log");
+                perms.push("View Audit Log");
             }
             if role.permissions.manage_webhooks() {
-                perms.push("🔗 Manage Webhooks");
+                perms.push("Manage Webhooks");
             }
             if role.permissions.manage_guild_expressions() {
-                perms.push("😀 Manage Emojis");
+                perms.push("Manage Emojis");
             }
             if role.permissions.create_instant_invite() {
-                perms.push("📎 Create Invites");
+                perms.push("Create Invites");
             }
             if role.permissions.manage_events() {
-                perms.push("📅 Manage Events");
+                perms.push("Manage Events");
             }
         }
 
@@ -951,46 +928,46 @@ pub async fn role(
     let role_type = if role.managed {
         let tags = &role.tags;
         if tags.bot_id.is_some() {
-            "🤖 Bot Role"
+            "Bot Role"
         } else if tags.integration_id.is_some() {
-            "🔗 Integration Role"
+            "Integration Role"
         } else if tags.premium_subscriber {
-            "💎 Booster Role"
+            "Booster Role"
         } else if tags.subscription_listing_id.is_some() {
-            "💰 Subscription Role"
+            "Subscription Role"
         } else if tags.available_for_purchase {
-            "🛒 Purchasable Role"
+            "Purchasable Role"
         } else if tags.guild_connections {
-            "🔗 Linked Role"
+            "Linked Role"
         } else {
-            "⚙️ Managed Role"
+            "Managed Role"
         }
     } else {
-        "👤 Regular Role"
+        "Regular Role"
     };
 
     let mut embed = CreateEmbed::new()
-        .title(format!("🎭 `{}` info", role.name))
+        .title(format!("`{}` info", role.name))
         .description(format!("<@&{}> `{}`", role.id, role.id))
         .color(role.colour)
-        .field("👥 members", format!("**`{}`**", member_count), true)
-        .field("📍 position", format!("**`{}`**", role.position), true)
-        .field("🏷️ type", role_type, true)
-        .field("📅 created", created_timestamp, false);
+        .field("members", format!("**`{}`**", member_count), true)
+        .field("position", format!("**`{}`**", role.position), true)
+        .field("type", role_type, true)
+        .field("created", created_timestamp, false);
 
     if role.hoist {
-        embed = embed.field("📋 displayed separately", "**yes**", true);
+        embed = embed.field("displayed separately", "**yes**", true);
     } else {
-        embed = embed.field("📋 displayed separately", "**no**", true);
+        embed = embed.field("displayed separately", "**no**", true);
     }
 
     if role.mentionable {
-        embed = embed.field("📢 mentionable", "**yes**", true);
+        embed = embed.field("mentionable", "**yes**", true);
     }
 
     if role.colour != serenity::Colour::default() {
         let color_hex = format!("#{:06X}", role.colour.0);
-        embed = embed.field("🎨 color", format!("**`{}`**", color_hex), true);
+        embed = embed.field("color", format!("**`{}`**", color_hex), true);
     }
 
     if let Some(icon) = &role.icon {
@@ -1002,35 +979,35 @@ pub async fn role(
     }
 
     if let Some(emoji) = &role.unicode_emoji {
-        embed = embed.field("😀 emoji", emoji, true);
+        embed = embed.field("emoji", emoji, true);
     }
 
     let tags = &role.tags;
     if let Some(bot_id) = tags.bot_id {
-        embed = embed.field("🤖 bot", format!("<@{}>", bot_id), true);
+        embed = embed.field("bot", format!("<@{}>", bot_id), true);
     }
 
     if let Some(integration_id) = tags.integration_id {
-        embed = embed.field("🔗 integration id", format!("`{}`", integration_id), true);
+        embed = embed.field("integration id", format!("`{}`", integration_id), true);
     }
 
     if let Some(subscription_id) = tags.subscription_listing_id {
-        embed = embed.field("💰 subscription id", format!("`{}`", subscription_id), true);
+        embed = embed.field("subscription id", format!("`{}`", subscription_id), true);
     }
 
     if tags.available_for_purchase {
-        embed = embed.field("🛒 available for purchase", "**yes**", true);
+        embed = embed.field("available for purchase", "**yes**", true);
     }
 
     if tags.guild_connections {
-        embed = embed.field("🔗 linked role", "**yes**", true);
+        embed = embed.field("linked role", "**yes**", true);
     }
 
-    embed = embed.field("🔐 key permissions", permissions_list, false);
+    embed = embed.field("key permissions", permissions_list, false);
 
-    embed = embed.field("🏷️ role id", format!("`{}`", role.id), true);
+    embed = embed.field("role id", format!("`{}`", role.id), true);
 
-    embed = embed.field("🏰 guild id", format!("`{}`", role.guild_id), true);
+    embed = embed.field("guild id", format!("`{}`", role.guild_id), true);
 
     embed = embed.timestamp(serenity::Timestamp::now());
 
@@ -1060,7 +1037,7 @@ pub async fn channel(
             _ => {
                 ctx.send(
                     poise::CreateReply::default()
-                        .content("❌ could not get channel information!")
+                        .content("could not get channel information!")
                         .ephemeral(true),
                 )
                 .await?;
@@ -1077,86 +1054,72 @@ pub async fn channel(
     );
 
     let channel_type = match target_channel.kind {
-        serenity::ChannelType::Text => "📝 Text Channel",
-        serenity::ChannelType::Voice => "🔊 Voice Channel",
-        serenity::ChannelType::Category => "📁 Category",
-        serenity::ChannelType::News => "📰 Announcement Channel",
-        serenity::ChannelType::Stage => "🎙️ Stage Channel",
-        serenity::ChannelType::Forum => "💬 Forum Channel",
-        serenity::ChannelType::PublicThread => "🧵 Public Thread",
-        serenity::ChannelType::PrivateThread => "🔒 Private Thread",
-        serenity::ChannelType::NewsThread => "📰 News Thread",
-        _ => "❓ Unknown Channel Type",
+        serenity::ChannelType::Text => "text channel",
+        serenity::ChannelType::Voice => "voice channel",
+        serenity::ChannelType::Category => "category",
+        serenity::ChannelType::News => "announcement channel",
+        serenity::ChannelType::Stage => "stage channel",
+        serenity::ChannelType::Forum => "forum channel",
+        serenity::ChannelType::PublicThread => "public thread",
+        serenity::ChannelType::PrivateThread => "private thread",
+        serenity::ChannelType::NewsThread => "news thread",
+        _ => "unknown channel type",
     };
 
     let mut embed = CreateEmbed::new()
-        .title(format!(
-            "{} `{}` info",
-            match target_channel.kind {
-                serenity::ChannelType::Text => "📝",
-                serenity::ChannelType::Voice => "🔊",
-                serenity::ChannelType::Category => "📁",
-                serenity::ChannelType::News => "📰",
-                serenity::ChannelType::Stage => "🎙️",
-                serenity::ChannelType::Forum => "💬",
-                _ => "💬",
-            },
-            target_channel.name
-        ))
+        .title(format!("`{}` info", target_channel.name))
         .description(format!("<#{}> `{}`", target_channel.id, target_channel.id))
         .color(get_default_embed_color(ctx.data()))
-        .field("🏷️ type", channel_type, true)
+        .field("type", channel_type, true)
         .field(
-            "📍 position",
+            "position",
             format!("**`{}`**", target_channel.position),
             true,
         )
-        .field("📅 created", created_timestamp, false);
+        .field("created", created_timestamp, false);
 
-    embed = embed.field(
-        "🏰 guild id",
-        format!("`{}`", target_channel.guild_id),
-        true,
-    );
+    embed = embed.field("guild id", format!("`{}`", target_channel.guild_id), true);
 
     if let Some(topic) = &target_channel.topic
-        && !topic.is_empty() {
-            let display_topic = if topic.len() > 100 {
-                format!("{}...", &topic[..97])
-            } else {
-                topic.clone()
-            };
-            embed = embed.field("📋 description", format!("*{}*", display_topic), false);
-        }
+        && !topic.is_empty()
+    {
+        let display_topic = if topic.len() > 100 {
+            format!("{}...", &topic[..97])
+        } else {
+            topic.clone()
+        };
+        embed = embed.field("description", format!("*{}*", display_topic), false);
+    }
 
     if let Some(parent_id) = target_channel.parent_id {
         if let Ok(parent) = parent_id.to_channel(&ctx.http()).await {
             if let serenity::Channel::Guild(parent_channel) = parent {
                 embed = embed.field(
-                    "📁 category",
+                    "category",
                     format!("`{}`\n**{}**", parent_channel.id, parent_channel.name),
                     true,
                 );
             }
         } else {
-            embed = embed.field("📁 parent channel", format!("<#{}>", parent_id), true);
+            embed = embed.field("parent channel", format!("<#{}>", parent_id), true);
         }
     }
 
     if target_channel.nsfw {
-        embed = embed.field("🔞 NSFW", "**yes**", true);
+        embed = embed.field("NSFW", "**yes**", true);
     }
 
     match target_channel.kind {
         serenity::ChannelType::Text | serenity::ChannelType::News => {
             if let Some(slowmode) = target_channel.rate_limit_per_user
-                && slowmode > 0 {
-                    embed = embed.field("⏰ slowmode", format!("**{}s**", slowmode), true);
-                }
+                && slowmode > 0
+            {
+                embed = embed.field("slowmode", format!("**{}s**", slowmode), true);
+            }
 
             if let Some(last_message_id) = target_channel.last_message_id {
                 embed = embed.field(
-                    "💬 last message",
+                    "last message",
                     format!("<t:{}:R>", last_message_id.created_at().timestamp()),
                     true,
                 );
@@ -1164,7 +1127,7 @@ pub async fn channel(
 
             if let Some(last_pin_timestamp) = target_channel.last_pin_timestamp {
                 embed = embed.field(
-                    "📌 last pin",
+                    "last pin",
                     format!("<t:{}:R>", last_pin_timestamp.timestamp()),
                     true,
                 );
@@ -1180,24 +1143,24 @@ pub async fn channel(
                     serenity::AutoArchiveDuration::OneWeek => "1 week",
                     _ => "custom",
                 };
-                embed = embed.field("🗓️ auto archive", format!("**{}**", duration), true);
+                embed = embed.field("auto archive", format!("**{}**", duration), true);
             }
         }
         serenity::ChannelType::Voice | serenity::ChannelType::Stage => {
             if let Some(bitrate) = target_channel.bitrate {
-                embed = embed.field("🎵 bitrate", format!("**{}kbps**", bitrate / 1000), true);
+                embed = embed.field("bitrate", format!("**{}kbps**", bitrate / 1000), true);
             }
 
             if let Some(user_limit) = target_channel.user_limit {
                 if user_limit > 0 {
-                    embed = embed.field("👥 user limit", format!("**{}**", user_limit), true);
+                    embed = embed.field("user limit", format!("**{}**", user_limit), true);
                 } else {
-                    embed = embed.field("👥 user limit", "**unlimited**", true);
+                    embed = embed.field("user limit", "**unlimited**", true);
                 }
             }
 
             if let Some(rtc_region) = &target_channel.rtc_region {
-                embed = embed.field("🌍 region", format!("**{}**", rtc_region), true);
+                embed = embed.field("region", format!("**{}**", rtc_region), true);
             }
 
             if let Some(video_quality_mode) = target_channel.video_quality_mode {
@@ -1206,14 +1169,15 @@ pub async fn channel(
                     serenity::VideoQualityMode::Full => "720p",
                     _ => "Unknown",
                 };
-                embed = embed.field("🎥 video quality", format!("**{}**", quality), true);
+                embed = embed.field("video quality", format!("**{}**", quality), true);
             }
         }
         serenity::ChannelType::Forum => {
             if let Some(slowmode) = target_channel.rate_limit_per_user
-                && slowmode > 0 {
-                    embed = embed.field("⏰ slowmode", format!("**{}s**", slowmode), true);
-                }
+                && slowmode > 0
+            {
+                embed = embed.field("slowmode", format!("**{}s**", slowmode), true);
+            }
 
             let tags = &target_channel.available_tags;
             if !tags.is_empty() {
@@ -1244,7 +1208,7 @@ pub async fn channel(
                     tag_names.join(", ")
                 };
 
-                embed = embed.field(format!("🏷️ tags ({})", tag_count), display_tags, false);
+                embed = embed.field(format!("tags ({})", tag_count), display_tags, false);
             }
 
             if let Some(default_reaction_emoji) = &target_channel.default_reaction_emoji {
@@ -1253,18 +1217,19 @@ pub async fn channel(
                     serenity::ForumEmoji::Id(id) => format!("<:reaction:{}>", id),
                     _ => "Unknown".to_string(),
                 };
-                embed = embed.field("😀 default reaction", emoji_display, true);
+                embed = embed.field("default reaction", emoji_display, true);
             }
 
             if let Some(default_thread_rate_limit) =
                 target_channel.default_thread_rate_limit_per_user
-                && default_thread_rate_limit > 0 {
-                    embed = embed.field(
-                        "🧵 thread slowmode",
-                        format!("**{}s**", default_thread_rate_limit),
-                        true,
-                    );
-                }
+                && default_thread_rate_limit > 0
+            {
+                embed = embed.field(
+                    "thread slowmode",
+                    format!("**{}s**", default_thread_rate_limit),
+                    true,
+                );
+            }
 
             if let Some(default_sort_order) = target_channel.default_sort_order {
                 let sort_name = match default_sort_order {
@@ -1272,7 +1237,7 @@ pub async fn channel(
                     serenity::SortOrder::CreationDate => "Creation Date",
                     _ => "Unknown",
                 };
-                embed = embed.field("🔄 default sort", format!("**{}**", sort_name), true);
+                embed = embed.field("default sort", format!("**{}**", sort_name), true);
             }
 
             if let Some(default_forum_layout) = target_channel.default_forum_layout {
@@ -1282,7 +1247,7 @@ pub async fn channel(
                     serenity::ForumLayoutType::GalleryView => "Gallery View",
                     _ => "Unknown",
                 };
-                embed = embed.field("🗺️ layout", format!("**{}**", layout_name), true);
+                embed = embed.field("layout", format!("**{}**", layout_name), true);
             }
         }
         serenity::ChannelType::PublicThread
@@ -1290,11 +1255,11 @@ pub async fn channel(
         | serenity::ChannelType::NewsThread => {
             if let Some(thread_metadata) = &target_channel.thread_metadata {
                 if thread_metadata.archived {
-                    embed = embed.field("🗄️ archived", "**yes**", true);
+                    embed = embed.field("archived", "**yes**", true);
 
                     if let Some(archive_timestamp) = thread_metadata.archive_timestamp {
                         embed = embed.field(
-                            "🗓️ archived at",
+                            "archived at",
                             format!("<t:{}:R>", archive_timestamp.timestamp()),
                             true,
                         );
@@ -1302,7 +1267,7 @@ pub async fn channel(
                 }
 
                 if thread_metadata.locked {
-                    embed = embed.field("🔒 locked", "**yes**", true);
+                    embed = embed.field("locked", "**yes**", true);
                 }
 
                 let duration = match thread_metadata.auto_archive_duration {
@@ -1312,28 +1277,28 @@ pub async fn channel(
                     serenity::AutoArchiveDuration::OneWeek => "1 week",
                     _ => "custom",
                 };
-                embed = embed.field("⏰ auto archive", format!("**{}**", duration), true);
+                embed = embed.field("auto archive", format!("**{}**", duration), true);
 
                 if thread_metadata.invitable {
-                    embed = embed.field("📫 invitable", "**yes**", true);
+                    embed = embed.field("invitable", "**yes**", true);
                 }
             }
 
             if let Some(owner_id) = target_channel.owner_id {
-                embed = embed.field("👑 thread creator", format!("<@{}>", owner_id), true);
+                embed = embed.field("thread creator", format!("<@{}>", owner_id), true);
             }
 
             if let Some(message_count) = target_channel.message_count {
-                embed = embed.field("💬 message count", format!("**~{}**", message_count), true);
+                embed = embed.field("message count", format!("**~{}**", message_count), true);
             }
 
             if let Some(member_count) = target_channel.member_count {
-                embed = embed.field("👥 member count", format!("**~{}**", member_count), true);
+                embed = embed.field("member count", format!("**~{}**", member_count), true);
             }
 
             if let Some(total_message_sent) = target_channel.total_message_sent {
                 embed = embed.field(
-                    "📨 total messages",
+                    "total messages",
                     format!("**{}**", total_message_sent),
                     true,
                 );
@@ -1369,13 +1334,13 @@ pub async fn channel(
 
         if !overwrite_text.is_empty() {
             embed = embed.field(
-                "🔐 permission overwrites",
+                "permission overwrites",
                 format!("**`{}`**\n{}", permission_overwrites, overwrite_text),
                 false,
             );
         } else {
             embed = embed.field(
-                "🔐 permission overwrites",
+                "permission overwrites",
                 format!("**`{}`**", permission_overwrites),
                 true,
             );
@@ -1385,14 +1350,14 @@ pub async fn channel(
     let flags = target_channel.flags;
     let mut flag_list = Vec::new();
     if flags.contains(serenity::ChannelFlags::PINNED) {
-        flag_list.push("📌 Pinned");
+        flag_list.push("Pinned");
     }
     if flags.contains(serenity::ChannelFlags::REQUIRE_TAG) {
-        flag_list.push("🏷️ Requires Tag");
+        flag_list.push("Requires Tag");
     }
 
     if !flag_list.is_empty() {
-        embed = embed.field("🏴 flags", flag_list.join(", "), true);
+        embed = embed.field("flags", flag_list.join(", "), true);
     }
 
     embed = embed.timestamp(serenity::Timestamp::now());

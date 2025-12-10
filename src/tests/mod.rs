@@ -12,7 +12,7 @@ pub mod web_tests;
 mod welcome_goodbye_tests;
 
 use crate::config::AppState;
-use serenity::all::{Cache, Http};
+use serenity::all::Http;
 use sqlx::SqlitePool;
 use std::sync::Arc;
 
@@ -97,8 +97,7 @@ pub async fn create_test_db() -> SqlitePool {
 pub async fn create_test_app_state() -> AppState {
     let config = Arc::new(crate::config::Config::test_config());
     let db = Arc::new(create_test_db().await);
-    let cache = Arc::new(Cache::new());
     let http = Arc::new(Http::new("test_token"));
 
-    AppState::new(config, db, cache, http)
+    AppState::new(config, db, http)
 }

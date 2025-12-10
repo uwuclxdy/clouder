@@ -405,7 +405,7 @@
 }
 
 .role-count::before {
-    content: '👥';
+    content: '';
     font-size: 0.9em;
 }
 
@@ -423,7 +423,7 @@
 }
 
 .selection-type::before {
-    content: '⚙️';
+    content: '';
     font-size: 0.9em;
 }
 

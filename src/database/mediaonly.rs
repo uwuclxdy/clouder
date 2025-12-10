@@ -1,3 +1,4 @@
+use crate::utils::parse_sqlite_datetime;
 use serde::{Deserialize, Serialize};
 use sqlx::{Row, SqlitePool};
 
@@ -44,35 +45,22 @@ impl MediaOnlyConfig {
                 allow_attachments: row.get("allow_attachments"),
                 allow_gifs: row.get("allow_gifs"),
                 allow_stickers: row.get("allow_stickers"),
-                created_at: chrono::DateTime::parse_from_str(
-                    &row.get::<String, _>("created_at"),
-                    "%Y-%m-%d %H:%M:%S",
-                )
-                .unwrap_or_else(|_| chrono::Utc::now().into())
-                .with_timezone(&chrono::Utc),
-                updated_at: chrono::DateTime::parse_from_str(
-                    &row.get::<String, _>("updated_at"),
-                    "%Y-%m-%d %H:%M:%S",
-                )
-                .unwrap_or_else(|_| chrono::Utc::now().into())
-                .with_timezone(&chrono::Utc),
+                created_at: parse_sqlite_datetime(&row.get::<String, _>("created_at")),
+                updated_at: parse_sqlite_datetime(&row.get::<String, _>("updated_at")),
             }))
         } else {
             Ok(None)
         }
     }
 
-    pub async fn get_by_guild(
-        pool: &SqlitePool,
-        guild_id: &str,
-    ) -> Result<Vec<Self>, sqlx::Error> {
+    pub async fn get_by_guild(pool: &SqlitePool, guild_id: &str) -> Result<Vec<Self>, sqlx::Error> {
         let rows = sqlx::query(
             r#"
             SELECT id, guild_id, channel_id, enabled, allow_links, allow_attachments,
                    allow_gifs, allow_stickers, created_at, updated_at
             FROM mediaonly_configs
             WHERE guild_id = ?
-            ORDER BY created_at ASC
+            ORDER BY created_at
             "#,
         )
         .bind(guild_id)
@@ -90,18 +78,8 @@ impl MediaOnlyConfig {
                 allow_attachments: row.get("allow_attachments"),
                 allow_gifs: row.get("allow_gifs"),
                 allow_stickers: row.get("allow_stickers"),
-                created_at: chrono::DateTime::parse_from_str(
-                    &row.get::<String, _>("created_at"),
-                    "%Y-%m-%d %H:%M:%S",
-                )
-                .unwrap_or_else(|_| chrono::Utc::now().into())
-                .with_timezone(&chrono::Utc),
-                updated_at: chrono::DateTime::parse_from_str(
-                    &row.get::<String, _>("updated_at"),
-                    "%Y-%m-%d %H:%M:%S",
-                )
-                .unwrap_or_else(|_| chrono::Utc::now().into())
-                .with_timezone(&chrono::Utc),
+                created_at: parse_sqlite_datetime(&row.get::<String, _>("created_at")),
+                updated_at: parse_sqlite_datetime(&row.get::<String, _>("updated_at")),
             });
         }
 

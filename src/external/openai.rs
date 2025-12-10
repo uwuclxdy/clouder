@@ -4,7 +4,8 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
-use tracing::{debug, error, warn};
+
+use crate::logging::{debug, error, warn};
 
 #[derive(Debug, Serialize)]
 pub struct OpenAIRequest {
@@ -77,7 +78,7 @@ impl OpenAIClient {
             stop: stop_sequences,
         };
 
-        debug!("Sending request to OpenAI: {} with model {}", url, model);
+        debug!("openai request: {} model {}", url, model);
 
         let response = self
             .client
@@ -93,21 +94,21 @@ impl OpenAIClient {
                 .text()
                 .await
                 .unwrap_or_else(|_| "Unknown error".to_string());
-            error!("OpenAI API error: {}", error_text);
+            error!("openai api: {}", error_text);
             return Err(anyhow::anyhow!("OpenAI API error: {}", error_text));
         }
 
         let openai_response: OpenAIResponse = response.json().await?;
 
         if openai_response.choices.is_empty() {
-            warn!("OpenAI returned empty choices array");
+            warn!("openai empty choices");
             return Ok("No response generated.".to_string());
         }
 
         let content = openai_response.choices[0].message.content.clone();
         let cleaned_content = clean_response_tokens(&content);
 
-        debug!("OpenAI response: {}", cleaned_content);
+        debug!("openai response: {}", cleaned_content);
         Ok(cleaned_content)
     }
 
@@ -116,9 +117,10 @@ impl OpenAIClient {
         let now = Instant::now();
 
         if let Some(&last_request) = cooldowns.get(&user_id)
-            && now.duration_since(last_request) < cooldown_duration {
-                return false; // User is still on cooldown
-            }
+            && now.duration_since(last_request) < cooldown_duration
+        {
+            return false; // User is still on cooldown
+        }
 
         cooldowns.insert(user_id, now);
         true

@@ -419,7 +419,7 @@
         <div class="config-grid">
             <!-- 1. Placeholders Card -->
             <div class="config-card">
-                <h2>📋 Available Placeholders</h2>
+                <h2>Available Placeholders</h2>
                 <p style="margin-bottom: 20px; color: #e0e0e0;">Use these placeholders in your messages to add dynamic content:</p>
 
                 <div class="placeholder-grid">
@@ -458,7 +458,7 @@
             <!-- 2. Welcome Messages Toggle -->
             <div class="config-card">
                 <div class="toggle-section">
-                    <h2>👋 Welcome Messages</h2>
+                    <h2>Welcome Messages</h2>
                     <label class="toggle-switch">
                         <input id="welcomeEnabled" onchange="toggleWelcomeConfig()" type="checkbox" {{WELCOME_ENABLED}}>
                         <span class="toggle-slider"></span>
@@ -469,7 +469,7 @@
 
             <!-- 3. Welcome Messages Configuration -->
             <div class="config-card" id="welcomeConfigCard" style="display: {{WELCOME_CONFIG_DISPLAY}};">
-                <h2>⚙️ Welcome Message Configuration</h2>
+                <h2>Welcome Message Configuration</h2>
 
                 <div class="form-group">
                     <label for="welcomeChannel">Channel:</label>
@@ -495,7 +495,7 @@
                 <div class="text-config {{WELCOME_TEXT_HIDE}}" id="welcomeTextConfig">
                     <div class="form-group">
                         <label for="welcomeContent">Message Content:</label>
-                        <textarea id="welcomeContent" name="welcome_message_content" placeholder="Welcome {user} to {server}! We now have {member_count} members! 🎉" rows="4">{{WELCOME_MESSAGE_CONTENT}}</textarea>
+                        <textarea id="welcomeContent" name="welcome_message_content" placeholder="Welcome {user} to {server}! We now have {member_count} members!" rows="4">{{WELCOME_MESSAGE_CONTENT}}</textarea>
                     </div>
                 </div>
 
@@ -552,7 +552,7 @@
             <!-- 4. Goodbye Messages Toggle -->
             <div class="config-card">
                 <div class="toggle-section">
-                    <h2>👋 Goodbye Messages</h2>
+                    <h2>Goodbye Messages</h2>
                     <label class="toggle-switch">
                         <input id="goodbyeEnabled" onchange="toggleGoodbyeConfig()" type="checkbox" {{GOODBYE_ENABLED}}>
                         <span class="toggle-slider"></span>
@@ -563,7 +563,7 @@
 
             <!-- 5. Goodbye Messages Configuration -->
             <div class="config-card" id="goodbyeConfigCard" style="display: {{GOODBYE_CONFIG_DISPLAY}};">
-                <h2>⚙️ Goodbye Message Configuration</h2>
+                <h2>Goodbye Message Configuration</h2>
 
                 <div class="form-group">
                     <label for="goodbyeChannel">Channel:</label>

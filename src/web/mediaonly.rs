@@ -1,6 +1,8 @@
 use crate::{
     config::AppState,
     database::mediaonly::MediaOnlyConfig,
+    logging::{error, info},
+    utils::{get_bot_invite_url, get_guild_icon_url, get_guild_text_channels},
     web::session_extractor::extract_session_data,
 };
 use axum::{
@@ -47,12 +49,6 @@ pub struct MediaOnlyConfigDisplay {
     pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
-#[derive(Debug, Serialize)]
-struct ChannelInfo {
-    id: String,
-    name: String,
-}
-
 pub async fn get_mediaonly_page(
     Path(guild_id): Path<String>,
     headers: HeaderMap,
@@ -81,42 +77,35 @@ pub async fn get_mediaonly_page(
     let configs = match MediaOnlyConfig::get_by_guild(&state.db, &guild_id).await {
         Ok(configs) => configs,
         Err(e) => {
-            tracing::error!("Failed to get mediaonly configs: {}", e);
+            error!("get mediaonly configs: {}", e);
             return Err(Redirect::temporary("/"));
         }
     };
 
     // Get channels for the guild
-    let channels = match get_guild_text_channels(&state, &guild_id).await {
+    let channels = match get_guild_text_channels(&state.http, &guild_id).await {
         Ok(channels) => channels,
         Err(e) => {
-            tracing::error!("Failed to get guild channels for guild {}: {}. Bot may not be in guild or lack permissions.", guild_id, e);
+            error!("get channels for {}: {}", guild_id, e);
             // Return empty channels list instead of redirecting, show friendly error in UI
             Vec::new()
         }
     };
 
-    let guild_icon = guild_info
-        .icon
-        .as_ref()
-        .map(|icon| {
-            format!(
-                "https://cdn.discordapp.com/icons/{}/{}.png",
-                guild_info.id, icon
-            )
-        })
-        .unwrap_or_else(|| "https://cdn.discordapp.com/embed/avatars/0.png".to_string());
+    let guild_icon = get_guild_icon_url(&guild_info.id, guild_info.icon.as_ref());
 
-    let invite_url = format!(
-        "https://discord.com/oauth2/authorize?client_id={}&permissions=268697088&response_type=code&redirect_uri={}&integration_type=0&scope=bot",
-        state.config.web.oauth.client_id, state.config.web.oauth.redirect_uri
+    let invite_url = get_bot_invite_url(
+        &state.config.web.oauth.client_id,
+        Some(&state.config.web.oauth.redirect_uri),
     );
 
     // Build channels options HTML
     let mut channels_html = String::new();
     if channels.is_empty() {
         // Show helpful message when bot is not in guild
-        channels_html.push_str(r#"<option value="" disabled>Bot not in server - please invite bot first</option>"#);
+        channels_html.push_str(
+            r#"<option value="" disabled>Bot not in server - please invite bot first</option>"#,
+        );
     } else {
         for channel in &channels {
             channels_html.push_str(&format!(
@@ -129,7 +118,11 @@ pub async fn get_mediaonly_page(
     // Create display configs with channel names
     let mut display_configs = Vec::new();
     let guild_id_u64: u64 = guild_id.parse().unwrap_or(0);
-    let discord_channels = state.http.get_channels(guild_id_u64.into()).await.unwrap_or_else(|_| Vec::new());
+    let discord_channels = state
+        .http
+        .get_channels(guild_id_u64.into())
+        .await
+        .unwrap_or_else(|_| Vec::new());
 
     for config in configs {
         let channel_name = discord_channels
@@ -166,7 +159,10 @@ pub async fn get_mediaonly_page(
         .replace("{{INVITE_URL}}", &invite_url)
         .replace("{{GUILD_ID}}", &guild_id)
         .replace("{{CHANNELS_HTML}}", &channels_html)
-        .replace("{{BOT_MISSING}}", if channels.is_empty() { "true" } else { "false" })
+        .replace(
+            "{{BOT_MISSING}}",
+            if channels.is_empty() { "true" } else { "false" },
+        )
         .replace("{{CONFIGS_JSON}}", &configs_json);
 
     Ok(Html(template))
@@ -190,8 +186,10 @@ pub async fn list_configs(
     let configs = match MediaOnlyConfig::get_by_guild(&state.db, &guild_id).await {
         Ok(configs) => configs,
         Err(e) => {
-            tracing::error!("Failed to get mediaonly configs: {}", e);
-            return Ok(Json(json!({"success": false, "error": "Failed to retrieve configurations"})));
+            error!("get mediaonly configs: {}", e);
+            return Ok(Json(
+                json!({"success": false, "error": "Failed to retrieve configurations"}),
+            ));
         }
     };
 
@@ -200,8 +198,10 @@ pub async fn list_configs(
     let channels = match state.http.get_channels(guild_id_u64.into()).await {
         Ok(channels) => channels,
         Err(e) => {
-            tracing::error!("Failed to get channels: {}", e);
-            return Ok(Json(json!({"success": false, "error": "Failed to retrieve channels"})));
+            error!("get channels: {}", e);
+            return Ok(Json(
+                json!({"success": false, "error": "Failed to retrieve channels"}),
+            ));
         }
     };
 
@@ -251,8 +251,10 @@ pub async fn create_or_update_config(
     let channels = match state.http.get_channels(guild_id_u64.into()).await {
         Ok(channels) => channels,
         Err(e) => {
-            tracing::error!("Failed to get channels: {}", e);
-            return Ok(Json(json!({"success": false, "error": "Failed to validate channel"})));
+            error!("get channels: {}", e);
+            return Ok(Json(
+                json!({"success": false, "error": "Failed to validate channel"}),
+            ));
         }
     };
 
@@ -261,17 +263,22 @@ pub async fn create_or_update_config(
         .any(|ch| ch.id.to_string() == request.channel_id && matches!(ch.kind, ChannelType::Text));
 
     if !channel_exists {
-        return Ok(Json(json!({"success": false, "error": "Invalid channel selected"})));
+        return Ok(Json(
+            json!({"success": false, "error": "Invalid channel selected"}),
+        ));
     }
 
     // Check if config already exists
-    let existing_config = match MediaOnlyConfig::get_by_channel(&state.db, &guild_id, &request.channel_id).await {
-        Ok(config) => config,
-        Err(e) => {
-            tracing::error!("Failed to check existing config: {}", e);
-            return Ok(Json(json!({"success": false, "error": "Failed to check existing configuration"})));
-        }
-    };
+    let existing_config =
+        match MediaOnlyConfig::get_by_channel(&state.db, &guild_id, &request.channel_id).await {
+            Ok(config) => config,
+            Err(e) => {
+                error!("check existing config: {}", e);
+                return Ok(Json(
+                    json!({"success": false, "error": "Failed to check existing configuration"}),
+                ));
+            }
+        };
 
     if let Some(mut config) = existing_config {
         // Update existing config
@@ -289,15 +296,24 @@ pub async fn create_or_update_config(
             request.allow_attachments,
             request.allow_gifs,
             request.allow_stickers,
-        ).await {
-            tracing::error!("Failed to update config: {}", e);
-            return Ok(Json(json!({"success": false, "error": "Failed to update configuration"})));
+        )
+        .await
+        {
+            error!("update config: {}", e);
+            return Ok(Json(
+                json!({"success": false, "error": "Failed to update configuration"}),
+            ));
         }
     } else {
         // Create new config
-        if let Err(e) = MediaOnlyConfig::upsert(&state.db, &guild_id, &request.channel_id, request.enabled).await {
-            tracing::error!("Failed to create config: {}", e);
-            return Ok(Json(json!({"success": false, "error": "Failed to create configuration"})));
+        if let Err(e) =
+            MediaOnlyConfig::upsert(&state.db, &guild_id, &request.channel_id, request.enabled)
+                .await
+        {
+            error!("create config: {}", e);
+            return Ok(Json(
+                json!({"success": false, "error": "Failed to create configuration"}),
+            ));
         }
 
         // Update permissions for the new config
@@ -309,13 +325,20 @@ pub async fn create_or_update_config(
             request.allow_attachments,
             request.allow_gifs,
             request.allow_stickers,
-        ).await {
-            tracing::error!("Failed to update permissions: {}", e);
-            return Ok(Json(json!({"success": false, "error": "Failed to update permissions"})));
+        )
+        .await
+        {
+            error!("update permissions: {}", e);
+            return Ok(Json(
+                json!({"success": false, "error": "Failed to update permissions"}),
+            ));
         }
     }
 
-    tracing::info!("Updated mediaonly config for guild {} channel {}", guild_id, request.channel_id);
+    info!(
+        "mediaonly config updated: guild {} channel {}",
+        guild_id, request.channel_id
+    );
     Ok(Json(json!({"success": true})))
 }
 
@@ -341,18 +364,26 @@ pub async fn update_permissions(
             // Update enabled if provided
             if let Some(enabled) = request.enabled {
                 config.enabled = enabled;
-                if let Err(e) = MediaOnlyConfig::upsert(&state.db, &guild_id, &channel_id, enabled).await {
-                    tracing::error!("Failed to update enabled status: {}", e);
-                    return Ok(Json(json!({"success": false, "error": "Failed to update enabled status"})));
+                if let Err(e) =
+                    MediaOnlyConfig::upsert(&state.db, &guild_id, &channel_id, enabled).await
+                {
+                    error!("update enabled: {}", e);
+                    return Ok(Json(
+                        json!({"success": false, "error": "Failed to update enabled status"}),
+                    ));
                 }
             }
-        },
+        }
         Ok(None) => {
-            return Ok(Json(json!({"success": false, "error": "Configuration not found"})));
+            return Ok(Json(
+                json!({"success": false, "error": "Configuration not found"}),
+            ));
         }
         Err(e) => {
-            tracing::error!("Failed to get config: {}", e);
-            return Ok(Json(json!({"success": false, "error": "Failed to retrieve configuration"})));
+            error!("get config: {}", e);
+            return Ok(Json(
+                json!({"success": false, "error": "Failed to retrieve configuration"}),
+            ));
         }
     };
 
@@ -364,12 +395,19 @@ pub async fn update_permissions(
         request.allow_attachments,
         request.allow_gifs,
         request.allow_stickers,
-    ).await {
-        tracing::error!("Failed to update permissions: {}", e);
-        return Ok(Json(json!({"success": false, "error": "Failed to update permissions"})));
+    )
+    .await
+    {
+        error!("update permissions: {}", e);
+        return Ok(Json(
+            json!({"success": false, "error": "Failed to update permissions"}),
+        ));
     }
 
-    tracing::info!("Updated mediaonly permissions for guild {} channel {}", guild_id, channel_id);
+    info!(
+        "mediaonly permissions updated: guild {} channel {}",
+        guild_id, channel_id
+    );
     Ok(Json(json!({"success": true})))
 }
 
@@ -390,40 +428,30 @@ pub async fn delete_config(
 
     // Check if config exists
     match MediaOnlyConfig::get_by_channel(&state.db, &guild_id, &channel_id).await {
-        Ok(Some(_)) => {},
+        Ok(Some(_)) => {}
         Ok(None) => {
-            return Ok(Json(json!({"success": false, "error": "Configuration not found"})));
+            return Ok(Json(
+                json!({"success": false, "error": "Configuration not found"}),
+            ));
         }
         Err(e) => {
-            tracing::error!("Failed to get config: {}", e);
-            return Ok(Json(json!({"success": false, "error": "Failed to retrieve configuration"})));
+            error!("get config: {}", e);
+            return Ok(Json(
+                json!({"success": false, "error": "Failed to retrieve configuration"}),
+            ));
         }
     };
 
     if let Err(e) = MediaOnlyConfig::delete(&state.db, &guild_id, &channel_id).await {
-        tracing::error!("Failed to delete config: {}", e);
-        return Ok(Json(json!({"success": false, "error": "Failed to delete configuration"})));
+        error!("delete config: {}", e);
+        return Ok(Json(
+            json!({"success": false, "error": "Failed to delete configuration"}),
+        ));
     }
 
-    tracing::info!("Deleted mediaonly config for guild {} channel {}", guild_id, channel_id);
+    info!(
+        "mediaonly config deleted: guild {} channel {}",
+        guild_id, channel_id
+    );
     Ok(Json(json!({"success": true})))
-}
-
-async fn get_guild_text_channels(
-    state: &AppState,
-    guild_id: &str,
-) -> Result<Vec<ChannelInfo>, Box<dyn std::error::Error + Send + Sync>> {
-    let guild_id_u64: u64 = guild_id.parse()?;
-    let channels = state.http.get_channels(guild_id_u64.into()).await?;
-
-    let text_channels: Vec<ChannelInfo> = channels
-        .into_iter()
-        .filter(|channel| matches!(channel.kind, ChannelType::Text))
-        .map(|channel| ChannelInfo {
-            id: channel.id.to_string(),
-            name: channel.name,
-        })
-        .collect();
-
-    Ok(text_channels)
 }

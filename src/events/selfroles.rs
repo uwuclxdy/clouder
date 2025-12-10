@@ -1,9 +1,9 @@
 use crate::config::AppState;
 use crate::database::selfroles::{SelfRoleConfig, SelfRoleCooldown};
+use crate::logging::{error, info, warn};
 use crate::serenity;
 use chrono::{Duration, Utc};
 use serenity::all::{CreateInteractionResponse, CreateInteractionResponseMessage, Mentionable};
-use tracing::info;
 
 pub async fn selfrole_message_delete(
     _ctx: &serenity::Context,
@@ -15,20 +15,11 @@ pub async fn selfrole_message_delete(
     let message_id_str = deleted_message_id.to_string();
 
     if let Ok(Some(config)) = SelfRoleConfig::get_by_message_id(&data.db, &message_id_str).await {
-        info!(
-            "Self-role message deleted from Discord: {}, cleaning up database",
-            message_id_str
-        );
+        info!("selfrole message deleted: {}", message_id_str);
         if let Err(e) = config.delete(&data.db).await {
-            tracing::error!(
-                "Failed to delete self-role config after Discord message deletion: {}",
-                e
-            );
+            error!("delete selfrole config: {}", e);
         } else {
-            info!(
-                "Successfully cleaned up self-role config for deleted message: {}",
-                message_id_str
-            );
+            info!("selfrole config cleaned: {}", message_id_str);
         }
     }
 }
@@ -40,17 +31,14 @@ pub async fn handle_selfrole_interaction(
 ) {
     let parts: Vec<&str> = interaction.data.custom_id.split('_').collect();
     if parts.len() != 3 {
-        tracing::error!(
-            "Invalid selfrole custom_id format: {}",
-            interaction.data.custom_id
-        );
+        error!("invalid selfrole id: {}", interaction.data.custom_id);
         return;
     }
 
     let _config_id: i64 = match parts[1].parse() {
         Ok(id) => id,
         Err(_) => {
-            tracing::error!("Invalid config_id in custom_id: {}", parts[1]);
+            error!("invalid config_id: {}", parts[1]);
             return;
         }
     };
@@ -60,7 +48,7 @@ pub async fn handle_selfrole_interaction(
     let guild_id = match interaction.guild_id {
         Some(id) => id.to_string(),
         None => {
-            tracing::error!("Self-role interaction outside of guild");
+            error!("selfrole outside guild");
             return;
         }
     };
@@ -72,31 +60,31 @@ pub async fn handle_selfrole_interaction(
                     &ctx.http,
                     CreateInteractionResponse::Message(
                         CreateInteractionResponseMessage::new()
-                            .content("⏰ you're doing that too quickly! please wait a moment before trying again.")
+                            .content("You're doing that too quickly! Try again in a few seconds.")
                             .ephemeral(true),
                     ),
                 )
                 .await
             {
-                tracing::error!("Failed to respond to cooldown interaction: {}", e);
+                error!("respond cooldown: {}", e);
             }
             return;
         }
         Ok(false) => {}
         Err(e) => {
-            tracing::error!("Failed to check cooldown: {}", e);
+            error!("check cooldown: {}", e);
             if let Err(e) = interaction
                 .create_response(
                     &ctx.http,
                     CreateInteractionResponse::Message(
                         CreateInteractionResponseMessage::new()
-                            .content("❌ an error occurred while processing your request. please try again.")
+                            .content("an error occurred while processing your request. please try again.")
                             .ephemeral(true),
                     ),
                 )
                 .await
             {
-                tracing::error!("Failed to respond to error interaction: {}", e);
+                error!("respond error: {}", e);
             }
             return;
         }
@@ -110,27 +98,24 @@ pub async fn handle_selfrole_interaction(
     {
         Ok(Some(config)) => config,
         Ok(None) => {
-            tracing::error!(
-                "Self-role config not found for message: {}",
-                interaction.message.id
-            );
+            error!("no selfrole config for message: {}", interaction.message.id);
             if let Err(e) = interaction
                 .create_response(
                     &ctx.http,
                     CreateInteractionResponse::Message(
                         CreateInteractionResponseMessage::new()
-                            .content("❌ this self-role message is no longer valid.")
+                            .content("this self-role message is no longer valid.")
                             .ephemeral(true),
                     ),
                 )
                 .await
             {
-                tracing::error!("Failed to respond to invalid config interaction: {}", e);
+                error!("respond invalid config: {}", e);
             }
             return;
         }
         Err(e) => {
-            tracing::error!("Failed to get self-role config: {}", e);
+            error!("get selfrole config: {}", e);
             return;
         }
     };
@@ -138,7 +123,7 @@ pub async fn handle_selfrole_interaction(
     let guild_id_u64: u64 = match guild_id.parse() {
         Ok(id) => id,
         Err(_) => {
-            tracing::error!("Invalid guild_id: {}", guild_id);
+            error!("invalid guild_id: {}", guild_id);
             return;
         }
     };
@@ -146,7 +131,7 @@ pub async fn handle_selfrole_interaction(
     let role_id_u64: u64 = match role_id.parse() {
         Ok(id) => id,
         Err(_) => {
-            tracing::error!("Invalid role_id: {}", role_id);
+            error!("invalid role_id: {}", role_id);
             return;
         }
     };
@@ -158,19 +143,19 @@ pub async fn handle_selfrole_interaction(
     {
         Ok(member) => member,
         Err(e) => {
-            tracing::error!("Failed to get member {}: {}", interaction.user.id, e);
+            error!("get member {}: {}", interaction.user.id, e);
             if let Err(e) = interaction
                 .create_response(
                     &ctx.http,
                     CreateInteractionResponse::Message(
                         CreateInteractionResponseMessage::new()
-                            .content("❌ failed to retrieve your member info.")
+                            .content("failed to retrieve your member info.")
                             .ephemeral(true),
                     ),
                 )
                 .await
             {
-                tracing::error!("Failed to respond to member fetch error: {}", e);
+                error!("respond member err: {}", e);
             }
             return;
         }
@@ -179,19 +164,19 @@ pub async fn handle_selfrole_interaction(
     let guild_roles = match ctx.http.get_guild_roles(guild_id_u64.into()).await {
         Ok(roles) => roles,
         Err(e) => {
-            tracing::error!("Failed to get guild roles for {}: {}", guild_id, e);
+            error!("get guild roles for {}: {}", guild_id, e);
             if let Err(e) = interaction
                 .create_response(
                     &ctx.http,
                     CreateInteractionResponse::Message(
                         CreateInteractionResponseMessage::new()
-                            .content("❌ failed to retrieve server roles.")
+                            .content("failed to retrieve server roles.")
                             .ephemeral(true),
                     ),
                 )
                 .await
             {
-                tracing::error!("Failed to respond to guild roles fetch error: {}", e);
+                error!("respond guild roles err: {}", e);
             }
             return;
         }
@@ -200,23 +185,19 @@ pub async fn handle_selfrole_interaction(
     let bot_member = match crate::web::get_bot_member_info(&ctx.http, guild_id_u64.into()).await {
         Ok(member) => member,
         Err(e) => {
-            tracing::error!(
-                "Failed to get bot member info for guild {}: {:?}",
-                guild_id,
-                e
-            );
+            error!("get bot member for {}: {:?}", guild_id, e);
             if let Err(e) = interaction
                 .create_response(
                     &ctx.http,
                     CreateInteractionResponse::Message(
                         CreateInteractionResponseMessage::new()
-                            .content("❌ bot permissions could not be verified.")
+                            .content("bot permissions could not be verified.")
                             .ephemeral(true),
                     ),
                 )
                 .await
             {
-                tracing::error!("Failed to respond to bot member fetch error: {}", e);
+                error!("respond bot member err: {}", e);
             }
             return;
         }
@@ -224,26 +205,27 @@ pub async fn handle_selfrole_interaction(
 
     // Check if bot has MANAGE_ROLES permission by checking its roles
     let bot_has_manage_roles = bot_member.roles.iter().any(|role_id| {
-        guild_roles.iter().find(|r| r.id == *role_id).is_some_and(|role| {
-            role.permissions.administrator() || role.permissions.manage_roles()
-        })
+        guild_roles
+            .iter()
+            .find(|r| r.id == *role_id)
+            .is_some_and(|role| role.permissions.administrator() || role.permissions.manage_roles())
     });
 
     if !bot_has_manage_roles {
-        tracing::warn!("Bot lacks MANAGE_ROLES permission in guild {} for self-role operations", guild_id);
+        warn!("no MANAGE_ROLES in guild {}", guild_id);
         if let Err(e) = interaction
             .create_response(
                 &ctx.http,
                 CreateInteractionResponse::Message(
                     CreateInteractionResponseMessage::new()
-                        .content("❌ i don't have permission to manage roles in this server.")
+                        .content("i don't have permission to manage roles in this server.")
                         .ephemeral(true),
-                    ),
-                )
-                .await
-            {
-                tracing::error!("Failed to respond to permission error: {}", e);
-            }
+                ),
+            )
+            .await
+        {
+            error!("respond permission err: {}", e);
+        }
         return;
     }
 
@@ -252,43 +234,41 @@ pub async fn handle_selfrole_interaction(
     let target_role = match guild_roles.iter().find(|r| r.id.get() == role_id_u64) {
         Some(role) => role,
         None => {
-            tracing::error!("Role {} not found in guild {}", role_id, guild_id);
+            error!("role {} not found in {}", role_id, guild_id);
             if let Err(e) = interaction
                 .create_response(
                     &ctx.http,
                     CreateInteractionResponse::Message(
                         CreateInteractionResponseMessage::new()
-                            .content("❌ the requested role no longer exists.")
+                            .content("the requested role no longer exists.")
                             .ephemeral(true),
                     ),
                 )
                 .await
             {
-                tracing::error!("Failed to respond to missing role error: {}", e);
+                error!("respond missing role err: {}", e);
             }
             return;
         }
     };
 
     if !crate::utils::can_bot_manage_role(&bot_role_positions, target_role.position) {
-        tracing::warn!(
-            "Role hierarchy validation failed: bot positions {:?} vs target role '{}' position {}",
-            bot_role_positions,
-            target_role.name,
-            target_role.position
+        warn!(
+            "role hierarchy: bot {:?} vs '{}' pos {}",
+            bot_role_positions, target_role.name, target_role.position
         );
         if let Err(e) = interaction
             .create_response(
                 &ctx.http,
                 CreateInteractionResponse::Message(
                     CreateInteractionResponseMessage::new()
-                        .content(format!("❌ cannot manage the role '{}' - it is higher than or equal to all of my roles in the hierarchy.", target_role.mention()))
+                        .content(format!("cannot manage the role '{}' - it is higher than or equal to all of my roles in the hierarchy.", target_role.mention()))
                         .ephemeral(true),
                 ),
             )
             .await
         {
-            tracing::error!("Failed to respond to hierarchy validation error: {}", e);
+            error!("respond hierarchy err: {}", e);
         }
         return;
     }
@@ -299,19 +279,19 @@ pub async fn handle_selfrole_interaction(
         let config_roles = match config.get_roles(&data.db).await {
             Ok(roles) => roles,
             Err(e) => {
-                tracing::error!("Failed to get config roles: {}", e);
+                error!("get config roles: {}", e);
                 if let Err(e) = interaction
                     .create_response(
                         &ctx.http,
                         CreateInteractionResponse::Message(
                             CreateInteractionResponseMessage::new()
-                                .content("❌ an error occurred while processing your request.")
+                                .content("an error occurred while processing your request.")
                                 .ephemeral(true),
                         ),
                     )
                     .await
                 {
-                    tracing::error!("Failed to respond to error: {}", e);
+                    error!("respond error: {}", e);
                 }
                 return;
             }
@@ -345,18 +325,13 @@ pub async fn handle_selfrole_interaction(
                             )
                             .await
                         {
-                            tracing::error!(
-                                "Failed to remove role {} from user {}: {}",
-                                config_role_id_u64,
-                                interaction.user.id,
-                                e
+                            error!(
+                                "remove role {} from {}: {}",
+                                config_role_id_u64, interaction.user.id, e
                             );
                         }
                     } else {
-                        tracing::warn!(
-                            "Cannot remove role '{}' due to hierarchy restrictions",
-                            remove_role.name
-                        );
+                        warn!("can't remove '{}' due to hierarchy", remove_role.name);
                     }
                 }
             }
@@ -376,21 +351,15 @@ pub async fn handle_selfrole_interaction(
             )
             .await
         {
-            Ok(_) => (
-                "removed",
-                "➖",
-                format!("removed {}", target_role.mention()),
-            ),
+            Ok(_) => ("removed", "", format!("removed {}", target_role.mention())),
             Err(e) => {
-                tracing::error!(
-                    "Failed to remove role {} from user {}: {}",
-                    role_id_u64,
-                    interaction.user.id,
-                    e
+                error!(
+                    "remove role {} from {}: {}",
+                    role_id_u64, interaction.user.id, e
                 );
                 (
                     "error",
-                    "❌",
+                    "",
                     format!(
                         "failed to remove the role '{}'. i might not have permission or the role might not exist anymore.",
                         target_role.name
@@ -410,17 +379,12 @@ pub async fn handle_selfrole_interaction(
             )
             .await
         {
-            Ok(_) => ("added", "✅", format!("added {}", target_role.mention())),
+            Ok(_) => ("added", "", format!("added {}", target_role.mention())),
             Err(e) => {
-                tracing::error!(
-                    "Failed to add role {} to user {}: {}",
-                    role_id_u64,
-                    interaction.user.id,
-                    e
-                );
+                error!("add role {} to {}: {}", role_id_u64, interaction.user.id, e);
                 (
                     "error",
-                    "❌",
+                    "",
                     format!(
                         "failed to assign the role '{}'. i might not have permission, or the role might be higher than my role in the hierarchy.",
                         target_role.name
@@ -436,22 +400,27 @@ pub async fn handle_selfrole_interaction(
         if let Err(e) =
             SelfRoleCooldown::create(&data.db, &user_id, role_id, &guild_id, expires_at).await
         {
-            tracing::error!("Failed to create cooldown: {}", e);
+            error!("create cooldown: {}", e);
         }
     }
 
     // Respond to the interaction
+    let response_content = if emoji.is_empty() {
+        message
+    } else {
+        format!("{} {}", emoji, message)
+    };
     if let Err(e) = interaction
         .create_response(
             &ctx.http,
             CreateInteractionResponse::Message(
                 CreateInteractionResponseMessage::new()
-                    .content(format!("{} {}", emoji, message))
+                    .content(response_content)
                     .ephemeral(true),
             ),
         )
         .await
     {
-        tracing::error!("Failed to respond to self-role interaction: {}", e);
+        error!("respond selfrole: {}", e);
     }
 }

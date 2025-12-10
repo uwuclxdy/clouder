@@ -1,3 +1,4 @@
+use crate::utils::parse_sqlite_datetime;
 use serde::{Deserialize, Serialize};
 use sqlx::{Row, SqlitePool};
 use std::collections::HashMap;
@@ -112,18 +113,8 @@ impl WelcomeGoodbyeConfig {
                 goodbye_embed_thumbnail: row.get("goodbye_embed_thumbnail"),
                 goodbye_embed_image: row.get("goodbye_embed_image"),
                 goodbye_embed_timestamp: row.get("goodbye_embed_timestamp"),
-                created_at: chrono::DateTime::parse_from_str(
-                    &row.get::<String, _>("created_at"),
-                    "%Y-%m-%d %H:%M:%S",
-                )
-                .unwrap_or_else(|_| chrono::Utc::now().into())
-                .with_timezone(&chrono::Utc),
-                updated_at: chrono::DateTime::parse_from_str(
-                    &row.get::<String, _>("updated_at"),
-                    "%Y-%m-%d %H:%M:%S",
-                )
-                .unwrap_or_else(|_| chrono::Utc::now().into())
-                .with_timezone(&chrono::Utc),
+                created_at: parse_sqlite_datetime(&row.get::<String, _>("created_at")),
+                updated_at: parse_sqlite_datetime(&row.get::<String, _>("updated_at")),
             }))
         } else {
             Ok(None)
@@ -175,17 +166,6 @@ impl WelcomeGoodbyeConfig {
 
         Ok(())
     }
-}
-
-pub fn replace_placeholders(content: &str, placeholders: &HashMap<String, String>) -> String {
-    let mut result = content.to_string();
-
-    for (key, value) in placeholders {
-        let placeholder = format!("{{{}}}", key);
-        result = result.replace(&placeholder, value);
-    }
-
-    result
 }
 
 pub fn get_member_placeholders(

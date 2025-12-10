@@ -293,7 +293,7 @@
         <div class="config-grid">
             <!-- 1. Add New Channel -->
             <div class="config-card">
-                <h2>➕ Add Media-Only Channel</h2>
+                <h2>Add Media-Only Channel</h2>
 
                 <div class="add-channel-section">
                     <div class="form-group">
@@ -319,22 +319,22 @@
                         <div class="permissions-grid">
                             <div class="checkbox-group checked" onclick="togglePermission('new', 'links')">
                                 <input checked id="newAllowLinks" name="new_allow_links" type="checkbox">
-                                <label for="newAllowLinks">🔗 Links</label>
+                                <label for="newAllowLinks">Links</label>
                             </div>
 
                             <div class="checkbox-group checked" onclick="togglePermission('new', 'attachments')">
                                 <input checked id="newAllowAttachments" name="new_allow_attachments" type="checkbox">
-                                <label for="newAllowAttachments">📎 File Attachments</label>
+                                <label for="newAllowAttachments">File Attachments</label>
                             </div>
 
                             <div class="checkbox-group checked" onclick="togglePermission('new', 'gifs')">
                                 <input checked id="newAllowGifs" name="new_allow_gifs" type="checkbox">
-                                <label for="newAllowGifs">🎞️ GIFs</label>
+                                <label for="newAllowGifs">GIFs</label>
                             </div>
 
                             <div class="checkbox-group checked" onclick="togglePermission('new', 'stickers')">
                                 <input checked id="newAllowStickers" name="new_allow_stickers" type="checkbox">
-                                <label for="newAllowStickers">🎭 Stickers</label>
+                                <label for="newAllowStickers">Stickers</label>
                             </div>
                         </div>
                     </div>
@@ -345,7 +345,7 @@
 
             <!-- 2. Current Configurations -->
             <div class="config-card">
-                <h2>🔒 Configured Channels</h2>
+                <h2>Configured Channels</h2>
                 <p style="margin-bottom: 20px; color: #e0e0e0;">Manage your media-only channel configurations:</p>
 
                 <div id="channelsList">
@@ -405,19 +405,19 @@
                             <div class="permissions-grid">
                                 <div class="checkbox-group ${config.allow_links ? 'checked' : ''}" onclick="togglePermission('${config.channel_id}', 'links')">
                                     <input id="links_${config.channel_id}" type="checkbox" ${config.allow_links ? 'checked' : ''}>
-                                    <label for="links_${config.channel_id}">🔗 Links</label>
+                                    <label for="links_${config.channel_id}">Links</label>
                                 </div>
                                 <div class="checkbox-group ${config.allow_attachments ? 'checked' : ''}" onclick="togglePermission('${config.channel_id}', 'attachments')">
                                     <input id="attachments_${config.channel_id}" type="checkbox" ${config.allow_attachments ? 'checked' : ''}>
-                                    <label for="attachments_${config.channel_id}">📎 File Attachments</label>
+                                    <label for="attachments_${config.channel_id}">File Attachments</label>
                                 </div>
                                 <div class="checkbox-group ${config.allow_gifs ? 'checked' : ''}" onclick="togglePermission('${config.channel_id}', 'gifs')">
                                     <input id="gifs_${config.channel_id}" type="checkbox" ${config.allow_gifs ? 'checked' : ''}>
-                                    <label for="gifs_${config.channel_id}">🎞️ GIFs</label>
+                                    <label for="gifs_${config.channel_id}">GIFs</label>
                                 </div>
                                 <div class="checkbox-group ${config.allow_stickers ? 'checked' : ''}" onclick="togglePermission('${config.channel_id}', 'stickers')">
                                     <input id="stickers_${config.channel_id}" type="checkbox" ${config.allow_stickers ? 'checked' : ''}>
-                                    <label for="stickers_${config.channel_id}">🎭 Stickers</label>
+                                    <label for="stickers_${config.channel_id}">Stickers</label>
                                 </div>
                             </div>
                         </div>

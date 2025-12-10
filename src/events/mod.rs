@@ -2,8 +2,8 @@ use crate::config::AppState;
 use crate::events::bot_mentioned::{handle_ai_retry_interaction, on_mention};
 use crate::events::mediaonly_handler::handle_media_only_message;
 use crate::events::selfroles::{handle_selfrole_interaction, selfrole_message_delete};
+use crate::logging::info;
 use crate::{serenity, Data, Error};
-use tracing::info;
 
 mod bot_mentioned;
 mod mediaonly_handler;
@@ -18,7 +18,7 @@ pub async fn event_handler(
 ) -> anyhow::Result<(), Error> {
     match event {
         serenity::FullEvent::Ready { data_about_bot, .. } => {
-            info!("Bot {} is ready!", data_about_bot.user.name);
+            info!("ready: {}", data_about_bot.user.name);
         }
         serenity::FullEvent::InteractionCreate { interaction } => {
             handle_interaction_create(ctx, interaction, data).await;

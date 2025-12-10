@@ -16,8 +16,12 @@ type Context<'a> = poise::Context<'a, AppState, Error>;
 )]
 pub async fn mediaonly(
     ctx: Context<'_>,
-    #[description = "Channel to configure (defaults to current channel)"] channel: Option<serenity::GuildChannel>,
-    #[description = "Enable or disable media-only mode (toggles if not specified)"] enabled: Option<bool>,
+    #[description = "Channel to configure (defaults to current channel)"] channel: Option<
+        serenity::GuildChannel,
+    >,
+    #[description = "Enable or disable media-only mode (toggles if not specified)"] enabled: Option<
+        bool,
+    >,
 ) -> Result<(), Error> {
     let guild_id = ctx.guild_id().unwrap().to_string();
     let target_channel = if let Some(ref channel) = channel {
@@ -35,14 +39,14 @@ pub async fn mediaonly(
     };
 
     let status_text = if final_enabled { "enabled" } else { "disabled" };
-    let emoji = if final_enabled { "🔒" } else { "🔓" };
 
     let embed = CreateEmbed::new()
-        .title(format!("{} media-only mode {}", emoji, status_text))
+        .title(format!("media-only mode {}", status_text))
         .description(format!(
-            "media-only mode is now **{}** for {}\n\nMessages without media will be deleted.\nConfigure allowed content types in the [dashboard](https://your-bot-url.com/dashboard/{}/mediaonly)",
+            "media-only mode is now **{}** for {}\n\nMessages without media will be deleted.\nConfigure allowed content types in the [dashboard]({}/dashboard/{}/mediaonly)",
             status_text,
             target_channel.mention(),
+            ctx.data().config.web.base_url,
             guild_id
         ))
         .color(get_default_embed_color(ctx.data()));

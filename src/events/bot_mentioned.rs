@@ -4,6 +4,9 @@ use crate::utils::bot_has_permission_in_channel;
 use std::time::Duration;
 use tracing::{debug, error, warn};
 
+#[cfg(feature = "llm")]
+use clouder_llm::{ChatMessage, OpenAIClient};
+
 /// Handle message events - primarily for bot mention help responses and OpenAI integration
 pub async fn on_mention(ctx: &serenity::Context, message: &serenity::Message, data: &AppState) {
     if message.author.bot {
@@ -23,6 +26,7 @@ pub async fn on_mention(ctx: &serenity::Context, message: &serenity::Message, da
 
     if is_mention || is_reply_to_bot {
         // Check if OpenAI is enabled and user is authorized
+        #[cfg(feature = "llm")]
         if data.config.openai.enabled
             && let Some(ref openai_client) = data.openai_client
             && is_user_authorized_for_openai(message, data).await
@@ -150,11 +154,12 @@ fn clean_message_content(content: &str, current_user: &serenity::User) -> String
         .to_string()
 }
 
+#[cfg(feature = "llm")]
 async fn handle_openai_request(
     ctx: &serenity::Context,
     message: &serenity::Message,
     data: &AppState,
-    openai_client: &crate::external::openai::OpenAIClient,
+    openai_client: &OpenAIClient,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let user_id = message.author.id.get();
 
@@ -196,13 +201,13 @@ async fn handle_openai_request(
 
     // Add system prompt if configured
     if !data.config.openai.system_prompt.trim().is_empty() {
-        messages.push(crate::external::openai::ChatMessage {
+        messages.push(ChatMessage {
             role: "system".to_string(),
             content: data.config.openai.system_prompt.clone(),
         });
     }
 
-    messages.push(crate::external::openai::ChatMessage {
+    messages.push(ChatMessage {
         role: "user".to_string(),
         content: prompt.clone(),
     });
@@ -330,6 +335,7 @@ async fn send_help_as_message(
 }
 
 /// Handle AI retry button interactions
+#[cfg(feature = "llm")]
 pub async fn handle_ai_retry_interaction(
     ctx: &serenity::Context,
     interaction: &serenity::ComponentInteraction,
@@ -545,13 +551,13 @@ pub async fn handle_ai_retry_interaction(
 
     // Add system prompt if configured
     if !data.config.openai.system_prompt.trim().is_empty() {
-        messages.push(crate::external::openai::ChatMessage {
+        messages.push(ChatMessage {
             role: "system".to_string(),
             content: data.config.openai.system_prompt.clone(),
         });
     }
 
-    messages.push(crate::external::openai::ChatMessage {
+    messages.push(ChatMessage {
         role: "user".to_string(),
         content: prompt.clone(),
     });

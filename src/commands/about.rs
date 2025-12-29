@@ -1,5 +1,5 @@
 use crate::config::AppState;
-use crate::utils::{format_duration, get_default_embed_color};
+use crate::utils::{discord_timestamp, format_duration, get_default_embed_color};
 use anyhow::Result;
 use lazy_static::lazy_static;
 use poise::serenity_prelude as serenity;
@@ -246,7 +246,7 @@ pub async fn server(ctx: Context<'_>) -> Result<(), Error> {
     };
 
     let created_at = guild_id.created_at();
-    let created_timestamp = format!("<t:{}:F>", created_at.timestamp());
+    let created_timestamp = discord_timestamp(created_at.timestamp(), 'F');
 
     let channels = full_guild.channels(&ctx.http()).await.unwrap_or_default();
 
@@ -597,9 +597,9 @@ pub async fn user(
 
     let created_at = target_user.id.created_at();
     let account_age = format!(
-        "<t:{}:F> (<t:{}:R>)",
-        created_at.timestamp(),
-        created_at.timestamp()
+        "{} ({})",
+        discord_timestamp(created_at.timestamp(), 'F'),
+        discord_timestamp(created_at.timestamp(), 'R')
     );
 
     let display_name = if let Some(global_name) = &full_user.global_name {
@@ -745,9 +745,9 @@ pub async fn user(
     if let Some(member) = member_info {
         if let Some(joined_at) = member.joined_at {
             let join_info = format!(
-                "<t:{}:F> (<t:{}:R>)",
-                joined_at.timestamp(),
-                joined_at.timestamp()
+                "{} ({})",
+                discord_timestamp(joined_at.timestamp(), 'F'),
+                discord_timestamp(joined_at.timestamp(), 'R')
             );
             embed = embed.field("joined server", join_info, false);
         }
@@ -775,7 +775,10 @@ pub async fn user(
         if let Some(premium_since) = member.premium_since {
             embed = embed.field(
                 "boosting",
-                format!("since <t:{}:R>", premium_since.timestamp()),
+                format!(
+                    "since {}",
+                    discord_timestamp(premium_since.timestamp(), 'R')
+                ),
                 true,
             );
         }
@@ -785,7 +788,10 @@ pub async fn user(
         {
             embed = embed.field(
                 "timed out",
-                format!("until <t:{}:R>", timed_out_until.timestamp()),
+                format!(
+                    "until {}",
+                    discord_timestamp(timed_out_until.timestamp(), 'R')
+                ),
                 true,
             );
         }
@@ -852,9 +858,9 @@ pub async fn role(
 
     let created_at = role.id.created_at();
     let created_timestamp = format!(
-        "<t:{}:F> (<t:{}:R>)",
-        created_at.timestamp(),
-        created_at.timestamp()
+        "{} ({})",
+        discord_timestamp(created_at.timestamp(), 'F'),
+        discord_timestamp(created_at.timestamp(), 'R')
     );
 
     let member_count = if let Some(guild) = ctx.guild() {
@@ -1048,9 +1054,9 @@ pub async fn channel(
 
     let created_at = target_channel.id.created_at();
     let created_timestamp = format!(
-        "<t:{}:F> (<t:{}:R>)",
-        created_at.timestamp(),
-        created_at.timestamp()
+        "{} ({})",
+        discord_timestamp(created_at.timestamp(), 'F'),
+        discord_timestamp(created_at.timestamp(), 'R')
     );
 
     let channel_type = match target_channel.kind {
@@ -1120,7 +1126,7 @@ pub async fn channel(
             if let Some(last_message_id) = target_channel.last_message_id {
                 embed = embed.field(
                     "last message",
-                    format!("<t:{}:R>", last_message_id.created_at().timestamp()),
+                    discord_timestamp(last_message_id.created_at().timestamp(), 'R').to_string(),
                     true,
                 );
             }
@@ -1128,7 +1134,7 @@ pub async fn channel(
             if let Some(last_pin_timestamp) = target_channel.last_pin_timestamp {
                 embed = embed.field(
                     "last pin",
-                    format!("<t:{}:R>", last_pin_timestamp.timestamp()),
+                    discord_timestamp(last_pin_timestamp.timestamp(), 'R').to_string(),
                     true,
                 );
             }
@@ -1260,7 +1266,7 @@ pub async fn channel(
                     if let Some(archive_timestamp) = thread_metadata.archive_timestamp {
                         embed = embed.field(
                             "archived at",
-                            format!("<t:{}:R>", archive_timestamp.timestamp()),
+                            discord_timestamp(archive_timestamp.timestamp(), 'R').to_string(),
                             true,
                         );
                     }

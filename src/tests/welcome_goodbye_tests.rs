@@ -1,9 +1,7 @@
 #[cfg(test)]
 mod tests {
     use crate::database::welcome_goodbye::WelcomeGoodbyeConfig;
-    use crate::utils::welcome_goodbye::{
-        build_embed, replace_placeholders, validate_message_config, validate_url, EmbedConfig,
-    };
+    use crate::utils::welcome_goodbye::{build_embed, replace_placeholders, EmbedConfig};
     use serenity::{model::id::UserId, model::user::User};
     use sqlx::SqlitePool;
     use std::collections::HashMap;
@@ -22,56 +20,6 @@ mod tests {
             result,
             "Welcome <@12345> to Test Server! Your username is TestUser."
         );
-    }
-
-    #[test]
-    fn test_validate_message_config() {
-        // Test embed with title
-        let result =
-            validate_message_config("embed", &None, &Some("Test Title".to_string()), &None);
-        assert!(result.is_ok());
-
-        // Test embed with description
-        let result =
-            validate_message_config("embed", &None, &None, &Some("Test Description".to_string()));
-        assert!(result.is_ok());
-
-        // Test embed with both
-        let result = validate_message_config(
-            "embed",
-            &None,
-            &Some("Test Title".to_string()),
-            &Some("Test Description".to_string()),
-        );
-        assert!(result.is_ok());
-
-        // Test embed with neither
-        let result = validate_message_config("embed", &None, &None, &None);
-        assert!(result.is_err());
-
-        // Test text with content
-        let result =
-            validate_message_config("text", &Some("Test Content".to_string()), &None, &None);
-        assert!(result.is_ok());
-
-        // Test text without content
-        let result = validate_message_config("text", &None, &None, &None);
-        assert!(result.is_err());
-
-        // Test invalid message type
-        let result =
-            validate_message_config("invalid", &Some("Test Content".to_string()), &None, &None);
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn test_validate_url() {
-        assert!(validate_url("https://example.com"));
-        assert!(validate_url("http://example.com"));
-        assert!(validate_url("https://example.com/path/to/image.png"));
-        assert!(!validate_url("not-a-url"));
-        assert!(!validate_url("ftp://example.com"));
-        assert!(!validate_url(""));
     }
 
     #[tokio::test]

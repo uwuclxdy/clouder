@@ -3,7 +3,7 @@
 <head>
     <title>Clouder Bot Dashboard</title>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
     <style>
         {{COMMON_CSS}}
         {{DASHBOARD_CSS}}
@@ -22,14 +22,14 @@
                 <a class="feature-request-btn" href="/feature-request">Feature Request</a>
                 <a class="add-server-btn" href="{{INVITE_URL}}" target="_blank">Add to Server</a>
                 <a class="logout-btn" href="/user/settings" style="margin-right: 10px;">Settings</a>
-                <a href="/auth/logout" class="logout-btn">Logout</a>
+                <a class="logout-btn" href="/auth/logout">Logout</a>
             </div>
         </div>
     </nav>
     <div class="container">
         <div class="user-info">
             <div class="user-info-left">
-                <img src="{{USER_AVATAR}}" alt="{{USER_NAME}}" class="user-avatar">
+                <img alt="{{USER_NAME}}" class="user-avatar" src="{{USER_AVATAR}}">
                 <div>
                     <h3 class="welcome-username">Welcome, {{USER_NAME}}!</h3>
                     <p class="welcome-subtitle">Select a server to configure bot features</p>

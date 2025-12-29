@@ -4,8 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
-
-use crate::logging::{debug, error, warn};
+use tracing::{debug, error, warn};
 
 #[derive(Debug, Serialize)]
 pub struct OpenAIRequest {
@@ -13,7 +12,6 @@ pub struct OpenAIRequest {
     pub messages: Vec<ChatMessage>,
     pub temperature: f32,
     pub max_tokens: u32,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub stop: Option<Vec<String>>,
 }
 
@@ -80,12 +78,12 @@ impl OpenAIClient {
 
         debug!("openai request: {} model {}", url, model);
 
-        let response = self
+        let response: reqwest::Response = self
             .client
             .post(&url)
             .header("Authorization", format!("Bearer {}", self.api_key))
             .header("Content-Type", "application/json")
-            .json(&request)
+            .body(serde_json::to_vec(&request)?)
             .send()
             .await?;
 
@@ -98,7 +96,8 @@ impl OpenAIClient {
             return Err(anyhow::anyhow!("OpenAI API error: {}", error_text));
         }
 
-        let openai_response: OpenAIResponse = response.json().await?;
+        let text = response.text().await?;
+        let openai_response: OpenAIResponse = serde_json::from_str(&text)?;
 
         if openai_response.choices.is_empty() {
             warn!("openai empty choices");

@@ -53,39 +53,6 @@ impl MediaOnlyConfig {
         }
     }
 
-    pub async fn get_by_guild(pool: &SqlitePool, guild_id: &str) -> Result<Vec<Self>, sqlx::Error> {
-        let rows = sqlx::query(
-            r#"
-            SELECT id, guild_id, channel_id, enabled, allow_links, allow_attachments,
-                   allow_gifs, allow_stickers, created_at, updated_at
-            FROM mediaonly_configs
-            WHERE guild_id = ?
-            ORDER BY created_at
-            "#,
-        )
-        .bind(guild_id)
-        .fetch_all(pool)
-        .await?;
-
-        let mut configs = Vec::new();
-        for row in rows {
-            configs.push(Self {
-                id: row.get("id"),
-                guild_id: row.get("guild_id"),
-                channel_id: row.get("channel_id"),
-                enabled: row.get("enabled"),
-                allow_links: row.get("allow_links"),
-                allow_attachments: row.get("allow_attachments"),
-                allow_gifs: row.get("allow_gifs"),
-                allow_stickers: row.get("allow_stickers"),
-                created_at: parse_sqlite_datetime(&row.get::<String, _>("created_at")),
-                updated_at: parse_sqlite_datetime(&row.get::<String, _>("updated_at")),
-            });
-        }
-
-        Ok(configs)
-    }
-
     pub async fn upsert(
         pool: &SqlitePool,
         guild_id: &str,
@@ -125,52 +92,5 @@ impl MediaOnlyConfig {
             Self::upsert(pool, guild_id, channel_id, true).await?;
             Ok(true)
         }
-    }
-
-    pub async fn update_permissions(
-        pool: &SqlitePool,
-        guild_id: &str,
-        channel_id: &str,
-        allow_links: bool,
-        allow_attachments: bool,
-        allow_gifs: bool,
-        allow_stickers: bool,
-    ) -> Result<(), sqlx::Error> {
-        sqlx::query(
-            r#"
-            UPDATE mediaonly_configs
-            SET allow_links = ?, allow_attachments = ?, allow_gifs = ?, allow_stickers = ?, updated_at = CURRENT_TIMESTAMP
-            WHERE guild_id = ? AND channel_id = ?
-            "#,
-        )
-        .bind(allow_links)
-        .bind(allow_attachments)
-        .bind(allow_gifs)
-        .bind(allow_stickers)
-        .bind(guild_id)
-        .bind(channel_id)
-        .execute(pool)
-        .await?;
-
-        Ok(())
-    }
-
-    pub async fn delete(
-        pool: &SqlitePool,
-        guild_id: &str,
-        channel_id: &str,
-    ) -> Result<(), sqlx::Error> {
-        sqlx::query(
-            r#"
-            DELETE FROM mediaonly_configs
-            WHERE guild_id = ? AND channel_id = ?
-            "#,
-        )
-        .bind(guild_id)
-        .bind(channel_id)
-        .execute(pool)
-        .await?;
-
-        Ok(())
     }
 }

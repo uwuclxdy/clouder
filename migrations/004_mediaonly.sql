@@ -1,4 +1,4 @@
--- Migration 004: Media-only channels configuration
+-- 004: Media-only channels feature
 CREATE TABLE IF NOT EXISTS mediaonly_configs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     guild_id TEXT NOT NULL,

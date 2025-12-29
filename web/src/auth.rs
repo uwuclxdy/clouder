@@ -1,11 +1,11 @@
-use crate::config::AppState;
-use crate::web::{
-    middleware::GLOBAL_SESSION_STORE,
+use crate::{
+    config::AppState,
+    middleware::{extract_session_data, GLOBAL_SESSION_STORE},
     models::{DiscordUser, Guild, SessionUser},
 };
 use axum::{
     extract::{Query, State},
-    http::{HeaderValue, StatusCode},
+    http::{HeaderMap, HeaderValue, StatusCode},
     response::Redirect,
 };
 use reqwest::Client;
@@ -142,4 +142,67 @@ pub async fn logout() -> (
         [(axum::http::header::SET_COOKIE, cookie_header)],
         Redirect::temporary("/auth/login"),
     )
+}
+
+pub async fn server_list(
+    headers: HeaderMap,
+    State(state): State<AppState>,
+) -> Result<axum::response::Html<String>, Redirect> {
+    let (_, user) = extract_session_data(&headers)
+        .await
+        .map_err(|_| Redirect::temporary("/auth/login"))?;
+    let user = user.ok_or_else(|| Redirect::temporary("/auth/login"))?;
+
+    let manageable_guilds = user.get_manageable_guilds();
+
+    let mut guilds_html = String::new();
+    for guild in manageable_guilds {
+        let icon_url = guild
+            .icon
+            .as_ref()
+            .map(|hash| format!("https://cdn.discordapp.com/icons/{}/{}.png", guild.id, hash))
+            .unwrap_or_else(|| "https://cdn.discordapp.com/embed/avatars/0.png".to_string());
+
+        guilds_html.push_str(&format!(
+            r#"<a href="/dashboard/{}" class="guild-card"><img src="{}" alt="{}"><span>{}</span></a>"#,
+            guild.id, icon_url, guild.name, guild.name
+        ));
+    }
+
+    let user_avatar = user
+        .user
+        .avatar
+        .as_ref()
+        .map(|hash| {
+            format!(
+                "https://cdn.discordapp.com/avatars/{}/{}.png",
+                user.user.id, hash
+            )
+        })
+        .unwrap_or_else(|| {
+            format!(
+                "https://cdn.discordapp.com/embed/avatars/{}.png",
+                (user.user.id.parse::<u64>().unwrap_or(0) % 5) as u8
+            )
+        });
+
+    let invite_url = format!(
+        "https://discord.com/api/oauth2/authorize?client_id={}&permissions=8&scope=bot",
+        state.config.web.oauth.client_id
+    );
+
+    let template = include_str!("../templates/server_list.html")
+        .replace("{{COMMON_CSS}}", include_str!("../static/css/common.css"))
+        .replace(
+            "{{DASHBOARD_CSS}}",
+            include_str!("../static/css/dashboard.css"),
+        )
+        .replace("{{USERNAME}}", &user.user.username)
+        .replace("{{USER_NAME}}", &user.user.username)
+        .replace("{{USER_AVATAR}}", &user_avatar)
+        .replace("{{GUILDS_HTML}}", &guilds_html)
+        .replace("{{BASE_URL}}", &state.config.web.base_url)
+        .replace("{{INVITE_URL}}", &invite_url);
+
+    Ok(axum::response::Html(template))
 }

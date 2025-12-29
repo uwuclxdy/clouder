@@ -3,7 +3,7 @@
 <head>
     <title>Self-Roles - {{GUILD_NAME}}</title>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
     <style>
         {{COMMON_CSS}}
         {{DASHBOARD_CSS}}
@@ -15,9 +15,9 @@
             <div class="navbar-left">
                 <div class="logo">clouder</div>
                 <div class="breadcrumb">
-                    <a href="/" class="breadcrumb-item">Dashboard</a>
+                    <a class="breadcrumb-item" href="/">Dashboard</a>
                     <span class="breadcrumb-separator">/</span>
-                    <a href="/dashboard/{{GUILD_ID}}" class="breadcrumb-item">{{GUILD_NAME}}</a>
+                    <a class="breadcrumb-item" href="/dashboard/{{GUILD_ID}}">{{GUILD_NAME}}</a>
                     <span class="breadcrumb-separator">/</span>
                     <span class="breadcrumb-item current">Self-Roles</span>
                 </div>
@@ -25,7 +25,7 @@
             <div class="navbar-right">
                 <a class="add-server-btn" href="{{INVITE_URL}}" target="_blank">Add to Server</a>
                 <a class="logout-btn" href="/user/settings" style="margin-right: 10px;">Settings</a>
-                <a href="/auth/logout" class="logout-btn">Logout</a>
+                <a class="logout-btn" href="/auth/logout">Logout</a>
             </div>
         </div>
     </nav>
@@ -35,7 +35,7 @@
                 <h1>Self-Roles Messages</h1>
                 <p>Manage interactive role assignment messages for <span class="guild-name-highlight">{{GUILD_NAME}}</span></p>
             </div>
-            <a href="/dashboard/{{GUILD_ID}}/selfroles/new" class="create-btn">+ Create New Message</a>
+            <a class="create-btn" href="/dashboard/{{GUILD_ID}}/selfroles/new">+ Create New Message</a>
         </div>
         <div class="messages-grid" id="messagesGrid">
             <div class="loading">Loading self-role messages...</div>

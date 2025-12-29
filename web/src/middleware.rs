@@ -1,10 +1,9 @@
-use crate::web::models::SessionUser;
+use crate::models::SessionUser;
 use axum::{extract::Request, http::StatusCode, middleware::Next, response::Response};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Session {
@@ -27,7 +26,7 @@ impl SessionStore {
     }
 
     pub async fn create_session(&self) -> String {
-        let session_id = Uuid::new_v4().to_string();
+        let session_id = format!("{}{}", chrono::Utc::now().timestamp(), std::process::id());
         let session = Session {
             id: session_id.clone(),
             data: HashMap::new(),
@@ -72,9 +71,8 @@ impl Default for SessionStore {
     }
 }
 
-lazy_static::lazy_static! {
-    pub static ref GLOBAL_SESSION_STORE: SessionStore = SessionStore::new();
-}
+pub static GLOBAL_SESSION_STORE: once_cell::sync::Lazy<SessionStore> =
+    once_cell::sync::Lazy::new(SessionStore::new);
 
 pub type SessionData = (Session, Option<SessionUser>);
 
@@ -83,4 +81,46 @@ pub async fn session_middleware(request: Request, next: Next) -> Result<Response
         GLOBAL_SESSION_STORE.cleanup_expired().await;
     });
     Ok(next.run(request).await)
+}
+
+pub async fn extract_session_data(
+    headers: &axum::http::HeaderMap,
+) -> Result<SessionData, StatusCode> {
+    let session_id = extract_session_id_from_headers(headers)?;
+
+    let session = GLOBAL_SESSION_STORE
+        .get_session(&session_id)
+        .await
+        .ok_or(StatusCode::UNAUTHORIZED)?;
+
+    if session.expires_at < chrono::Utc::now() {
+        GLOBAL_SESSION_STORE.delete_session(&session_id).await;
+        return Err(StatusCode::UNAUTHORIZED);
+    }
+
+    let user_data = session
+        .data
+        .get("user")
+        .and_then(|value| serde_json::from_value::<SessionUser>(value.clone()).ok());
+
+    Ok((session, user_data))
+}
+
+pub fn extract_session_id_from_headers(
+    headers: &axum::http::HeaderMap,
+) -> Result<String, StatusCode> {
+    let cookie_header = headers
+        .get(axum::http::header::COOKIE)
+        .ok_or(StatusCode::UNAUTHORIZED)?
+        .to_str()
+        .map_err(|_| StatusCode::BAD_REQUEST)?;
+
+    for cookie in cookie_header.split(';') {
+        let cookie = cookie.trim();
+        if let Some(session_id) = cookie.strip_prefix("session_id=") {
+            return Ok(session_id.to_string());
+        }
+    }
+
+    Err(StatusCode::UNAUTHORIZED)
 }

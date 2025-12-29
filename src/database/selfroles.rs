@@ -25,7 +25,6 @@ pub struct SelfRoleRole {
 }
 
 #[derive(Debug, sqlx::FromRow)]
-#[allow(dead_code)]
 pub struct SelfRoleCooldown {
     pub user_id: String,
     pub role_id: String,
@@ -150,7 +149,6 @@ impl SelfRoleConfig {
         Ok(roles)
     }
 
-    #[allow(dead_code)]
     pub async fn delete_by_message_id(pool: &SqlitePool, message_id: &str) -> Result<bool> {
         let result = sqlx::query("DELETE FROM selfrole_configs WHERE message_id = ?")
             .bind(message_id)
@@ -160,7 +158,6 @@ impl SelfRoleConfig {
         Ok(result.rows_affected() > 0)
     }
 
-    #[allow(dead_code)]
     pub async fn get_by_guild_id(pool: &SqlitePool, guild_id: u64) -> Result<Vec<Self>> {
         let configs = sqlx::query_as::<_, Self>(
             "SELECT * FROM selfrole_configs WHERE guild_id = ? ORDER BY created_at DESC",
@@ -172,7 +169,6 @@ impl SelfRoleConfig {
         Ok(configs)
     }
 
-    #[allow(dead_code)]
     pub async fn get_by_message_id_u64(pool: &SqlitePool, message_id: u64) -> Result<Option<Self>> {
         let config =
             sqlx::query_as::<_, Self>("SELECT * FROM selfrole_configs WHERE message_id = ?")
@@ -209,15 +205,6 @@ impl SelfRoleRole {
             .await?;
 
         Ok(role)
-    }
-
-    pub async fn delete_by_config_id(pool: &SqlitePool, config_id: i64) -> Result<()> {
-        sqlx::query("DELETE FROM selfrole_roles WHERE config_id = ?")
-            .bind(config_id)
-            .execute(pool)
-            .await?;
-
-        Ok(())
     }
 }
 

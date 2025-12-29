@@ -14,13 +14,11 @@ pub async fn selfrole_message_delete(
 ) {
     let message_id_str = deleted_message_id.to_string();
 
-    if let Ok(Some(config)) = SelfRoleConfig::get_by_message_id(&data.db, &message_id_str).await {
-        info!("selfrole message deleted: {}", message_id_str);
-        if let Err(e) = config.delete(&data.db).await {
-            error!("delete selfrole config: {}", e);
-        } else {
-            info!("selfrole config cleaned: {}", message_id_str);
-        }
+    info!("selfrole message deleted: {}", message_id_str);
+    match SelfRoleConfig::delete_by_message_id(&data.db, &message_id_str).await {
+        Ok(true) => info!("selfrole config cleaned: {}", message_id_str),
+        Ok(false) => warn!("no selfrole config found for message: {}", message_id_str),
+        Err(e) => error!("delete selfrole config: {}", e),
     }
 }
 
@@ -182,7 +180,27 @@ pub async fn handle_selfrole_interaction(
         }
     };
 
-    let bot_member = match crate::web::get_bot_member_info(&ctx.http, guild_id_u64.into()).await {
+    // TODO: test this
+    let bot_user_id = if data.config.discord.application_id != 0 {
+        serenity::UserId::new(data.config.discord.application_id)
+    } else {
+        error!("bot user id missing");
+        if let Err(e) = interaction
+            .create_response(
+                &ctx.http,
+                CreateInteractionResponse::Message(
+                    CreateInteractionResponseMessage::new()
+                        .content("bot permissions could not be verified.")
+                        .ephemeral(true),
+                ),
+            )
+            .await
+        {
+            error!("respond bot id missing: {}", e);
+        }
+        return;
+    };
+    let bot_member = match ctx.http.get_member(guild_id_u64.into(), bot_user_id).await {
         Ok(member) => member,
         Err(e) => {
             error!("get bot member for {}: {:?}", guild_id, e);

@@ -56,20 +56,6 @@ pub struct Guild {
     pub features: Vec<String>,
     #[serde(default, deserialize_with = "deserialize_optional_permissions")]
     pub permissions_new: Option<String>,
-    #[serde(default)]
-    pub banner: Option<String>,
-    #[serde(default)]
-    pub description: Option<String>,
-    #[serde(default)]
-    pub splash: Option<String>,
-    #[serde(default)]
-    pub discovery_splash: Option<String>,
-    #[serde(default)]
-    pub preferred_locale: Option<String>,
-    #[serde(default)]
-    pub approximate_member_count: Option<u64>,
-    #[serde(default)]
-    pub approximate_presence_count: Option<u64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

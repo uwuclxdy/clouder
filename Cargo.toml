@@ -1,31 +1,39 @@
+[workspace]
+members = [".", "web", "llm"]
+
 [package]
 name = "clouder"
 version = "0.1.7"
 edition = "2024"
 
+[lib]
+name = "clouder"
+path = "src/lib.rs"
+
+[[bin]]
+name = "clouder"
+path = "src/main.rs"
+
 [dependencies]
-serenity = { version = "0.12.4", default-features = false, features = ["client", "gateway", "rustls_backend", "model", "cache"] }
+serenity = { version = "0.12.5", default-features = false, features = ["client", "gateway", "rustls_backend", "model", "cache"] }
 poise = "0.6.1"
-
-axum = { version = "0.8.7", features = ["multipart"] }
-
 sqlx = { version = "0.8.6", features = ["runtime-tokio-rustls", "sqlite", "chrono", "uuid", "derive", "migrate", "macros"], default-features = false }
-
-reqwest = { version = "0.12.24", features = ["json"] }
-
 tokio = { version = "1.48.0", features = ["macros", "rt-multi-thread", "fs"] }
-
 serde = { version = "1.0.228", features = ["derive"] }
-serde_json = "1.0.145"
-
+serde_json = "1.0.148"
 anyhow = "1.0.100"
-tracing = "0.1.41"
-tracing-subscriber = { version = "0.3.20", features = ["env-filter"] }
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.22", features = ["env-filter"] }
 chrono = { version = "0.4.42", features = ["serde"] }
-uuid = { version = "1.18.1", features = ["v4", "serde"] }
 lazy_static = "1.5"
-urlencoding = "2.1.3"
 sysinfo = "0.37.2"
-
 dotenvy = "0.15.7"
 regex = "1.12.2"
+
+clouder-llm = { path = "llm", optional = true }
+clouder-web = { path = "web", optional = true }
+
+[features]
+default = ["web", "llm"]
+web = ["clouder-web"]
+llm = ["clouder-llm"]

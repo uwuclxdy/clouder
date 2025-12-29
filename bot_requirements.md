@@ -328,6 +328,7 @@
 - **Automatic Deletion:** Messages without allowed content deleted after 3 seconds (non-configurable)
 
 ## **Project Structure**
+> OUTDATED!
 ```
 migrations/ # database migrations
 ├── 001_initial.sql # self-roles
@@ -376,7 +377,7 @@ src/
 ## **Structure in production**
 - Auto-creates `data` folder, db file (if not exists) and tables on startup with `IF NOT EXISTS`
 ```
-├── clouder.exe
+├── clouder       // executable binary
 └── data/
     └── db.sqlite
 ```
@@ -400,7 +401,7 @@ src/
 
 ## **Embed Colors**
 ```
-use crate::utils::get_default_embed_color;
+use utils::get_default_embed_color;
 
 // In commands with Context
 .color(get_default_embed_color(ctx.data()))

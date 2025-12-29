@@ -17,8 +17,8 @@ pub async fn event_handler(
     data: &Data,
 ) -> anyhow::Result<(), Error> {
     match event {
-        serenity::FullEvent::Ready { data_about_bot, .. } => {
-            info!("ready: {}", data_about_bot.user.name);
+        serenity::FullEvent::Ready { .. } => {
+            info!("bot ready");
         }
         serenity::FullEvent::InteractionCreate { interaction } => {
             handle_interaction_create(ctx, interaction, data).await;

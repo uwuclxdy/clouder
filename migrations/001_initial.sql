@@ -1,4 +1,4 @@
--- Initial schema for self-roles
+-- 001: Initial schema
 CREATE TABLE IF NOT EXISTS selfrole_configs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     guild_id TEXT NOT NULL,

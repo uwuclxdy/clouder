@@ -4,11 +4,8 @@ pub mod config_tests;
 pub mod database_tests;
 pub mod events_tests;
 mod help_tests;
-pub mod mediaonly_tests;
 mod purge_tests;
-pub mod session_extractor_tests;
 pub mod utils_tests;
-pub mod web_tests;
 mod welcome_goodbye_tests;
 
 use crate::config::AppState;

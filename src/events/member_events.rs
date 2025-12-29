@@ -63,7 +63,7 @@ pub async fn member_addition(ctx: &Context, guild_id: &GuildId, new_member: &Mem
     let (guild_name, member_count) = match ctx.cache.guild(guild_id) {
         Some(guild) => (guild.name.clone(), guild.member_count),
         None => {
-            error!("guild {} not in cache", guild_id);
+            warn!("guild {} not in cache", guild_id);
             return;
         }
     };

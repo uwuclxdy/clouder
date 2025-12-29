@@ -1,4 +1,4 @@
--- Reminders system and user settings tables
+-- 002: Reminders system and user settings
 
 -- User settings for timezone and DM preferences
 CREATE TABLE IF NOT EXISTS user_settings (

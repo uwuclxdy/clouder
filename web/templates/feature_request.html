@@ -3,7 +3,7 @@
 <head>
     <title>Feature Request - Clouder Bot</title>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
     <style>
         {{COMMON_CSS}}
         {{DASHBOARD_CSS}}
@@ -15,7 +15,7 @@
             <div class="navbar-left">
                 <div class="logo">clouder</div>
                 <div class="breadcrumb">
-                    <a href="/" class="breadcrumb-item">Dashboard</a>
+                    <a class="breadcrumb-item" href="/">Dashboard</a>
                     <span class="breadcrumb-separator">/</span>
                     <span class="breadcrumb-item current">Feature Request</span>
                 </div>
@@ -24,14 +24,14 @@
                 <a class="feature-request-btn" href="/feature-request">Feature Request</a>
                 <a class="add-server-btn" href="{{INVITE_URL}}" target="_blank">Add to Server</a>
                 <a class="logout-btn" href="/user/settings" style="margin-right: 10px;">Settings</a>
-                <a href="/auth/logout" class="logout-btn">Logout</a>
+                <a class="logout-btn" href="/auth/logout">Logout</a>
             </div>
         </div>
     </nav>
     <div class="container">
         <div class="user-info">
             <div class="user-info-left">
-                <img src="{{USER_AVATAR}}" alt="{{USER_NAME}}" class="user-avatar">
+                <img alt="{{USER_NAME}}" class="user-avatar" src="{{USER_AVATAR}}">
                 <div>
                     <h3 class="welcome-username">{{USER_NAME}}</h3>
                     <p class="welcome-subtitle">Suggest new features for Clouder Bot</p>
@@ -48,11 +48,11 @@
                     <div class="feature-description-container">
                         <textarea
                             id="featureDescription"
+                            maxlength="2000"
                             name="description"
                             placeholder="Describe your feature idea here..."
-                            maxlength="2000"
-                            rows="8"
                             required
+                            rows="8"
                         ></textarea>
                         <div class="char-counter">
                             <span id="charCount">0</span>/2000 characters
@@ -60,7 +60,7 @@
                     </div>
 
                     <div class="setting-item submit-section">
-                        <button id="submitFeatureRequest" type="submit" class="btn primary-btn">Submit Feature Request</button>
+                        <button class="btn primary-btn" id="submitFeatureRequest" type="submit">Submit Feature Request</button>
                     </div>
                 </form>
             </div>
@@ -69,6 +69,21 @@
 
     <script>
         {{COMMON_JS}}
+
+        function showMessage(message, type) {
+            // Simple alert for now, could be enhanced with a proper notification system
+            alert(message);
+        }
+
+        function setButtonLoading(button, loading, text) {
+            if (loading) {
+                button.disabled = true;
+                button.textContent = text;
+            } else {
+                button.disabled = false;
+                button.textContent = text;
+            }
+        }
 
         document.addEventListener('DOMContentLoaded', function() {
             const textarea = document.getElementById('featureDescription');

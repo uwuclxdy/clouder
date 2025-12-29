@@ -2,8 +2,8 @@ use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, Env
 
 pub fn init() {
     let env_filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| {
-        // Default to info level for our crate, warn for dependencies
-        EnvFilter::new("warn,clouder=info")
+        // Default to info level for all crates
+        EnvFilter::new("info")
     });
 
     tracing_subscriber::registry()
@@ -46,7 +46,6 @@ mod tests {
             "error",
             "clouder=debug",
             "clouder=debug,serenity=warn",
-            "warn,clouder::web=debug",
         ];
 
         for filter_str in filters {
@@ -63,7 +62,7 @@ mod tests {
     #[test]
     fn test_default_filter() {
         // Verify the default filter string is valid
-        let default_filter = "warn,clouder=info";
+        let default_filter = "info";
         let result = EnvFilter::try_new(default_filter);
         assert!(result.is_ok(), "Default filter should be valid");
     }

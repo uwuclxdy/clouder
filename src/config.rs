@@ -329,13 +329,15 @@ pub struct AppState {
     pub config: Arc<Config>,
     pub db: Arc<SqlitePool>,
     pub http: Arc<Http>,
-    pub openai_client: Option<crate::external::openai::OpenAIClient>,
+    #[cfg(feature = "llm")]
+    pub openai_client: Option<clouder_llm::OpenAIClient>,
 }
 
 impl AppState {
     pub fn new(config: Arc<Config>, db: Arc<SqlitePool>, http: Arc<Http>) -> Self {
+        #[cfg(feature = "llm")]
         let openai_client = if config.openai.enabled {
-            Some(crate::external::openai::OpenAIClient::new(
+            Some(clouder_llm::OpenAIClient::new(
                 config.openai.base_url.clone(),
                 config.openai.api_key.clone(),
                 config.openai.timeout_seconds,
@@ -348,6 +350,7 @@ impl AppState {
             config,
             db,
             http,
+            #[cfg(feature = "llm")]
             openai_client,
         }
     }

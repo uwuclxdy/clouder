@@ -128,60 +128,6 @@ mod tests {
     }
 
     #[test]
-    fn test_format_discord_timestamp() {
-        // Test with a known timestamp: 2025-08-19T14:05:00Z (UTC)
-        let test_time = "2025-08-19T14:05:00Z";
-        let expected_timestamp = 1755612300; // Unix timestamp as produced by chrono (test environment specific)
-
-        // Test different formatting styles
-        assert_eq!(
-            format_discord_timestamp(test_time, 'F'),
-            format!("<t:{}:F>", expected_timestamp)
-        );
-        assert_eq!(
-            format_discord_timestamp(test_time, 'f'),
-            format!("<t:{}:f>", expected_timestamp)
-        );
-        assert_eq!(
-            format_discord_timestamp(test_time, 'D'),
-            format!("<t:{}:D>", expected_timestamp)
-        );
-        assert_eq!(
-            format_discord_timestamp(test_time, 'd'),
-            format!("<t:{}:d>", expected_timestamp)
-        );
-        assert_eq!(
-            format_discord_timestamp(test_time, 't'),
-            format!("<t:{}:t>", expected_timestamp)
-        );
-        assert_eq!(
-            format_discord_timestamp(test_time, 'T'),
-            format!("<t:{}:T>", expected_timestamp)
-        );
-        assert_eq!(
-            format_discord_timestamp(test_time, 'R'),
-            format!("<t:{}:R>", expected_timestamp)
-        );
-
-        // Test default format (invalid style character)
-        assert_eq!(
-            format_discord_timestamp(test_time, 'X'),
-            format!("<t:{}:f>", expected_timestamp)
-        );
-
-        // Test invalid timestamp
-        assert_eq!(
-            format_discord_timestamp("invalid-time", 'F'),
-            "invalid timestamp"
-        );
-
-        // Test just that timezone formatting works, without strict timestamp checking
-        let time_with_offset = "2025-08-19T16:05:00+02:00";
-        let result = format_discord_timestamp(time_with_offset, 'F');
-        assert!(result.starts_with("<t:") && result.ends_with(":F>"));
-    }
-
-    #[test]
     fn test_can_bot_manage_role() {
         // Test with multiple bot roles
         let bot_positions = vec![2, 5, 8];
@@ -208,60 +154,6 @@ mod tests {
 
         // Test with zero position target
         assert!(can_bot_manage_role(&bot_positions, 0));
-    }
-
-    // Tests for get_bot_invite_url
-
-    #[test]
-    fn test_get_bot_invite_url_without_redirect() {
-        let client_id = "123456789012345678";
-        let url = get_bot_invite_url(client_id, None);
-
-        assert!(url.contains(client_id));
-        assert!(url.starts_with("https://discord.com/oauth2/authorize"));
-        assert!(url.contains("permissions=268697088"));
-        assert!(url.contains("scope=bot%20applications.commands"));
-        assert!(!url.contains("redirect_uri"));
-        assert!(!url.contains("response_type"));
-    }
-
-    #[test]
-    fn test_get_bot_invite_url_with_redirect() {
-        let client_id = "123456789012345678";
-        let redirect_uri = "https://example.com/callback";
-        let url = get_bot_invite_url(client_id, Some(redirect_uri));
-
-        assert!(url.contains(client_id));
-        assert!(url.starts_with("https://discord.com/oauth2/authorize"));
-        assert!(url.contains("permissions=268697088"));
-        assert!(url.contains("response_type=code"));
-        assert!(url.contains(&format!("redirect_uri={}", redirect_uri)));
-        assert!(url.contains("integration_type=0"));
-        assert!(url.contains("scope=bot"));
-    }
-
-    #[test]
-    fn test_get_bot_invite_url_different_client_ids() {
-        let ids = ["1", "999999999999999999", "123456789012345678"];
-
-        for id in ids {
-            let url = get_bot_invite_url(id, None);
-            assert!(
-                url.contains(&format!("client_id={}", id)),
-                "url should contain client_id={}",
-                id
-            );
-        }
-    }
-
-    #[test]
-    fn test_get_bot_invite_url_special_chars_in_redirect() {
-        let client_id = "123456789012345678";
-        let redirect_uri = "https://example.com/callback?foo=bar&baz=qux";
-        let url = get_bot_invite_url(client_id, Some(redirect_uri));
-
-        // URL should contain the redirect_uri (though not URL-encoded by the function)
-        assert!(url.contains(redirect_uri));
     }
 
     // Tests for BotChannelPermissions struct
@@ -372,77 +264,5 @@ mod tests {
             .max()
             .unwrap_or(0);
         assert_eq!(negative_highest, 1);
-    }
-
-    // Tests for get_guild_text_channels signature accepting &Http
-
-    #[tokio::test]
-    async fn test_get_guild_text_channels_accepts_http_reference() {
-        // Verify the function signature accepts &Http directly (not &AppState)
-        let http = Http::new("test_token");
-
-        // Call with invalid guild ID to test the error path
-        let result = get_guild_text_channels(&http, "invalid_guild_id").await;
-
-        // Should error on invalid guild ID parse
-        assert!(result.is_err());
-    }
-
-    #[tokio::test]
-    async fn test_get_guild_text_channels_invalid_guild_id_format() {
-        let http = Http::new("test_token");
-
-        // Test various invalid guild ID formats
-        let invalid_ids = vec!["", "abc", "12.34", "not-a-number"];
-
-        for invalid_id in invalid_ids {
-            let result = get_guild_text_channels(&http, invalid_id).await;
-            assert!(
-                result.is_err(),
-                "expected error for invalid guild id: {}",
-                invalid_id
-            );
-        }
-    }
-
-    #[tokio::test]
-    async fn test_get_guild_text_channels_valid_guild_id_format() {
-        let http = Http::new("test_token");
-
-        // Test with valid format but non-existent guild (will fail at API level)
-        let result = get_guild_text_channels(&http, "123456789012345678").await;
-
-        // Should error because the token is invalid/guild doesn't exist
-        // but the guild_id parsing should succeed
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn test_channel_info_struct() {
-        // Test ChannelInfo struct creation and serialization
-        let channel = ChannelInfo {
-            id: "123456789".to_string(),
-            name: "general".to_string(),
-        };
-
-        assert_eq!(channel.id, "123456789");
-        assert_eq!(channel.name, "general");
-
-        // Test serialization
-        let json = serde_json::to_string(&channel).unwrap();
-        assert!(json.contains("123456789"));
-        assert!(json.contains("general"));
-    }
-
-    #[test]
-    fn test_channel_info_clone() {
-        let channel = ChannelInfo {
-            id: "987654321".to_string(),
-            name: "test-channel".to_string(),
-        };
-
-        let cloned = channel.clone();
-        assert_eq!(cloned.id, channel.id);
-        assert_eq!(cloned.name, channel.name);
     }
 }

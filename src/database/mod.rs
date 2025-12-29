@@ -37,13 +37,14 @@ async fn run_migrations(pool: &SqlitePool) -> Result<()> {
         include_str!("../../migrations/004_mediaonly.sql"),
     ];
 
-    for (index, migration_content) in migrations.iter().enumerate() {
+    for migration_content in migrations {
         info!(
             "running migration {}",
-            migrations[index]
-                .split('/')
-                .next_back()
-                .unwrap_or("unknown")
+            migration_content
+                .lines()
+                .next()
+                .unwrap()
+                .trim_start_matches("-- ")
         );
         for statement in migration_content.split(';') {
             let statement = statement.trim();

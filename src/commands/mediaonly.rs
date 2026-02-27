@@ -1,7 +1,7 @@
-use crate::config::AppState;
-use crate::database::mediaonly::MediaOnlyConfig;
-use crate::utils::get_default_embed_color;
 use anyhow::Result;
+use clouder_core::config::AppState;
+use clouder_core::database::mediaonly::MediaOnlyConfig;
+use clouder_core::utils::get_default_embed_color;
 use poise::serenity_prelude as serenity;
 use serenity::{CreateEmbed, Mentionable};
 
@@ -46,7 +46,7 @@ pub async fn mediaonly(
             "media-only mode is now **{}** for {}\n\nMessages without media will be deleted.\nConfigure allowed content types in the [dashboard]({}/dashboard/{}/mediaonly)",
             status_text,
             target_channel.mention(),
-            ctx.data().config.web.base_url,
+            ctx.data().config.web.api_url,
             guild_id
         ))
         .color(get_default_embed_color(ctx.data()));

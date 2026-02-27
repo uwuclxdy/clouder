@@ -1,0 +1,15 @@
+[package]
+name = "clouder-llm"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+name = "clouder_llm"
+path = "src/lib.rs"
+
+[dependencies]
+reqwest = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }

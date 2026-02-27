@@ -1,7 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use crate::utils::*;
-    use serenity::all::{Http, Permissions};
+    use clouder_core::utils::*;
 
     #[test]
     fn test_format_duration() {
@@ -125,123 +124,6 @@ mod tests {
                 assert!(highest_position > *position, "Admin should manage {}", name);
             }
         }
-    }
-
-    #[test]
-    fn test_can_bot_manage_role() {
-        // Test with multiple bot roles
-        let bot_positions = vec![2, 5, 8];
-
-        // Can manage role below highest position
-        assert!(can_bot_manage_role(&bot_positions, 3));
-        assert!(can_bot_manage_role(&bot_positions, 7));
-
-        // Cannot manage role equal to highest position
-        assert!(!can_bot_manage_role(&bot_positions, 8));
-
-        // Cannot manage role above highest position
-        assert!(!can_bot_manage_role(&bot_positions, 10));
-
-        // Test with single bot role
-        let single_role = vec![5];
-        assert!(can_bot_manage_role(&single_role, 3));
-        assert!(!can_bot_manage_role(&single_role, 5));
-        assert!(!can_bot_manage_role(&single_role, 7));
-
-        // Test with no bot roles
-        let no_roles: Vec<u16> = vec![];
-        assert!(!can_bot_manage_role(&no_roles, 1));
-
-        // Test with zero position target
-        assert!(can_bot_manage_role(&bot_positions, 0));
-    }
-
-    // Tests for BotChannelPermissions struct
-
-    #[test]
-    fn test_bot_channel_permissions_struct() {
-        let perms = BotChannelPermissions {
-            permissions: Permissions::SEND_MESSAGES | Permissions::READ_MESSAGE_HISTORY,
-        };
-
-        assert!(perms.permissions.send_messages());
-        assert!(perms.permissions.read_message_history());
-        assert!(!perms.permissions.administrator());
-    }
-
-    // Tests for bot_has_permission_in_channel logic
-
-    #[tokio::test]
-    async fn test_bot_has_permission_dm_always_true() {
-        let http = Http::new("test_token");
-
-        // DMs (guild_id = None) should always return true
-        let result = bot_has_permission_in_channel(
-            &http,
-            None, // DM context
-            serenity::all::ChannelId::new(123456789),
-            |p| p.send_messages(),
-        )
-        .await;
-
-        assert!(result, "DMs should always have permission");
-    }
-
-    #[tokio::test]
-    async fn test_bot_has_permission_invalid_guild() {
-        let http = Http::new("invalid_token");
-
-        // Invalid guild should return false (API call fails)
-        let result = bot_has_permission_in_channel(
-            &http,
-            Some(serenity::all::GuildId::new(999999999999)),
-            serenity::all::ChannelId::new(123456789),
-            |p| p.send_messages(),
-        )
-        .await;
-
-        assert!(
-            !result,
-            "invalid guild/token should return false due to API failure"
-        );
-    }
-
-    #[tokio::test]
-    async fn test_get_bot_channel_permissions_invalid_token() {
-        let http = Http::new("invalid_token");
-
-        let result = get_bot_channel_permissions(
-            &http,
-            serenity::all::GuildId::new(123456789),
-            serenity::all::ChannelId::new(987654321),
-        )
-        .await;
-
-        // Should return None due to invalid token
-        assert!(result.is_none());
-    }
-
-    // Tests for permission check callback patterns
-
-    #[test]
-    fn test_permission_check_callbacks() {
-        let full_perms = Permissions::all();
-        let limited_perms = Permissions::SEND_MESSAGES | Permissions::VIEW_CHANNEL;
-        let no_perms = Permissions::empty();
-
-        // Test various permission checks
-        assert!(full_perms.send_messages());
-        assert!(limited_perms.send_messages());
-        assert!(!no_perms.send_messages());
-
-        assert!(full_perms.administrator());
-        assert!(!limited_perms.administrator());
-
-        // Combined permission check
-        let combined_check = |p: &Permissions| p.send_messages() && p.view_channel();
-        assert!(combined_check(&full_perms));
-        assert!(combined_check(&limited_perms));
-        assert!(!combined_check(&no_perms));
     }
 
     #[test]

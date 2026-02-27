@@ -1,39 +1,81 @@
 [workspace]
-members = [".", "web", "llm"]
+members = [".", "clouder-core", "clouder-web", "clouder-llm"]
+
+[workspace.dependencies]
+serenity = { version = "0.12.5", default-features = false, features = [
+    "client",
+    "gateway",
+    "rustls_backend",
+    "model",
+    "cache",
+] }
+poise = { version = "0.6.1" }
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = { version = "1.0.149" }
+anyhow = { version = "1.0.102" }
+tracing = { version = "0.1.44" }
+tracing-subscriber = { version = "0.3.22", features = ["env-filter"] }
+tokio = { version = "1.49.0", features = [
+    "macros",
+    "rt-multi-thread",
+    "fs",
+    "process",
+] }
+sqlx = { version = "0.8.6", features = [
+    "runtime-tokio-rustls",
+    "sqlite",
+    "chrono",
+    "uuid",
+    "derive",
+    "migrate",
+    "macros",
+], default-features = false }
+chrono = { version = "0.4.44", features = ["serde"] }
+reqwest = { version = "0.13.2" }
+axum = { version = "0.8.8" }
+uuid = { version = "1.21.0" }
+once_cell = { version = "1.21.3" }
+dotenvy = { version = "0.15.7" }
+regex = { version = "1.12.3" }
+urlencoding = { version = "2.1.3" }
+lazy_static = { version = "1.5.0" }
+sysinfo = { version = "0.38.2" }
+rand = { version = "0.10.0" }
+axum-extra = { version = "0.12.5", features = ["cookie-signed"] }
+uwurs = "0.3.4"
 
 [package]
 name = "clouder"
-version = "0.1.7"
+version = "0.2.0"
 edition = "2024"
-
-[lib]
-name = "clouder"
-path = "src/lib.rs"
 
 [[bin]]
 name = "clouder"
 path = "src/main.rs"
 
 [dependencies]
-serenity = { version = "0.12.5", default-features = false, features = ["client", "gateway", "rustls_backend", "model", "cache"] }
-poise = "0.6.1"
-sqlx = { version = "0.8.6", features = ["runtime-tokio-rustls", "sqlite", "chrono", "uuid", "derive", "migrate", "macros"], default-features = false }
-tokio = { version = "1.48.0", features = ["macros", "rt-multi-thread", "fs"] }
-serde = { version = "1.0.228", features = ["derive"] }
-serde_json = "1.0.148"
-anyhow = "1.0.100"
-tracing = "0.1.44"
-tracing-subscriber = { version = "0.3.22", features = ["env-filter"] }
-chrono = { version = "0.4.42", features = ["serde"] }
-lazy_static = "1.5"
-sysinfo = "0.37.2"
-dotenvy = "0.15.7"
-regex = "1.12.2"
+serenity = { workspace = true }
+poise = { workspace = true }
+sqlx = { workspace = true }
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+chrono = { workspace = true }
+lazy_static = { workspace = true }
+sysinfo = { workspace = true }
+rand = { workspace = true }
+uwurs = { workspace = true }
+# used in unit tests
+tempfile = "3.26.0"
 
-clouder-llm = { path = "llm", optional = true }
-clouder-web = { path = "web", optional = true }
+clouder-core = { path = "clouder-core" }
+clouder-llm = { path = "clouder-llm", optional = true }
+clouder-web = { path = "clouder-web", optional = true }
 
 [features]
 default = ["web", "llm"]
-web = ["clouder-web"]
-llm = ["clouder-llm"]
+web = ["dep:clouder-web"]
+llm = ["clouder-llm", "clouder-core/llm"]

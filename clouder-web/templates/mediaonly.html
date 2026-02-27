@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>clouder // media-only</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+  <header class="topbar">
+    <div class="container topbar-inner">
+      <a href="/servers" class="logo" style="text-decoration:none;">clouder</a>
+      <div class="user-info">
+        <img src="{{AVATAR_URL}}" alt="" class="avatar">
+        <span class="username">{{USERNAME}}</span>
+        <a href="/auth/logout" class="btn btn-sm">sign out</a>
+      </div>
+    </div>
+  </header>
+  <div class="dashboard-layout container">
+    <nav class="sidebar">
+      <a href="/dashboard/{{GUILD_ID}}/about" class="sidebar-link">about</a>
+      <a href="/dashboard/{{GUILD_ID}}/selfroles" class="sidebar-link">self-roles</a>
+      <a href="/dashboard/{{GUILD_ID}}/welcome-goodbye" class="sidebar-link">welcome/goodbye</a>
+      <a href="/dashboard/{{GUILD_ID}}/mediaonly" class="sidebar-link active">media-only</a>
+    </nav>
+    <main class="dash-content">
+      <h2>media-only <span class="subtext">// channels that only allow media</span></h2>
+
+      <!-- configured channels table -->
+      <div class="section-card">
+        <div class="section-header">
+          <span class="section-title">configured channels</span>
+        </div>
+        <div id="configs-container">
+          <p class="loading">fetching...</p>
+        </div>
+      </div>
+
+      <!-- add channel -->
+      <div class="section-card">
+        <div class="section-header">
+          <span class="section-title">add channel</span>
+        </div>
+        <div class="add-row">
+          <div class="form-group">
+            <label for="add-channel">channel</label>
+            <select id="add-channel">
+              <option value="">loading...</option>
+            </select>
+          </div>
+          <button class="btn btn-primary" onclick="addChannel()">+ add</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/static/app.js"></script>
+  <script>
+    const GUILD_ID = '{{GUILD_ID}}';
+    let channels = [];
+
+    async function loadChannels() {
+      const res = await apiFetch('GET', `/api/guild/${GUILD_ID}/channels`);
+      const data = await res.json();
+      channels = data.channels.sort((a, b) => a.position - b.position);
+      const sel = document.getElementById('add-channel');
+      sel.innerHTML = channels.map(c => `<option value="${c.id}">#${escHtml(c.name)}</option>`).join('');
+    }
+
+    async function loadConfigs() {
+      const res = await apiFetch('GET', `/api/mediaonly/${GUILD_ID}`);
+      const data = await res.json();
+      const container = document.getElementById('configs-container');
+
+      if (!data.configs || data.configs.length === 0) {
+        container.innerHTML = '<p class="loading">no channels configured. add one below.</p>';
+        return;
+      }
+
+      data.configs.forEach(c => {
+        channelState[c.channel_id] = {
+          allow_links: c.allow_links,
+          allow_attachments: c.allow_attachments,
+          allow_gifs: c.allow_gifs,
+          allow_stickers: c.allow_stickers,
+        };
+      });
+
+      const rows = data.configs.map(c => {
+        const ch = channels.find(x => x.id === c.channel_id);
+        const name = ch ? '#' + ch.name : c.channel_id;
+        return `<div class="config-item" id="mo-${c.channel_id}">
+          <div class="config-item-info">
+            <div class="config-item-title">${escHtml(name)}</div>
+            <div class="config-item-meta" style="display:flex;gap:var(--spacing-sm);flex-wrap:wrap;margin-top:6px;">
+              <label class="toggle-row" style="gap:6px;cursor:pointer;">
+                <input type="checkbox" ${c.allow_links ? 'checked' : ''} onchange="updateChannel('${c.channel_id}', 'allow_links', this.checked)">
+                <span style="font-size:0.8rem;color:var(--ctp-subtext1);">links</span>
+              </label>
+              <label class="toggle-row" style="gap:6px;cursor:pointer;">
+                <input type="checkbox" ${c.allow_attachments ? 'checked' : ''} onchange="updateChannel('${c.channel_id}', 'allow_attachments', this.checked)">
+                <span style="font-size:0.8rem;color:var(--ctp-subtext1);">attachments</span>
+              </label>
+              <label class="toggle-row" style="gap:6px;cursor:pointer;">
+                <input type="checkbox" ${c.allow_gifs ? 'checked' : ''} onchange="updateChannel('${c.channel_id}', 'allow_gifs', this.checked)">
+                <span style="font-size:0.8rem;color:var(--ctp-subtext1);">gifs</span>
+              </label>
+              <label class="toggle-row" style="gap:6px;cursor:pointer;">
+                <input type="checkbox" ${c.allow_stickers ? 'checked' : ''} onchange="updateChannel('${c.channel_id}', 'allow_stickers', this.checked)">
+                <span style="font-size:0.8rem;color:var(--ctp-subtext1);">stickers</span>
+              </label>
+            </div>
+          </div>
+          <div class="config-item-actions">
+            <button class="btn btn-sm btn-danger" onclick="removeChannel('${c.channel_id}')">remove</button>
+          </div>
+        </div>`;
+      }).join('');
+      container.innerHTML = rows;
+    }
+
+    // track per-channel state for batch updates
+    const channelState = {};
+
+    async function updateChannel(channelId, field, value) {
+      if (!channelState[channelId]) channelState[channelId] = {};
+      channelState[channelId][field] = value;
+      const payload = {
+        allow_links: channelState[channelId].allow_links ?? true,
+        allow_attachments: channelState[channelId].allow_attachments ?? true,
+        allow_gifs: channelState[channelId].allow_gifs ?? true,
+        allow_stickers: channelState[channelId].allow_stickers ?? true,
+      };
+      const res = await apiFetch('PUT', `/api/mediaonly/${GUILD_ID}/${channelId}`, payload);
+      toast(res.ok ? 'settings updated' : 'update failed', res.ok ? 'success' : 'error');
+    }
+
+    async function addChannel() {
+      const channelId = document.getElementById('add-channel').value;
+      if (!channelId) return;
+      const payload = { channel_id: channelId, allow_links: true, allow_attachments: true, allow_gifs: true, allow_stickers: true };
+      const res = await apiFetch('POST', `/api/mediaonly/${GUILD_ID}`, payload);
+      if (res.ok) {
+        toast('channel added', 'success');
+        loadConfigs();
+      } else {
+        toast('failed to add channel', 'error');
+      }
+    }
+
+    async function removeChannel(channelId) {
+      if (!confirm('remove this channel from media-only?')) return;
+      const res = await apiFetch('DELETE', `/api/mediaonly/${GUILD_ID}/${channelId}`);
+      if (res.ok) {
+        toast('channel removed', 'success');
+        document.getElementById(`mo-${channelId}`)?.remove();
+        const container = document.getElementById('configs-container');
+        if (!container.querySelector('.config-item')) {
+          container.innerHTML = '<p class="loading">no channels configured. add one below.</p>';
+        }
+      } else {
+        toast('failed to remove channel', 'error');
+      }
+    }
+
+    function escHtml(s) {
+      if (s == null) return '';
+      return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    loadChannels().then(loadConfigs);
+  </script>
+</body>
+
+</html>

@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use crate::config::{AppState, Config};
+    use clouder_core::config::{AppState, Config};
     use serenity;
     use std::sync::Arc;
 
@@ -10,9 +10,8 @@ mod tests {
 
         assert_eq!(config.discord.token, "test_token");
         assert_eq!(config.discord.application_id, 12345);
-        assert_eq!(config.web.host, "127.0.0.1");
-        assert_eq!(config.web.port, 3000);
-        assert_eq!(config.web.base_url, "http://localhost:3000");
+        assert_eq!(config.web.api_url, "http://127.0.0.1:8080");
+        assert_eq!(config.web.bind_addr(), "127.0.0.1:8080");
         assert_eq!(config.database.url, ":memory:");
     }
 
@@ -20,11 +19,11 @@ mod tests {
     fn test_oauth_config() {
         let config = Config::test_config();
 
-        assert_eq!(config.web.oauth.client_id, "test_client_id");
+        assert_eq!(config.web.oauth.client_id, "12345");
         assert_eq!(config.web.oauth.client_secret, "test_client_secret");
         assert_eq!(
             config.web.oauth.redirect_uri,
-            "http://localhost:3000/auth/callback"
+            "http://127.0.0.1:8080/auth/callback"
         );
     }
 
@@ -48,7 +47,7 @@ mod tests {
 
         let json = serde_json::to_string(&config).expect("Config should serialize to JSON");
         assert!(json.contains("test_token"));
-        assert!(json.contains("test_client_id"));
+        assert!(json.contains("12345"));
 
         let deserialized: Config =
             serde_json::from_str(&json).expect("Config should deserialize from JSON");
@@ -66,28 +65,28 @@ mod tests {
             config1.discord.application_id,
             config2.discord.application_id
         );
-        assert_eq!(config1.web.host, config2.web.host);
-        assert_eq!(config1.web.port, config2.web.port);
+        assert_eq!(config1.web.api_url, config2.web.api_url);
     }
 
     #[test]
     fn test_discord_config_structure() {
         let config = Config::test_config();
 
-        // Verify Discord config structure
         assert!(!config.discord.token.is_empty());
         assert!(config.discord.application_id > 0);
+        // application_id is parsed from client_id
+        assert_eq!(
+            config.discord.application_id,
+            config.web.oauth.client_id.parse::<u64>().unwrap()
+        );
     }
 
     #[test]
     fn test_web_config_structure() {
         let config = Config::test_config();
 
-        // Verify web config structure
-        assert!(!config.web.host.is_empty());
-        assert!(config.web.port > 0);
-        assert!(!config.web.base_url.is_empty());
-        assert!(config.web.base_url.starts_with("http"));
+        assert!(!config.web.api_url.is_empty());
+        assert!(config.web.api_url.starts_with("http"));
     }
 
     #[test]

@@ -1,5 +1,5 @@
-use crate::commands::about::BOT_START_TIME;
-use crate::utils::format_duration;
+use clouder::commands::about::BOT_START_TIME;
+use clouder_core::utils::format_duration;
 use poise::serenity_prelude as serenity;
 use sysinfo::System;
 

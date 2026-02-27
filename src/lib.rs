@@ -1,40 +1,44 @@
-pub use config::{AppState, Config};
-pub use database::selfroles::{SelfRoleConfig, SelfRoleRole};
-pub use database::welcome_goodbye::WelcomeGoodbyeConfig;
-pub use shared::models::{
+pub use clouder_core::config::{AppState, Config};
+pub use clouder_core::database::selfroles::{SelfRoleConfig, SelfRoleCooldown, SelfRoleRole};
+pub use clouder_core::database::welcome_goodbye::WelcomeGoodbyeConfig;
+pub use clouder_core::shared::models::{
     ChannelInfo, CreateSelfRoleRequest, RoleInfo, SelfRoleData, UserPermissions,
 };
-pub use shared::{
+pub use clouder_core::shared::{
     create_selfrole, delete_selfrole, get_guild_channels, get_guild_roles, list_selfroles,
 };
 
-mod commands;
-mod config;
-mod database;
+pub mod commands;
 mod events;
 mod logging;
-mod shared;
-mod utils;
 
 pub use crate::commands::about::about;
 pub use crate::commands::help::help;
 pub use crate::commands::mediaonly::mediaonly;
 pub use crate::commands::purge::purge;
+pub use crate::commands::random::random;
 pub use crate::commands::selfroles::selfroles;
-pub use crate::database::selfroles::SelfRoleCooldown;
+pub use crate::commands::uwufy::uwufy;
 pub use crate::events::event_handler;
 pub use crate::logging::{debug, error, info};
 
 use anyhow::Result;
 use poise::serenity_prelude as serenity;
+use std::path::Path;
 use std::sync::Arc;
-use tokio::time::{sleep, Duration};
+use tokio::time::{Duration, sleep};
 use tokio::try_join;
 
 type Data = AppState;
 type Error = Box<dyn std::error::Error + Send + Sync>;
 
 pub fn run() -> Result<()> {
+    if !Path::new(".env").exists() {
+        std::fs::write(".env", include_str!("../.env.example"))?;
+        println!("created .env -- fill it out and restart");
+        std::process::exit(0);
+    }
+
     tokio::runtime::Runtime::new()?.block_on(async_main())
 }
 
@@ -48,7 +52,7 @@ async fn async_main() -> Result<()> {
     let config = Arc::new(Config::from_env()?);
     info!("config loaded");
 
-    let db = database::initialize_database(&config.database.url).await?;
+    let db = clouder_core::database::initialize_database(&config.database.url).await?;
     info!("db init ok");
     let token = config.discord.token.clone();
     let intents = serenity::GatewayIntents::GUILD_MESSAGES
@@ -62,7 +66,15 @@ async fn async_main() -> Result<()> {
 
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
-            commands: vec![selfroles(), about(), help(), purge(), mediaonly()],
+            commands: vec![
+                selfroles(),
+                about(),
+                help(),
+                purge(),
+                mediaonly(),
+                random(),
+                uwufy(),
+            ],
             event_handler: |ctx, event, framework, data| {
                 Box::pin(event_handler(ctx, event, framework, data))
             },
@@ -103,7 +115,6 @@ async fn async_main() -> Result<()> {
 
     info!("starting discord client");
 
-    // Start Discord bot and web dashboard
     try_join!(
         async {
             client.start().await.map_err(anyhow::Error::msg)?;
@@ -112,8 +123,8 @@ async fn async_main() -> Result<()> {
         async {
             #[cfg(feature = "web")]
             {
-                clouder_web::run().await.map_err(|e| {
-                    error!("web dashboard error: {}", e);
+                clouder_web::run(app_state.clone()).await.map_err(|e| {
+                    error!("web API error: {}", e);
                     e
                 })?;
             }

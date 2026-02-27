@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>clouder // about</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .stat-card {
+            background: var(--ctp-crust);
+            border: 1px solid var(--ctp-surface0);
+            padding: var(--spacing-sm);
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .stat-value {
+            font-family: var(--font-mono);
+            font-size: 1.6rem;
+            color: var(--primary);
+            line-height: 1;
+        }
+
+        .stat-label {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--ctp-overlay0);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .guild-header {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .guild-icon {
+            width: 64px;
+            height: 64px;
+            border: 1px solid var(--ctp-surface0);
+            flex-shrink: 0;
+        }
+
+        .guild-icon-placeholder {
+            width: 64px;
+            height: 64px;
+            background: var(--ctp-surface0);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-mono);
+            font-size: 1.5rem;
+            color: var(--ctp-subtext0);
+            flex-shrink: 0;
+        }
+
+        .guild-name {
+            font-size: 1.4rem;
+            color: var(--ctp-text);
+            font-weight: 600;
+        }
+
+        .guild-desc {
+            font-size: 0.9rem;
+            color: var(--ctp-subtext0);
+            margin-top: 4px;
+        }
+
+        .features-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .feature-tag {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            color: var(--ctp-lavender);
+            background: var(--ctp-surface0);
+            padding: 2px 8px;
+            text-transform: lowercase;
+        }
+
+        .status-row {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            padding: var(--spacing-xs) 0;
+            border-bottom: 1px solid var(--ctp-surface0);
+        }
+
+        .status-row:last-child {
+            border-bottom: none;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            flex-shrink: 0;
+        }
+
+        .status-dot.on {
+            background: var(--ctp-green);
+        }
+
+        .status-dot.off {
+            background: var(--ctp-surface1);
+        }
+
+        .status-label {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            color: var(--ctp-subtext1);
+            flex: 1;
+        }
+
+        .status-value {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            color: var(--ctp-overlay0);
+        }
+
+        .boost-badge {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            padding: 2px 8px;
+            border: 1px solid;
+        }
+
+        .boost-badge.tier-0 {
+            color: var(--ctp-overlay0);
+            border-color: var(--ctp-surface1);
+        }
+
+        .boost-badge.tier-1 {
+            color: var(--ctp-mauve);
+            border-color: var(--ctp-mauve);
+        }
+
+        .boost-badge.tier-2 {
+            color: var(--ctp-lavender);
+            border-color: var(--ctp-lavender);
+        }
+
+        .boost-badge.tier-3 {
+            color: var(--primary);
+            border-color: var(--primary);
+        }
+    </style>
+</head>
+
+<body>
+    <header class="topbar">
+        <div class="container topbar-inner">
+            <a href="/servers" class="logo" style="text-decoration:none;">clouder</a>
+            <div class="user-info">
+                <img src="{{AVATAR_URL}}" alt="" class="avatar">
+                <span class="username">{{USERNAME}}</span>
+                <a href="/auth/logout" class="btn btn-sm">sign out</a>
+            </div>
+        </div>
+    </header>
+    <div class="dashboard-layout container">
+        <nav class="sidebar">
+            <a href="/dashboard/{{GUILD_ID}}/about" class="sidebar-link active">about</a>
+            <a href="/dashboard/{{GUILD_ID}}/selfroles" class="sidebar-link">self-roles</a>
+            <a href="/dashboard/{{GUILD_ID}}/welcome-goodbye" class="sidebar-link">welcome/goodbye</a>
+            <a href="/dashboard/{{GUILD_ID}}/mediaonly" class="sidebar-link">media-only</a>
+        </nav>
+        <main class="dash-content">
+            <h2>about <span class="subtext">// server overview &amp; stats</span></h2>
+
+            <div class="section-card">
+                <div class="section-header">
+                    <span class="section-title">server</span>
+                    <div id="guild-owner"></div>
+                </div>
+                <div id="guild-header">
+                    <p class="loading">fetching...</p>
+                </div>
+            </div>
+
+            <div class="section-card">
+                <div class="section-header">
+                    <span class="section-title">members &amp; channels</span>
+                </div>
+                <div class="stats-grid" id="stats-grid">
+                    <p class="loading">fetching...</p>
+                </div>
+            </div>
+
+            <div class="section-card">
+                <div class="section-header">
+                    <span class="section-title">bot config</span>
+                </div>
+                <div id="bot-config">
+                    <p class="loading">fetching...</p>
+                </div>
+            </div>
+
+            <div class="section-card" id="features-card" style="display:none;">
+                <div class="section-header">
+                    <span class="section-title">guild features</span>
+                </div>
+                <div class="features-list" id="features-list"></div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/static/app.js"></script>
+    <script>
+        const GUILD_ID = '{{GUILD_ID}}';
+        const API_URL = '{{API_URL}}';
+
+        function escHtmlLocal(s) {
+            return String(s)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        function fmt(n) {
+            if (n == null) return '?';
+            return Number(n).toLocaleString();
+        }
+
+        async function loadAbout() {
+            let data;
+            try {
+                const res = await apiFetch('GET', `/api/guild/${GUILD_ID}/about`);
+                data = await res.json();
+            } catch {
+                document.getElementById('guild-header').innerHTML = '<p class="loading">failed to load.</p>';
+                return;
+            }
+
+            // guild header
+            const iconHtml = data.icon_url
+                ? `<img src="${escHtmlLocal(data.icon_url)}" alt="" class="guild-icon">`
+                : `<div class="guild-icon-placeholder">${escHtmlLocal((data.name || '?')[0].toUpperCase())}</div>`;
+
+            const boostTier = data.boost_tier || 0;
+            const boostLabel = boostTier > 0
+                ? `<span class="boost-badge tier-${boostTier}">tier ${boostTier} // ${fmt(data.boost_count)} boosts</span>`
+                : `<span class="boost-badge tier-0">no boost</span>`;
+
+            const descHtml = data.description
+                ? `<div class="guild-desc">${escHtmlLocal(data.description)}</div>`
+                : '';
+
+            const ownerAvatarHtml = data.owner_avatar
+                ? `<img src="${escHtmlLocal(data.owner_avatar)}" alt="" style="width:24px;height:24px;border-radius:50%;border:1px solid var(--ctp-surface0);vertical-align:middle;">`
+                : '';
+            const ownerHtml = `<span class="label" style="display:inline-flex;align-items:center;gap:4px;">${ownerAvatarHtml}${escHtmlLocal(data.owner_name || data.owner_id || '?')}</span>`;
+
+            document.getElementById('guild-owner').innerHTML = ownerHtml;
+            document.getElementById('guild-header').innerHTML = `
+        <div class="guild-header">
+            ${iconHtml}
+            <div>
+                <div class="guild-name">${escHtmlLocal(data.name || '(unknown)')}</div>
+                ${descHtml}
+                <div style="margin-top:6px;display:flex;gap:6px;align-items:center;">
+                    ${boostLabel}
+                    <span class="label">created ${escHtmlLocal(data.created_at || '?')}</span>
+                </div>
+            </div>
+        </div>`;
+
+            // stats grid
+            const stats = [
+                { label: 'members', value: fmt(data.member_count) },
+                { label: 'online', value: fmt(data.online_count) },
+                { label: 'channels', value: fmt(data.total_channels) },
+                { label: 'text', value: fmt(data.text_channels) },
+                { label: 'voice', value: fmt(data.voice_channels) },
+                { label: 'roles', value: fmt(data.role_count) },
+            ];
+
+            document.getElementById('stats-grid').innerHTML = stats
+                .map(s => `<div class="stat-card"><div class="stat-value">${escHtmlLocal(s.value)}</div><div class="stat-label">${escHtmlLocal(s.label)}</div></div>`)
+                .join('');
+
+            // bot config
+            const configRows = [
+                { label: 'self-role panels', value: fmt(data.selfroles_panels), on: data.selfroles_panels > 0 },
+                { label: 'media-only channels', value: fmt(data.mediaonly_channels), on: data.mediaonly_channels > 0 },
+                { label: 'welcome messages', value: data.welcome_enabled ? 'enabled' : 'disabled', on: data.welcome_enabled },
+                { label: 'goodbye messages', value: data.goodbye_enabled ? 'enabled' : 'disabled', on: data.goodbye_enabled },
+            ];
+
+            document.getElementById('bot-config').innerHTML = configRows
+                .map(r => `
+          <div class="status-row">
+            <div class="status-dot ${r.on ? 'on' : 'off'}"></div>
+            <span class="status-label">${escHtmlLocal(r.label)}</span>
+            <span class="status-value">${escHtmlLocal(r.value)}</span>
+          </div>`)
+                .join('');
+
+            // features
+            const features = data.features || [];
+            if (features.length > 0) {
+                document.getElementById('features-card').style.display = '';
+                document.getElementById('features-list').innerHTML = features
+                    .sort()
+                    .map(f => `<span class="feature-tag">${escHtmlLocal(f.toLowerCase().replace(/_/g, ' '))}</span>`)
+                    .join('');
+            }
+        }
+
+        loadAbout();
+    </script>
+</body>
+
+</html>

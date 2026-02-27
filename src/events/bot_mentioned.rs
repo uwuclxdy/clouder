@@ -1,11 +1,10 @@
-use crate::config::AppState;
 use crate::serenity;
-use crate::utils::bot_has_permission_in_channel;
+use clouder_core::config::AppState;
 use std::time::Duration;
 use tracing::{debug, error, warn};
 
 #[cfg(feature = "llm")]
-use clouder_llm::{ChatMessage, OpenAIClient};
+use clouder_llm::{ChatMessage, LlmClient};
 
 /// Handle message events - primarily for bot mention help responses and OpenAI integration
 pub async fn on_mention(ctx: &serenity::Context, message: &serenity::Message, data: &AppState) {
@@ -25,13 +24,13 @@ pub async fn on_mention(ctx: &serenity::Context, message: &serenity::Message, da
     let is_reply_to_bot = is_replying_to_bot(message, &current_user).await;
 
     if is_mention || is_reply_to_bot {
-        // Check if OpenAI is enabled and user is authorized
+        // Check if LLM is enabled and user is authorized
         #[cfg(feature = "llm")]
-        if data.config.openai.enabled
-            && let Some(ref openai_client) = data.openai_client
-            && is_user_authorized_for_openai(message, data).await
+        if data.config.llm.provider.is_some()
+            && let Some(ref llm_client) = data.llm_client
+            && is_user_authorized(message, data).await
         {
-            if let Err(e) = handle_openai_request(ctx, message, data, openai_client).await {
+            if let Err(e) = handle_llm_request(ctx, message, data, llm_client).await {
                 error!("openai request: {}", e);
                 send_ephemeral_error(
                     ctx,
@@ -50,18 +49,12 @@ pub async fn on_mention(ctx: &serenity::Context, message: &serenity::Message, da
     }
 }
 
-async fn is_user_authorized_for_openai(message: &serenity::Message, data: &AppState) -> bool {
+async fn is_user_authorized(message: &serenity::Message, data: &AppState) -> bool {
     let user_id = message.author.id.get();
-
-    // Check if user is in allowed lists
-    let is_server_context = message.guild_id.is_some();
-
-    if is_server_context {
-        // In server context, check server allowed users
-        data.config.openai.allowed_users.contains(&user_id)
+    if message.guild_id.is_some() {
+        data.config.llm.allowed_users.contains(&user_id)
     } else {
-        // In DM context, check DM allowed users
-        data.config.openai.dm_allowed_users.contains(&user_id)
+        data.config.llm.dm_allowed_users.contains(&user_id)
     }
 }
 
@@ -77,69 +70,63 @@ async fn build_conversation_context(
     message: &serenity::Message,
     current_user: &serenity::User,
 ) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
-    let mut conversation = Vec::new();
-    let mut current_msg = message;
-    let mut depth = 0;
-    const MAX_DEPTH: usize = 4;
+    const MAX_ENTRIES: usize = 4;
+    let mut entries: Vec<(bool, String)> = Vec::new();
 
-    // Collect up to 4 messages in the reply chain
-    while depth < MAX_DEPTH {
-        let role = if current_msg.author.id == current_user.id {
-            "Assistant"
-        } else {
-            "User"
-        };
+    push_entry(&mut entries, message, current_user);
 
-        let content = if current_msg.author.id == current_user.id {
-            // For bot messages, use the content as-is
-            current_msg.content.clone()
-        } else {
-            clean_message_content(&current_msg.content, current_user)
-        };
+    let mut next_id = reply_chain_id(message);
 
-        if !content.trim().is_empty() {
-            conversation.push(format!("{}: {}", role, content.trim()));
-        }
-
-        // Try to get the referenced message
-        if let Some(ref referenced_message) = current_msg.referenced_message {
-            current_msg = referenced_message;
-            depth += 1;
-        } else if let Some(message_reference) = &current_msg.message_reference {
-            // If we have a message reference but not the full message, try to fetch it
-            if let Some(message_id) = message_reference.message_id {
-                match ctx.http.get_message(message.channel_id, message_id).await {
-                    Ok(fetched_msg) => {
-                        current_msg = Box::leak(Box::new(fetched_msg));
-                        depth += 1;
-                    }
-                    Err(_) => break,
-                }
-            } else {
-                break;
+    while entries.len() < MAX_ENTRIES {
+        let Some(msg_id) = next_id.take() else { break };
+        match ctx.http.get_message(message.channel_id, msg_id).await {
+            Ok(fetched) => {
+                push_entry(&mut entries, &fetched, current_user);
+                next_id = reply_chain_id(&fetched);
             }
-        } else {
-            break;
+            Err(_) => break,
         }
     }
 
-    // Reverse the conversation so it's in chronological order (oldest first)
-    conversation.reverse();
+    entries.reverse();
 
-    // If we have conversation context, format it nicely
-    if conversation.len() > 1 {
+    if entries.len() > 1 {
+        let lines: Vec<String> = entries
+            .iter()
+            .map(|(is_bot, content)| {
+                let role = if *is_bot { "Assistant" } else { "User" };
+                format!("{}: {}", role, content)
+            })
+            .collect();
         Ok(format!(
             "Previous conversation:\n{}\n\nCurrent message: {}",
-            conversation[..conversation.len() - 1].join("\n"),
-            conversation
+            lines[..lines.len() - 1].join("\n"),
+            lines
                 .last()
-                .unwrap_or(&String::new())
+                .unwrap()
                 .replace("User: ", "")
                 .replace("Assistant: ", "")
         ))
     } else {
-        // No conversation context, just return the current message
         Ok(clean_message_content(&message.content, current_user))
+    }
+}
+
+fn reply_chain_id(msg: &serenity::Message) -> Option<serenity::MessageId> {
+    msg.referenced_message
+        .as_ref()
+        .map(|m| m.id)
+        .or_else(|| msg.message_reference.as_ref().and_then(|r| r.message_id))
+}
+
+fn push_entry(
+    entries: &mut Vec<(bool, String)>,
+    msg: &serenity::Message,
+    current_user: &serenity::User,
+) {
+    let content = clean_message_content(&msg.content, current_user);
+    if !content.trim().is_empty() {
+        entries.push((msg.author.id == current_user.id, content));
     }
 }
 
@@ -155,31 +142,21 @@ fn clean_message_content(content: &str, current_user: &serenity::User) -> String
 }
 
 #[cfg(feature = "llm")]
-async fn handle_openai_request(
+async fn handle_llm_request(
     ctx: &serenity::Context,
     message: &serenity::Message,
     data: &AppState,
-    openai_client: &OpenAIClient,
+    openai_client: &LlmClient,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let user_id = message.author.id.get();
 
-    // Check if bot has SEND_MESSAGES permission in this channel
-    if !bot_has_permission_in_channel(&ctx.http, message.guild_id, message.channel_id, |p| {
-        p.send_messages()
-    })
-    .await
-    {
-        debug!("no SEND_MESSAGES in channel {}", message.channel_id);
-        return Ok(()); // Silently ignore if no permission
-    }
-
     // Check cooldown unless user is in no-cooldown list
-    if !data.config.openai.no_cooldown_users.contains(&user_id) {
+    if !data.config.llm.no_cooldown_users.contains(&user_id) {
         let cooldown_duration = Duration::from_secs(10);
 
         if !openai_client.check_and_update_cooldown(user_id, cooldown_duration) {
             debug!("user {} on cooldown", user_id);
-            return Ok(()); // Silently ignore if on cooldown
+            return Ok(());
         }
     }
 
@@ -188,22 +165,19 @@ async fn handle_openai_request(
     let prompt = build_conversation_context(ctx, message, &current_user).await?;
 
     if prompt.trim().is_empty() {
-        return Ok(()); // Silently ignore empty prompts
+        return Ok(());
     }
 
-    debug!("openai user {}: {}", user_id, prompt);
+    debug!("llm user {}: {}", user_id, prompt);
 
-    // Start typing indicator
     let typing = message.channel_id.start_typing(&ctx.http);
 
-    // Build messages array for OpenAI
     let mut messages = Vec::new();
 
-    // Add system prompt if configured
-    if !data.config.openai.system_prompt.trim().is_empty() {
+    if !data.config.llm.system_prompt.trim().is_empty() {
         messages.push(ChatMessage {
             role: "system".to_string(),
-            content: data.config.openai.system_prompt.clone(),
+            content: data.config.llm.system_prompt.clone(),
         });
     }
 
@@ -212,17 +186,16 @@ async fn handle_openai_request(
         content: prompt.clone(),
     });
 
-    // Send request to OpenAI
     let response = openai_client
         .generate(
-            &data.config.openai.model,
+            &data.config.llm.model,
             messages,
-            data.config.openai.temperature,
-            data.config.openai.max_tokens,
-            if data.config.openai.stop.is_empty() {
+            data.config.llm.temperature,
+            data.config.llm.max_tokens,
+            if data.config.llm.stop.is_empty() {
                 None
             } else {
-                Some(&data.config.openai.stop)
+                Some(&data.config.llm.stop)
             },
         )
         .await?;
@@ -287,16 +260,6 @@ async fn send_ephemeral_error(
     message: &serenity::Message,
     _error_msg: String,
 ) {
-    // Check if bot has ADD_REACTIONS permission in this channel
-    if !bot_has_permission_in_channel(&ctx.http, message.guild_id, message.channel_id, |p| {
-        p.add_reactions()
-    })
-    .await
-    {
-        debug!("no ADD_REACTIONS in channel {}", message.channel_id);
-        return; // Silently ignore if no permission
-    }
-
     // Try to react with an error emoji to indicate something went wrong
     if let Err(e) = message.react(&ctx.http, '❌').await {
         warn!("react to message: {}", e);
@@ -308,16 +271,6 @@ async fn send_help_as_message(
     message: &serenity::Message,
     data: &AppState,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    // Check if bot has SEND_MESSAGES permission in this channel
-    if !bot_has_permission_in_channel(&ctx.http, message.guild_id, message.channel_id, |p| {
-        p.send_messages()
-    })
-    .await
-    {
-        debug!("no SEND_MESSAGES in channel {}", message.channel_id);
-        return Ok(()); // Silently ignore if no permission
-    }
-
     let commands = crate::commands::help::get_all_commands();
     let embed = crate::commands::help::create_help_embed(&commands, data);
 
@@ -341,18 +294,6 @@ pub async fn handle_ai_retry_interaction(
     interaction: &serenity::ComponentInteraction,
     data: &AppState,
 ) {
-    // Check if bot has SEND_MESSAGES permission in this channel
-    if !bot_has_permission_in_channel(
-        &ctx.http,
-        interaction.guild_id,
-        interaction.channel_id,
-        |p| p.send_messages(),
-    )
-    .await
-    {
-        debug!("no SEND_MESSAGES in channel {}", interaction.channel_id);
-        return; // Silently ignore if no permission
-    }
     // Parse custom_id: "ai_retry_{user_id}_{prompt_hash}_{original_message_id}"
     let parts: Vec<&str> = interaction.data.custom_id.split('_').collect();
     if parts.len() != 5 || parts[0] != "ai" || parts[1] != "retry" {
@@ -394,13 +335,12 @@ pub async fn handle_ai_retry_interaction(
         return;
     }
 
-    // Check if OpenAI is enabled and get client
-    if !data.config.openai.enabled {
-        error!("openai not enabled for retry");
+    if data.config.llm.provider.is_none() {
+        error!("LLM not enabled for retry");
         return;
     }
 
-    let openai_client = match &data.openai_client {
+    let openai_client = match &data.llm_client {
         Some(client) => client,
         None => {
             error!("no openai client for retry");
@@ -408,10 +348,9 @@ pub async fn handle_ai_retry_interaction(
         }
     };
 
-    // Check cooldown (unless user is in no-cooldown list)
     if !data
         .config
-        .openai
+        .llm
         .no_cooldown_users
         .contains(&requesting_user_id)
     {
@@ -549,11 +488,10 @@ pub async fn handle_ai_retry_interaction(
     // Build messages array for OpenAI
     let mut messages = Vec::new();
 
-    // Add system prompt if configured
-    if !data.config.openai.system_prompt.trim().is_empty() {
+    if !data.config.llm.system_prompt.trim().is_empty() {
         messages.push(ChatMessage {
             role: "system".to_string(),
-            content: data.config.openai.system_prompt.clone(),
+            content: data.config.llm.system_prompt.clone(),
         });
     }
 
@@ -562,17 +500,16 @@ pub async fn handle_ai_retry_interaction(
         content: prompt.clone(),
     });
 
-    // Send request to OpenAI
     let response = match openai_client
         .generate(
-            &data.config.openai.model,
+            &data.config.llm.model,
             messages,
-            data.config.openai.temperature,
-            data.config.openai.max_tokens,
-            if data.config.openai.stop.is_empty() {
+            data.config.llm.temperature,
+            data.config.llm.max_tokens,
+            if data.config.llm.stop.is_empty() {
                 None
             } else {
-                Some(&data.config.openai.stop)
+                Some(&data.config.llm.stop)
             },
         )
         .await

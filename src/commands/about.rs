@@ -1,6 +1,6 @@
-use crate::config::AppState;
-use crate::utils::{discord_timestamp, format_duration, get_default_embed_color};
 use anyhow::Result;
+use clouder_core::config::AppState;
+use clouder_core::utils::{discord_timestamp, format_duration, get_default_embed_color};
 use lazy_static::lazy_static;
 use poise::serenity_prelude as serenity;
 use serenity::CreateEmbed;

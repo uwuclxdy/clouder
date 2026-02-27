@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
-    use crate::database::welcome_goodbye::WelcomeGoodbyeConfig;
-    use crate::utils::welcome_goodbye::{build_embed, replace_placeholders, EmbedConfig};
+    use clouder_core::database::welcome_goodbye::WelcomeGoodbyeConfig;
+    use clouder_core::utils::welcome_goodbye::{EmbedConfig, build_embed, replace_placeholders};
     use serenity::{model::id::UserId, model::user::User};
     use sqlx::SqlitePool;
     use std::collections::HashMap;
@@ -28,9 +28,9 @@ mod tests {
 
         // Run migrations
         let migrations = [
-            include_str!("../../migrations/001_initial.sql"),
-            include_str!("../../migrations/002_reminders.sql"),
-            include_str!("../../migrations/003_welcome_goodbye.sql"),
+            include_str!("../../clouder-core/migrations/001_initial.sql"),
+            include_str!("../../clouder-core/migrations/002_reminders.sql"),
+            include_str!("../../clouder-core/migrations/003_welcome_goodbye.sql"),
         ];
 
         for migration_content in migrations.iter() {
@@ -119,9 +119,9 @@ mod tests {
 
         // Run migrations
         let migrations = [
-            include_str!("../../migrations/001_initial.sql"),
-            include_str!("../../migrations/002_reminders.sql"),
-            include_str!("../../migrations/003_welcome_goodbye.sql"),
+            include_str!("../../clouder-core/migrations/001_initial.sql"),
+            include_str!("../../clouder-core/migrations/002_reminders.sql"),
+            include_str!("../../clouder-core/migrations/003_welcome_goodbye.sql"),
         ];
 
         for migration_content in migrations.iter() {

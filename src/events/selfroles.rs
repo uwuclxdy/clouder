@@ -1,8 +1,8 @@
-use crate::config::AppState;
-use crate::database::selfroles::{SelfRoleConfig, SelfRoleCooldown};
 use crate::logging::{error, info, warn};
 use crate::serenity;
 use chrono::{Duration, Utc};
+use clouder_core::config::AppState;
+use clouder_core::database::selfroles::{SelfRoleConfig, SelfRoleCooldown};
 use serenity::all::{CreateInteractionResponse, CreateInteractionResponseMessage, Mentionable};
 
 pub async fn selfrole_message_delete(
@@ -14,10 +14,9 @@ pub async fn selfrole_message_delete(
 ) {
     let message_id_str = deleted_message_id.to_string();
 
-    info!("selfrole message deleted: {}", message_id_str);
     match SelfRoleConfig::delete_by_message_id(&data.db, &message_id_str).await {
         Ok(true) => info!("selfrole config cleaned: {}", message_id_str),
-        Ok(false) => warn!("no selfrole config found for message: {}", message_id_str),
+        Ok(false) => {}
         Err(e) => error!("delete selfrole config: {}", e),
     }
 }
@@ -159,138 +158,8 @@ pub async fn handle_selfrole_interaction(
         }
     };
 
-    let guild_roles = match ctx.http.get_guild_roles(guild_id_u64.into()).await {
-        Ok(roles) => roles,
-        Err(e) => {
-            error!("get guild roles for {}: {}", guild_id, e);
-            if let Err(e) = interaction
-                .create_response(
-                    &ctx.http,
-                    CreateInteractionResponse::Message(
-                        CreateInteractionResponseMessage::new()
-                            .content("failed to retrieve server roles.")
-                            .ephemeral(true),
-                    ),
-                )
-                .await
-            {
-                error!("respond guild roles err: {}", e);
-            }
-            return;
-        }
-    };
-
-    // TODO: test this
-    let bot_user_id = if data.config.discord.application_id != 0 {
-        serenity::UserId::new(data.config.discord.application_id)
-    } else {
-        error!("bot user id missing");
-        if let Err(e) = interaction
-            .create_response(
-                &ctx.http,
-                CreateInteractionResponse::Message(
-                    CreateInteractionResponseMessage::new()
-                        .content("bot permissions could not be verified.")
-                        .ephemeral(true),
-                ),
-            )
-            .await
-        {
-            error!("respond bot id missing: {}", e);
-        }
-        return;
-    };
-    let bot_member = match ctx.http.get_member(guild_id_u64.into(), bot_user_id).await {
-        Ok(member) => member,
-        Err(e) => {
-            error!("get bot member for {}: {:?}", guild_id, e);
-            if let Err(e) = interaction
-                .create_response(
-                    &ctx.http,
-                    CreateInteractionResponse::Message(
-                        CreateInteractionResponseMessage::new()
-                            .content("bot permissions could not be verified.")
-                            .ephemeral(true),
-                    ),
-                )
-                .await
-            {
-                error!("respond bot member err: {}", e);
-            }
-            return;
-        }
-    };
-
-    // Check if bot has MANAGE_ROLES permission by checking its roles
-    let bot_has_manage_roles = bot_member.roles.iter().any(|role_id| {
-        guild_roles
-            .iter()
-            .find(|r| r.id == *role_id)
-            .is_some_and(|role| role.permissions.administrator() || role.permissions.manage_roles())
-    });
-
-    if !bot_has_manage_roles {
-        warn!("no MANAGE_ROLES in guild {}", guild_id);
-        if let Err(e) = interaction
-            .create_response(
-                &ctx.http,
-                CreateInteractionResponse::Message(
-                    CreateInteractionResponseMessage::new()
-                        .content("i don't have permission to manage roles in this server.")
-                        .ephemeral(true),
-                ),
-            )
-            .await
-        {
-            error!("respond permission err: {}", e);
-        }
-        return;
-    }
-
-    let bot_role_positions = crate::utils::get_bot_role_positions(&bot_member, &guild_roles);
-
-    let target_role = match guild_roles.iter().find(|r| r.id.get() == role_id_u64) {
-        Some(role) => role,
-        None => {
-            error!("role {} not found in {}", role_id, guild_id);
-            if let Err(e) = interaction
-                .create_response(
-                    &ctx.http,
-                    CreateInteractionResponse::Message(
-                        CreateInteractionResponseMessage::new()
-                            .content("the requested role no longer exists.")
-                            .ephemeral(true),
-                    ),
-                )
-                .await
-            {
-                error!("respond missing role err: {}", e);
-            }
-            return;
-        }
-    };
-
-    if !crate::utils::can_bot_manage_role(&bot_role_positions, target_role.position) {
-        warn!(
-            "role hierarchy: bot {:?} vs '{}' pos {}",
-            bot_role_positions, target_role.name, target_role.position
-        );
-        if let Err(e) = interaction
-            .create_response(
-                &ctx.http,
-                CreateInteractionResponse::Message(
-                    CreateInteractionResponseMessage::new()
-                        .content(format!("cannot manage the role '{}' - it is higher than or equal to all of my roles in the hierarchy.", target_role.mention()))
-                        .ephemeral(true),
-                ),
-            )
-            .await
-        {
-            error!("respond hierarchy err: {}", e);
-        }
-        return;
-    }
-    let has_role = member.roles.contains(&serenity::RoleId::new(role_id_u64));
+    let role = serenity::RoleId::new(role_id_u64);
+    let has_role = member.roles.contains(&role);
 
     // Handle radio mode - remove other roles from this config first
     if config.selection_type == "radio" && !has_role {
@@ -315,7 +184,6 @@ pub async fn handle_selfrole_interaction(
             }
         };
 
-        // Remove all other roles from this config (only remove roles the bot can manage)
         for config_role in &config_roles {
             let config_role_id_u64: u64 = match config_role.role_id.parse() {
                 Ok(id) => id,
@@ -325,96 +193,78 @@ pub async fn handle_selfrole_interaction(
             if member
                 .roles
                 .contains(&serenity::RoleId::new(config_role_id_u64))
+                && let Err(e) = ctx
+                    .http
+                    .remove_member_role(
+                        guild_id_u64.into(),
+                        interaction.user.id,
+                        serenity::RoleId::new(config_role_id_u64),
+                        Some("Self-role radio mode"),
+                    )
+                    .await
             {
-                // Check if bot can manage this role before attempting removal
-                if let Some(remove_role) = guild_roles
-                    .iter()
-                    .find(|r| r.id.get() == config_role_id_u64)
-                {
-                    if crate::utils::can_bot_manage_role(&bot_role_positions, remove_role.position)
-                    {
-                        if let Err(e) = ctx
-                            .http
-                            .remove_member_role(
-                                guild_id_u64.into(),
-                                interaction.user.id,
-                                serenity::RoleId::new(config_role_id_u64),
-                                Some("Self-role radio mode"),
-                            )
-                            .await
-                        {
-                            error!(
-                                "remove role {} from {}: {}",
-                                config_role_id_u64, interaction.user.id, e
-                            );
-                        }
-                    } else {
-                        warn!("can't remove '{}' due to hierarchy", remove_role.name);
-                    }
-                }
+                warn!(
+                    "remove role {} from {}: {}",
+                    config_role_id_u64, interaction.user.id, e
+                );
             }
         }
     }
 
     // Add or remove the role
-    let (action, emoji, message) = if has_role {
-        // Remove role
+    let (ok, message) = if has_role {
         match ctx
             .http
             .remove_member_role(
                 guild_id_u64.into(),
                 interaction.user.id,
-                serenity::RoleId::new(role_id_u64),
+                role,
                 Some("Self-role removal"),
             )
             .await
         {
-            Ok(_) => ("removed", "", format!("removed {}", target_role.mention())),
+            Ok(_) => (true, format!("removed {}", role.mention())),
             Err(e) => {
                 error!(
                     "remove role {} from {}: {}",
                     role_id_u64, interaction.user.id, e
                 );
                 (
-                    "error",
-                    "",
+                    false,
                     format!(
-                        "failed to remove the role '{}'. i might not have permission or the role might not exist anymore.",
-                        target_role.name
+                        "failed to remove {}. i might not have permission or the role might not exist anymore.",
+                        role.mention()
                     ),
                 )
             }
         }
     } else {
-        // Add role
         match ctx
             .http
             .add_member_role(
                 guild_id_u64.into(),
                 interaction.user.id,
-                serenity::RoleId::new(role_id_u64),
+                role,
                 Some("Self-role assignment"),
             )
             .await
         {
-            Ok(_) => ("added", "", format!("added {}", target_role.mention())),
+            Ok(_) => (true, format!("added {}", role.mention())),
             Err(e) => {
                 error!("add role {} to {}: {}", role_id_u64, interaction.user.id, e);
                 (
-                    "error",
-                    "",
+                    false,
                     format!(
-                        "failed to assign the role '{}'. i might not have permission, or the role might be higher than my role in the hierarchy.",
-                        target_role.name
+                        "failed to assign {}. the role may be managed by another bot, or is higher than my highest role in the server hierarchy.",
+                        role.mention()
                     ),
                 )
             }
         }
     };
 
-    // Set cooldown if the role operation was successful
-    if action != "error" {
-        let expires_at = Utc::now() + Duration::seconds(5); // 5-second cooldown
+    if ok {
+        let expires_at = Utc::now() + Duration::seconds(5);
         if let Err(e) =
             SelfRoleCooldown::create(&data.db, &user_id, role_id, &guild_id, expires_at).await
         {
@@ -422,18 +272,12 @@ pub async fn handle_selfrole_interaction(
         }
     }
 
-    // Respond to the interaction
-    let response_content = if emoji.is_empty() {
-        message
-    } else {
-        format!("{} {}", emoji, message)
-    };
     if let Err(e) = interaction
         .create_response(
             &ctx.http,
             CreateInteractionResponse::Message(
                 CreateInteractionResponseMessage::new()
-                    .content(response_content)
+                    .content(message)
                     .ephemeral(true),
             ),
         )

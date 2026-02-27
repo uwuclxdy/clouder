@@ -1,8 +1,7 @@
-use crate::config::AppState;
-use crate::database::mediaonly::MediaOnlyConfig;
 use crate::logging::{error, warn};
-use crate::utils::content_detection::has_allowed_content;
-use crate::utils::get_bot_channel_permissions;
+use clouder_core::config::AppState;
+use clouder_core::database::mediaonly::MediaOnlyConfig;
+use clouder_core::utils::content_detection::has_allowed_content;
 use poise::serenity_prelude as serenity;
 
 /// Handle media-only channel message processing
@@ -39,20 +38,6 @@ pub async fn handle_media_only_message(
         }
     };
 
-    // Check if bot has MANAGE_MESSAGES permission in this channel
-    let perms = match get_bot_channel_permissions(&ctx.http, guild_id, channel_id).await {
-        Some(p) => p,
-        None => {
-            warn!("get channel permissions for {}", channel_id);
-            return;
-        }
-    };
-
-    if !perms.permissions.manage_messages() {
-        warn!("no MANAGE_MESSAGES in channel {}", channel_id);
-        return;
-    }
-
     // Check if a message contains allowed content
     if has_allowed_content(
         message,
@@ -66,13 +51,23 @@ pub async fn handle_media_only_message(
 
     // Delete message that doesn't have allowed content
     let message_id = message.id;
+    let author_id = message.author.id;
     let channel_id = message.channel_id;
     let http = ctx.http.clone();
 
     tokio::spawn(async move {
         match http.delete_message(channel_id, message_id, None).await {
             Ok(_) => {
-                // Successfully deleted - no logging to avoid spam
+                let content = format!("<@{}> this channel is media-only", author_id);
+                let notice_msg = serenity::builder::CreateMessage::new().content(content);
+                if let Ok(notice) = http.send_message(channel_id, Vec::new(), &notice_msg).await {
+                    let notice_id = notice.id;
+                    let http2 = http.clone();
+                    tokio::spawn(async move {
+                        tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
+                        let _ = http2.delete_message(channel_id, notice_id, None).await;
+                    });
+                }
             }
             Err(serenity::Error::Http(http_error)) => {
                 // Check if it's a "message not found" error (already deleted)

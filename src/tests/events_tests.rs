@@ -1,8 +1,8 @@
 #[cfg(test)]
 mod tests {
-    use crate::database::selfroles::{SelfRoleConfig, SelfRoleCooldown, SelfRoleRole};
     use crate::tests::{create_test_app_state, create_test_db};
     use chrono::{Duration, Utc};
+    use clouder_core::database::selfroles::{SelfRoleConfig, SelfRoleCooldown, SelfRoleRole};
 
     #[tokio::test]
     async fn test_message_delete_event_basic() {

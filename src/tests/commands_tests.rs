@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
-    use crate::database::selfroles::SelfRoleConfig;
     use crate::tests::create_test_db;
+    use clouder_core::database::selfroles::SelfRoleConfig;
 
     #[tokio::test]
     async fn test_commands_module_exists() {
@@ -28,7 +28,7 @@ mod tests {
         .unwrap();
 
         // Create a test role for this config
-        use crate::database::selfroles::SelfRoleRole;
+        use clouder_core::database::selfroles::SelfRoleRole;
         let _role = SelfRoleRole::create(&db, config.id, "111222333", "a")
             .await
             .unwrap();

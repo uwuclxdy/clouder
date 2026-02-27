@@ -1,9 +1,10 @@
-use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
+use tracing_subscriber::{EnvFilter, fmt, layer::SubscriberExt, util::SubscriberInitExt};
 
 pub fn init() {
     let env_filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| {
-        // Default to info level for all crates
-        EnvFilter::new("info")
+        // Default to info level only for crates in our workspace; silence
+        // everything else unless the user overrides via RUST_LOG.
+        EnvFilter::new("clouder=info,clouder_core=info,clouder_web=info,clouder_llm=info")
     });
 
     tracing_subscriber::registry()
@@ -61,8 +62,9 @@ mod tests {
 
     #[test]
     fn test_default_filter() {
-        // Verify the default filter string is valid
-        let default_filter = "info";
+        // Verify the default filter string covers workspace crates and
+        // parses successfully.
+        let default_filter = "clouder=info,clouder_core=info,clouder_web=info,clouder_llm=info";
         let result = EnvFilter::try_new(default_filter);
         assert!(result.is_ok(), "Default filter should be valid");
     }

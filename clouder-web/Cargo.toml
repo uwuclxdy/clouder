@@ -1,0 +1,23 @@
+[package]
+name = "clouder-web"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+name = "clouder_web"
+path = "src/lib.rs"
+
+[dependencies]
+axum = { workspace = true }
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+reqwest = { workspace = true, features = ["json", "form"] }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+urlencoding = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+once_cell = { workspace = true }
+axum-extra = { workspace = true }
+clouder-core = { path = "../clouder-core" }

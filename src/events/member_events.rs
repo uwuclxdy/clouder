@@ -1,8 +1,7 @@
-use crate::config::AppState;
-use crate::database::welcome_goodbye::{get_member_placeholders, WelcomeGoodbyeConfig};
 use crate::logging::{error, warn};
-use crate::utils::get_bot_channel_permissions;
-use crate::utils::welcome_goodbye::{build_embed, replace_placeholders, EmbedConfig};
+use clouder_core::config::AppState;
+use clouder_core::database::welcome_goodbye::{WelcomeGoodbyeConfig, get_member_placeholders};
+use clouder_core::utils::welcome_goodbye::{EmbedConfig, build_embed, replace_placeholders};
 use serenity::{
     builder::CreateMessage,
     client::Context,
@@ -162,26 +161,11 @@ async fn send_welcome_message(
         }
     };
 
-    // Check if bot has SEND_MESSAGES permission in the welcome channel
-    let perms =
-        match get_bot_channel_permissions(&ctx.http, guild_channel.guild_id, *channel_id).await {
-            Some(p) => p,
-            None => {
-                error!("get channel permissions for welcome");
-                return Err("Failed to get channel permissions".into());
-            }
-        };
-
-    if !perms.permissions.send_messages() {
-        warn!("no SEND_MESSAGES in welcome channel {}", channel_id);
-        return Err("Bot lacks SEND_MESSAGES permission".into());
-    }
-
     match config.welcome_message_type.as_str() {
         "embed" => {
             let default_color = data
                 .get::<AppStateKey>()
-                .map(|state| crate::utils::get_default_embed_color(state).0 as u64)
+                .map(|state| clouder_core::utils::get_default_embed_color(state).0 as u64)
                 .unwrap_or(0x5865F2);
 
             let embed_config = EmbedConfig {
@@ -240,26 +224,11 @@ async fn send_goodbye_message(
         }
     };
 
-    // Check if bot has SEND_MESSAGES permission in the goodbye channel
-    let perms =
-        match get_bot_channel_permissions(&ctx.http, guild_channel.guild_id, *channel_id).await {
-            Some(p) => p,
-            None => {
-                error!("get channel permissions for goodbye");
-                return Err("Failed to get channel permissions".into());
-            }
-        };
-
-    if !perms.permissions.send_messages() {
-        warn!("no SEND_MESSAGES in goodbye channel {}", channel_id);
-        return Err("Bot lacks SEND_MESSAGES permission".into());
-    }
-
     match config.goodbye_message_type.as_str() {
         "embed" => {
             let default_color = data
                 .get::<AppStateKey>()
-                .map(|state| crate::utils::get_default_embed_color(state).0 as u64)
+                .map(|state| clouder_core::utils::get_default_embed_color(state).0 as u64)
                 .unwrap_or(0x5865F2);
 
             let embed_config = EmbedConfig {

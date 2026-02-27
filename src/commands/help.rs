@@ -1,6 +1,6 @@
-use crate::config::AppState;
-use crate::utils::get_default_embed_color;
 use anyhow::Result;
+use clouder_core::config::AppState;
+use clouder_core::utils::get_default_embed_color;
 use poise::serenity_prelude as serenity;
 use serenity::{CreateEmbed, CreateEmbedFooter};
 
@@ -80,6 +80,20 @@ pub fn get_all_commands() -> Vec<CommandInfo> {
             usage: Some("/mediaonly [channel] [enable/disable]".to_string()),
             category: CommandCategory::Management,
             permissions: Some("manage channels".to_string()),
+        },
+        CommandInfo {
+            name: "/random".to_string(),
+            description: "freaky link generator".to_string(),
+            usage: Some("/random".to_string()),
+            category: CommandCategory::Core,
+            permissions: None,
+        },
+        CommandInfo {
+            name: "/uwufy".to_string(),
+            description: "toggle uwufy mode for a user".to_string(),
+            usage: Some("/uwufy [@user]".to_string()),
+            category: CommandCategory::Core,
+            permissions: Some("manage server".to_string()),
         },
     ]
 }

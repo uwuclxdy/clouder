@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use crate::commands::help::{get_all_commands, truncate_description, CommandCategory};
+    use clouder::commands::help::{CommandCategory, get_all_commands, truncate_description};
 
     #[test]
     fn test_command_registry_not_empty() {

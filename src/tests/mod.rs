@@ -4,11 +4,12 @@ pub mod config_tests;
 pub mod database_tests;
 pub mod events_tests;
 mod help_tests;
+mod mediaonly_tests;
 mod purge_tests;
 pub mod utils_tests;
 mod welcome_goodbye_tests;
 
-use crate::config::AppState;
+use clouder_core::config::AppState;
 use serenity::all::Http;
 use sqlx::SqlitePool;
 use std::sync::Arc;
@@ -92,7 +93,7 @@ pub async fn create_test_db() -> SqlitePool {
 
 /// Create a test AppState
 pub async fn create_test_app_state() -> AppState {
-    let config = Arc::new(crate::config::Config::test_config());
+    let config = Arc::new(clouder_core::config::Config::test_config());
     let db = Arc::new(create_test_db().await);
     let http = Arc::new(Http::new("test_token"));
 

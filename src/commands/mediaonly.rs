@@ -46,7 +46,7 @@ pub async fn mediaonly(
             "media-only mode is now **{}** for {}\n\nMessages without media will be deleted.\nConfigure allowed content types in the [dashboard]({}/dashboard/{}/mediaonly)",
             status_text,
             target_channel.mention(),
-            ctx.data().config.web.api_url,
+            ctx.data().config.web.api_base,
             guild_id
         ))
         .color(get_default_embed_color(ctx.data()));

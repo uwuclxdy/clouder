@@ -24,7 +24,7 @@ pub struct DiscordConfig {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WebConfig {
-    pub api_url: String,
+    pub api_base: String,
     pub bind_addr: String,
     pub oauth: OAuthConfig,
     pub embed: EmbedConfig,
@@ -124,13 +124,13 @@ impl Config {
                 return Err(anyhow::anyhow!("BOT_OWNER: {}", err));
             }
         };
-        let api_url = match env::var("API_URL") {
+        let api_base = match env::var("API_BASE") {
             Ok(url) => {
-                debug!("API_URL: {}", url);
+                debug!("API_BASE: {}", url);
                 url
             }
             Err(_) => {
-                info!("API_URL not set, using http://127.0.0.1:8080");
+                info!("API_BASE not set, using http://127.0.0.1:8080");
                 "http://127.0.0.1:8080".to_string()
             }
         };
@@ -140,8 +140,8 @@ impl Config {
                 addr
             }
             Err(_) => {
-                info!("WEB_BIND_ADDR not set, using 127.0.0.1:8080");
-                "127.0.0.1:8080".to_string()
+                info!("WEB_BIND_ADDR not set, using 127.0.0.1:3000");
+                "127.0.0.1:3000".to_string()
             }
         };
         let database_url = match env::var("DATABASE_URL") {
@@ -181,7 +181,7 @@ impl Config {
         };
 
         let redirect_uri = env::var("DISCORD_REDIRECT_URI")
-            .unwrap_or_else(|_| format!("{}/auth/callback", api_url));
+            .unwrap_or_else(|_| format!("{}/auth/callback", api_base));
 
         let session_secret = env::var("SESSION_SECRET").unwrap_or_else(|_| {
             warn!("SESSION_SECRET not set, falling back to client_secret");
@@ -258,7 +258,7 @@ impl Config {
                 bot_owner,
             },
             web: WebConfig {
-                api_url,
+                api_base,
                 bind_addr,
                 oauth: OAuthConfig {
                     client_id: oauth_client_id,
@@ -296,7 +296,7 @@ impl Config {
                 bot_owner: 12345,
             },
             web: WebConfig {
-                api_url: "http://127.0.0.1:8080".to_string(),
+                api_base: "http://127.0.0.1:8080".to_string(),
                 bind_addr: "127.0.0.1:8080".to_string(),
                 oauth: OAuthConfig {
                     client_id: "12345".to_string(),

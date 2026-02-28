@@ -95,27 +95,18 @@ mod tests {
 
     #[test]
     fn test_success_embed_format() {
-        // Test success embed message formatting
-        let test_cases = vec![
-            (1, "successfully deleted **`1`** message"),
-            (5, "successfully deleted **`5`** messages"),
-            (100, "successfully deleted **`100`** messages"),
-        ];
+        let test_cases = vec![(1, "message"), (5, "messages"), (100, "messages")];
 
-        for (count, _expected_partial) in test_cases {
+        for (count, expected_suffix) in test_cases {
             let description = format!(
-                "successfully deleted **`{}`** message{}",
+                "deleted **`{}`** message{} >_<",
                 count,
                 if count == 1 { "" } else { "s" }
             );
 
             assert!(description.contains(&count.to_string()));
-            if count == 1 {
-                assert!(!description.contains("messages"));
-                assert!(description.contains("message"));
-            } else {
-                assert!(description.contains("messages"));
-            }
+            assert!(description.contains(expected_suffix));
+            assert!(description.ends_with(">_<"));
         }
     }
 

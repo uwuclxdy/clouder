@@ -112,7 +112,7 @@ pub async fn purge(
         ))
         .color(get_default_embed_color(ctx.data()));
 
-    ctx.send(poise::CreateReply::default().embed(embed).ephemeral(false))
+    ctx.send(poise::CreateReply::default().embed(embed).ephemeral(true))
         .await?;
 
     Ok(())

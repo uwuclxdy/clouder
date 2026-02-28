@@ -54,7 +54,7 @@ pub async fn callback(
     };
 
     info!("user {} ({}) logged in", user.username, user.user_id);
-    let secure = state.app_state.config.web.api_url.starts_with("https://");
+    let secure = state.app_state.config.web.api_base.starts_with("https://");
     (session::store(jar, &user, secure), Redirect::to("/servers"))
 }
 

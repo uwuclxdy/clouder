@@ -10,7 +10,7 @@ mod tests {
 
         assert_eq!(config.discord.token, "test_token");
         assert_eq!(config.discord.application_id, 12345);
-        assert_eq!(config.web.api_url, "http://127.0.0.1:8080");
+        assert_eq!(config.web.api_base, "http://127.0.0.1:8080");
         assert_eq!(config.web.bind_addr, "127.0.0.1:8080");
         assert_eq!(config.database.url, ":memory:");
     }
@@ -65,7 +65,7 @@ mod tests {
             config1.discord.application_id,
             config2.discord.application_id
         );
-        assert_eq!(config1.web.api_url, config2.web.api_url);
+        assert_eq!(config1.web.api_base, config2.web.api_base);
     }
 
     #[test]
@@ -85,8 +85,8 @@ mod tests {
     fn test_web_config_structure() {
         let config = Config::test_config();
 
-        assert!(!config.web.api_url.is_empty());
-        assert!(config.web.api_url.starts_with("http"));
+        assert!(!config.web.api_base.is_empty());
+        assert!(config.web.api_base.starts_with("http"));
     }
 
     #[test]

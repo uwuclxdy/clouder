@@ -12,6 +12,7 @@ static SELFROLES_HTML: &str = include_str!("../templates/selfroles.html");
 static WELCOME_HTML: &str = include_str!("../templates/welcome_goodbye.html");
 static MEDIAONLY_HTML: &str = include_str!("../templates/mediaonly.html");
 static ABOUT_HTML: &str = include_str!("../templates/about.html");
+static UWUFY_HTML: &str = include_str!("../templates/uwufy.html");
 
 fn html_escape(s: &str) -> String {
     s.replace('&', "&amp;")
@@ -216,6 +217,27 @@ pub async fn about_page(
     let api_url = &state.app_state.config.web.api_url;
     Html(render(
         ABOUT_HTML,
+        &[
+            ("USERNAME", &user.username),
+            ("AVATAR_URL", &user.avatar_url()),
+            ("GUILD_ID", &guild_id),
+            ("API_URL", api_url),
+        ],
+    ))
+    .into_response()
+}
+
+pub async fn uwufy_page(
+    State(state): State<WebState>,
+    jar: SignedCookieJar,
+    Path(guild_id): Path<String>,
+) -> Response {
+    let Some(user) = session::extract(&jar) else {
+        return Redirect::to("/login").into_response();
+    };
+    let api_url = &state.app_state.config.web.api_url;
+    Html(render(
+        UWUFY_HTML,
         &[
             ("USERNAME", &user.username),
             ("AVATAR_URL", &user.avatar_url()),

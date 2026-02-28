@@ -60,6 +60,7 @@ pub async fn run(app_state: AppState) -> Result<()> {
             "/dashboard/{guild_id}/mediaonly",
             get(dashboard::mediaonly_page),
         )
+        .route("/dashboard/{guild_id}/uwufy", get(dashboard::uwufy_page))
         // auth
         .route("/auth/login", get(auth::login))
         .route("/auth/callback", get(auth::callback))
@@ -99,6 +100,14 @@ pub async fn run(app_state: AppState) -> Result<()> {
             axum::routing::delete(api::api_mediaonly_delete).put(api::api_mediaonly_put),
         )
         .route("/api/guild/{guild_id}/about", get(api::api_about_get))
+        .route(
+            "/api/uwufy/{guild_id}",
+            get(api::api_uwufy_get).delete(api::api_uwufy_disable_all),
+        )
+        .route(
+            "/api/uwufy/{guild_id}/{user_id}",
+            axum::routing::put(api::api_uwufy_toggle),
+        )
         .with_state(state.clone());
 
     let listener = tokio::net::TcpListener::bind(state.app_state.config.web.bind_addr()).await?;

@@ -323,3 +323,56 @@ pub async fn api_about_get(
         }
     }
 }
+
+pub async fn api_uwufy_get(
+    _auth: Auth,
+    Path(guild_id): Path<String>,
+    State(state): State<AppState>,
+) -> Result<Json<Value>, StatusCode> {
+    let guild_id_u64 = guild_id.parse().map_err(|_| StatusCode::BAD_REQUEST)?;
+    match clouder_core::shared::list_uwufy_members(&state, guild_id_u64).await {
+        Ok(result) => Ok(Json(result)),
+        Err(e) => {
+            error!("failed to list uwufy members: {}", e);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
+}
+
+pub async fn api_uwufy_toggle(
+    _auth: Auth,
+    Path((guild_id, user_id)): Path<(String, String)>,
+    State(state): State<AppState>,
+    Json(payload): Json<Value>,
+) -> Result<Json<Value>, StatusCode> {
+    let guild_id_u64 = guild_id.parse().map_err(|_| StatusCode::BAD_REQUEST)?;
+    let enabled = payload.get("enabled").and_then(|v| v.as_bool());
+    match clouder_core::shared::toggle_uwufy_member(&state, guild_id_u64, &user_id, enabled).await {
+        Ok(result) => {
+            info!("uwufy toggled for user {} in guild {}", user_id, guild_id);
+            Ok(Json(result))
+        }
+        Err(e) => {
+            error!("failed to toggle uwufy: {}", e);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
+}
+
+pub async fn api_uwufy_disable_all(
+    _auth: Auth,
+    Path(guild_id): Path<String>,
+    State(state): State<AppState>,
+) -> Result<Json<Value>, StatusCode> {
+    let guild_id_u64 = guild_id.parse().map_err(|_| StatusCode::BAD_REQUEST)?;
+    match clouder_core::shared::disable_all_uwufy(&state, guild_id_u64).await {
+        Ok(result) => {
+            info!("uwufy disabled for all in guild {}", guild_id);
+            Ok(Json(result))
+        }
+        Err(e) => {
+            error!("failed to disable all uwufy: {}", e);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
+}

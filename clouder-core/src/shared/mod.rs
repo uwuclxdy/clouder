@@ -60,7 +60,7 @@ pub async fn get_guild_roles(app_state: &AppState, guild_id: u64) -> Result<Valu
 
     let role_list: Vec<Value> = roles
         .into_iter()
-        .filter(|r| r.name != "@everyone")
+        .filter(|r| r.name != "@everyone" && !r.managed)
         .map(|r| {
             json!({
                 "id": r.id.to_string(),
@@ -1183,4 +1183,117 @@ async fn fetch_bot_guild_ids(bot_token: &str) -> std::collections::HashSet<Strin
             std::collections::HashSet::new()
         }
     }
+}
+
+// Uwufy functions
+
+pub async fn list_uwufy_members(app_state: &AppState, guild_id: u64) -> Result<Value, String> {
+    use crate::database::uwufy::UwufyToggle;
+
+    let gid = GuildId::new(guild_id);
+    let guild_id_str = guild_id.to_string();
+
+    let mut all_members = Vec::new();
+    let mut after: Option<u64> = None;
+    loop {
+        let members = app_state
+            .http
+            .get_guild_members(gid, Some(1000), after)
+            .await
+            .map_err(|e| format!("failed to get guild members: {}", e))?;
+
+        if members.is_empty() {
+            break;
+        }
+        after = members.last().map(|m| m.user.id.get());
+        all_members.extend(members);
+        if all_members.len() < 1000 {
+            break;
+        }
+    }
+
+    let enabled_ids = UwufyToggle::get_enabled_in_guild(&app_state.db, &guild_id_str)
+        .await
+        .unwrap_or_default();
+
+    let member_list: Vec<Value> = all_members
+        .into_iter()
+        .filter(|m| !m.user.bot)
+        .map(|m| {
+            let uid = m.user.id.to_string();
+            let display = m
+                .nick
+                .as_deref()
+                .or(m.user.global_name.as_deref())
+                .unwrap_or(&m.user.name);
+            let avatar = m
+                .user
+                .avatar
+                .as_ref()
+                .map(|h| {
+                    format!(
+                        "https://cdn.discordapp.com/avatars/{}/{}.png?size=64",
+                        m.user.id, h
+                    )
+                })
+                .or_else(|| {
+                    Some(format!(
+                        "https://cdn.discordapp.com/embed/avatars/{}.png",
+                        (m.user.id.get() >> 22) % 6
+                    ))
+                });
+            json!({
+                "user_id": uid,
+                "username": m.user.name,
+                "display_name": display,
+                "avatar_url": avatar,
+                "uwufy_enabled": enabled_ids.contains(&uid),
+            })
+        })
+        .collect();
+
+    Ok(json!({
+        "success": true,
+        "members": member_list,
+        "enabled_count": enabled_ids.len(),
+    }))
+}
+
+pub async fn toggle_uwufy_member(
+    app_state: &AppState,
+    guild_id: u64,
+    user_id: &str,
+    enabled: Option<bool>,
+) -> Result<Value, String> {
+    use crate::database::uwufy::UwufyToggle;
+
+    let guild_id_str = guild_id.to_string();
+    let new_state = match enabled {
+        Some(state) => UwufyToggle::set_enabled(&app_state.db, &guild_id_str, user_id, state)
+            .await
+            .map_err(|e| format!("failed to toggle uwufy: {}", e))?,
+        None => UwufyToggle::toggle(&app_state.db, &guild_id_str, user_id)
+            .await
+            .map_err(|e| format!("failed to toggle uwufy: {}", e))?,
+    };
+
+    Ok(json!({
+        "success": true,
+        "user_id": user_id,
+        "enabled": new_state,
+    }))
+}
+
+pub async fn disable_all_uwufy(app_state: &AppState, guild_id: u64) -> Result<Value, String> {
+    use crate::database::uwufy::UwufyToggle;
+
+    let guild_id_str = guild_id.to_string();
+    let count = UwufyToggle::disable_all_in_guild(&app_state.db, &guild_id_str)
+        .await
+        .map_err(|e| format!("failed to disable all uwufy: {}", e))?;
+
+    Ok(json!({
+        "success": true,
+        "disabled_count": count,
+    }))
 }

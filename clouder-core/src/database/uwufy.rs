@@ -93,4 +93,46 @@ impl UwufyToggle {
 
         Ok(rows.into_iter().map(|row| row.get("user_id")).collect())
     }
+
+    pub async fn disable_all_in_guild(
+        pool: &SqlitePool,
+        guild_id: &str,
+    ) -> Result<u64, sqlx::Error> {
+        let result = sqlx::query(
+            r#"
+            UPDATE uwufy_toggles
+            SET enabled = FALSE, toggled_at = CURRENT_TIMESTAMP
+            WHERE guild_id = ? AND enabled = TRUE
+            "#,
+        )
+        .bind(guild_id)
+        .execute(pool)
+        .await?;
+
+        Ok(result.rows_affected())
+    }
+
+    pub async fn set_enabled(
+        pool: &SqlitePool,
+        guild_id: &str,
+        user_id: &str,
+        enabled: bool,
+    ) -> Result<bool, sqlx::Error> {
+        sqlx::query(
+            r#"
+            INSERT INTO uwufy_toggles (guild_id, user_id, enabled)
+            VALUES (?, ?, ?)
+            ON CONFLICT(guild_id, user_id) DO UPDATE SET
+                enabled = excluded.enabled,
+                toggled_at = CURRENT_TIMESTAMP
+            "#,
+        )
+        .bind(guild_id)
+        .bind(user_id)
+        .bind(enabled)
+        .execute(pool)
+        .await?;
+
+        Ok(enabled)
+    }
 }

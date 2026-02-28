@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>clouder // uwufy</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        .uwufy-stats {
+            display: flex;
+            gap: var(--spacing-sm);
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .uwufy-stat {
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            color: var(--ctp-overlay0);
+        }
+
+        .uwufy-stat strong {
+            color: var(--primary);
+        }
+
+        .search-bar {
+            position: relative;
+        }
+
+        .search-bar input {
+            width: 100%;
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+            padding: 8px 12px;
+            border: 1px solid var(--ctp-surface0);
+            background: var(--ctp-crust);
+            color: var(--ctp-text);
+            transition: border-color 0.2s ease;
+        }
+
+        .search-bar input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .search-bar input::placeholder {
+            color: var(--ctp-overlay0);
+        }
+
+        .member-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .member-row {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            padding: 10px var(--spacing-sm);
+            border-bottom: 1px solid var(--ctp-surface0);
+            transition: background 0.2s ease;
+        }
+
+        .member-row:last-child {
+            border-bottom: none;
+        }
+
+        .member-row:hover {
+            background: var(--ctp-surface0);
+        }
+
+        .member-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 1px solid var(--ctp-surface0);
+            flex-shrink: 0;
+        }
+
+        .member-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .member-display {
+            color: var(--ctp-text);
+            font-size: 0.9rem;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .member-username {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--ctp-overlay0);
+        }
+
+        .uwufy-toggle {
+            position: relative;
+            width: 40px;
+            height: 22px;
+            flex-shrink: 0;
+            cursor: pointer;
+        }
+
+        .uwufy-toggle input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .uwufy-slider {
+            position: absolute;
+            inset: 0;
+            background: var(--ctp-surface0);
+            border: 1px solid var(--ctp-surface1);
+            transition: background 0.2s ease, border-color 0.2s ease;
+        }
+
+        .uwufy-slider::before {
+            content: '';
+            position: absolute;
+            height: 16px;
+            width: 16px;
+            left: 2px;
+            bottom: 2px;
+            background: var(--ctp-subtext0);
+            transition: transform 0.2s ease, background 0.2s ease;
+        }
+
+        .uwufy-toggle input:checked+.uwufy-slider {
+            background: var(--primary-dim);
+            border-color: var(--primary);
+        }
+
+        .uwufy-toggle input:checked+.uwufy-slider::before {
+            transform: translateX(18px);
+            background: var(--primary);
+        }
+
+        .uwufy-toggle input:focus-visible+.uwufy-slider {
+            border-color: var(--primary);
+        }
+
+        .no-results {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            color: var(--ctp-overlay0);
+            padding: var(--spacing-md);
+            text-align: center;
+        }
+
+        .actions-bar {
+            display: flex;
+            gap: var(--spacing-sm);
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+        }
+    </style>
+</head>
+
+<body>
+    <header class="topbar">
+        <div class="container topbar-inner">
+            <a href="/servers" class="logo" style="text-decoration:none;">clouder</a>
+            <div class="user-info">
+                <img src="{{AVATAR_URL}}" alt="" class="avatar">
+                <span class="username">{{USERNAME}}</span>
+                <a href="/auth/logout" class="btn btn-sm">sign out</a>
+            </div>
+        </div>
+    </header>
+    <div class="dashboard-layout container">
+        <nav class="sidebar">
+            <a href="/dashboard/{{GUILD_ID}}/about" class="sidebar-link">about</a>
+            <a href="/dashboard/{{GUILD_ID}}/selfroles" class="sidebar-link">self-roles</a>
+            <a href="/dashboard/{{GUILD_ID}}/welcome-goodbye" class="sidebar-link">welcome/goodbye</a>
+            <a href="/dashboard/{{GUILD_ID}}/mediaonly" class="sidebar-link">media-only</a>
+            <a href="/dashboard/{{GUILD_ID}}/uwufy" class="sidebar-link active">uwufy</a>
+        </nav>
+        <main class="dash-content">
+            <h2>uwufy <span class="subtext">// make their messages cuter</span></h2>
+
+            <div class="section-card">
+                <div class="section-header">
+                    <span class="section-title">members</span>
+                    <div class="uwufy-stats">
+                        <span class="uwufy-stat"><strong id="enabled-count">0</strong> enabled</span>
+                        <span class="uwufy-stat"><strong id="total-count">0</strong> total</span>
+                    </div>
+                </div>
+
+                <div class="actions-bar" style="margin-bottom: var(--spacing-sm);">
+                    <div class="search-bar" style="flex:1;max-width:400px;">
+                        <input type="text" id="member-search" placeholder="search members..." oninput="filterMembers()">
+                    </div>
+                    <button class="btn btn-sm btn-danger" id="disable-all-btn" onclick="disableAll()"
+                        style="display:none;">
+                        disable all
+                    </button>
+                </div>
+
+                <div id="member-list-container">
+                    <p class="loading">fetching...</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/static/app.js"></script>
+    <script>
+        const GUILD_ID = '{{GUILD_ID}}';
+        let members = [];
+
+        function escHtml(s) {
+            if (s == null) return '';
+            return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        async function loadMembers() {
+            const res = await apiFetch('GET', `/api/uwufy/${GUILD_ID}`);
+            if (!res.ok) {
+                document.getElementById('member-list-container').innerHTML =
+                    '<p class="no-results">failed to load members</p>';
+                return;
+            }
+            const data = await res.json();
+            members = data.members || [];
+            updateStats();
+            renderMembers(members);
+        }
+
+        function updateStats() {
+            const enabledCount = members.filter(m => m.uwufy_enabled).length;
+            document.getElementById('enabled-count').textContent = enabledCount;
+            document.getElementById('total-count').textContent = members.length;
+            document.getElementById('disable-all-btn').style.display = enabledCount > 0 ? '' : 'none';
+        }
+
+        function filterMembers() {
+            const query = document.getElementById('member-search').value.toLowerCase().trim();
+            if (!query) {
+                renderMembers(members);
+                return;
+            }
+            const filtered = members.filter(m =>
+                m.display_name.toLowerCase().includes(query) ||
+                m.username.toLowerCase().includes(query) ||
+                m.user_id.includes(query)
+            );
+            renderMembers(filtered);
+        }
+
+        function renderMembers(list) {
+            const container = document.getElementById('member-list-container');
+            if (list.length === 0) {
+                container.innerHTML = '<p class="no-results">no members found</p>';
+                return;
+            }
+
+            const sorted = [...list].sort((a, b) => {
+                if (a.uwufy_enabled !== b.uwufy_enabled) return b.uwufy_enabled ? 1 : -1;
+                return a.display_name.localeCompare(b.display_name);
+            });
+
+            const html = '<div class="member-list">' + sorted.map((m, idx) => `
+        <div class="member-row" id="member-${m.user_id}" style="opacity:0;transform:translateY(10px);">
+          <img src="${escHtml(m.avatar_url)}" alt="" class="member-avatar" loading="lazy">
+          <div class="member-info">
+            <div class="member-display">${escHtml(m.display_name)}</div>
+            <div class="member-username">${escHtml(m.username)}</div>
+          </div>
+          <label class="uwufy-toggle">
+            <input type="checkbox" ${m.uwufy_enabled ? 'checked' : ''}
+              onchange="toggleMember('${m.user_id}', this.checked)"
+              aria-label="toggle uwufy for ${escHtml(m.display_name)}">
+            <span class="uwufy-slider"></span>
+          </label>
+        </div>
+      `).join('') + '</div>';
+
+            container.innerHTML = html;
+
+            container.querySelectorAll('.member-row').forEach((el, i) => {
+                setTimeout(() => {
+                    el.style.transition = 'all 0.3s ease';
+                    el.style.opacity = '1';
+                    el.style.transform = 'translateY(0)';
+                }, i * 20);
+            });
+        }
+
+        async function toggleMember(userId, enabled) {
+            const res = await apiFetch('PUT', `/api/uwufy/${GUILD_ID}/${userId}`, { enabled });
+            if (res.ok) {
+                const m = members.find(m => m.user_id === userId);
+                if (m) m.uwufy_enabled = enabled;
+                updateStats();
+                toast(enabled ? 'uwufy enabled' : 'uwufy disabled', 'success');
+            } else {
+                toast('failed to toggle uwufy', 'error');
+                const row = document.getElementById(`member-${userId}`);
+                if (row) {
+                    const checkbox = row.querySelector('input[type="checkbox"]');
+                    if (checkbox) checkbox.checked = !enabled;
+                }
+            }
+        }
+
+        async function disableAll() {
+            if (!confirm('disable uwufy for all members?')) return;
+            const res = await apiFetch('DELETE', `/api/uwufy/${GUILD_ID}`);
+            if (res.ok) {
+                members.forEach(m => m.uwufy_enabled = false);
+                updateStats();
+                filterMembers();
+                toast('uwufy disabled for all members', 'success');
+            } else {
+                toast('failed to disable all', 'error');
+            }
+        }
+
+        loadMembers();
+    </script>
+</body>
+
+</html>

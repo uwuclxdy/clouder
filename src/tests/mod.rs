@@ -7,6 +7,7 @@ mod help_tests;
 mod mediaonly_tests;
 mod purge_tests;
 pub mod utils_tests;
+mod uwufy_tests;
 mod welcome_goodbye_tests;
 
 use clouder_core::config::AppState;
@@ -81,6 +82,21 @@ pub async fn create_test_db() -> SqlitePool {
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             UNIQUE(guild_id, channel_id)
+        );
+    "#,
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    sqlx::query(
+        r#"
+        CREATE TABLE uwufy_toggles (
+            guild_id TEXT NOT NULL,
+            user_id TEXT NOT NULL,
+            enabled BOOLEAN NOT NULL DEFAULT TRUE,
+            toggled_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY(guild_id, user_id)
         );
     "#,
     )

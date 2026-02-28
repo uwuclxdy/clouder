@@ -11,7 +11,7 @@ mod tests {
         assert_eq!(config.discord.token, "test_token");
         assert_eq!(config.discord.application_id, 12345);
         assert_eq!(config.web.api_url, "http://127.0.0.1:8080");
-        assert_eq!(config.web.bind_addr(), "127.0.0.1:8080");
+        assert_eq!(config.web.bind_addr, "127.0.0.1:8080");
         assert_eq!(config.database.url, ":memory:");
     }
 

@@ -31,8 +31,7 @@ impl axum::extract::FromRef<WebState> for Key {
 pub async fn run(app_state: AppState) -> Result<()> {
     info!(
         "starting clouder-web on {} ({})",
-        app_state.config.web.bind_addr(),
-        app_state.config.web.api_url,
+        app_state.config.web.bind_addr, app_state.config.web.api_url,
     );
 
     let key = cookie_key_from_secret(&app_state.config.web.session_secret);
@@ -110,7 +109,7 @@ pub async fn run(app_state: AppState) -> Result<()> {
         )
         .with_state(state.clone());
 
-    let listener = tokio::net::TcpListener::bind(state.app_state.config.web.bind_addr()).await?;
+    let listener = tokio::net::TcpListener::bind(&state.app_state.config.web.bind_addr).await?;
     axum::serve(listener, app).await?;
 
     Ok(())

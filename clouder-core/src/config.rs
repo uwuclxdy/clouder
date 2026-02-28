@@ -25,26 +25,10 @@ pub struct DiscordConfig {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WebConfig {
     pub api_url: String,
+    pub bind_addr: String,
     pub oauth: OAuthConfig,
     pub embed: EmbedConfig,
     pub session_secret: String,
-}
-
-impl WebConfig {
-    /// Returns `host:port` parsed from `api_url`, defaulting to port 8080 when absent.
-    pub fn bind_addr(&self) -> String {
-        let without_scheme = self
-            .api_url
-            .strip_prefix("https://")
-            .or_else(|| self.api_url.strip_prefix("http://"))
-            .unwrap_or(&self.api_url);
-        let host_port = without_scheme.split('/').next().unwrap_or(without_scheme);
-        if host_port.contains(':') {
-            host_port.to_string()
-        } else {
-            format!("{}:8080", host_port)
-        }
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -148,6 +132,16 @@ impl Config {
             Err(_) => {
                 info!("API_URL not set, using http://127.0.0.1:8080");
                 "http://127.0.0.1:8080".to_string()
+            }
+        };
+        let bind_addr = match env::var("WEB_BIND_ADDR") {
+            Ok(addr) => {
+                debug!("WEB_BIND_ADDR: {}", addr);
+                addr
+            }
+            Err(_) => {
+                info!("WEB_BIND_ADDR not set, using 127.0.0.1:8080");
+                "127.0.0.1:8080".to_string()
             }
         };
         let database_url = match env::var("DATABASE_URL") {
@@ -265,6 +259,7 @@ impl Config {
             },
             web: WebConfig {
                 api_url,
+                bind_addr,
                 oauth: OAuthConfig {
                     client_id: oauth_client_id,
                     client_secret: oauth_client_secret,
@@ -302,6 +297,7 @@ impl Config {
             },
             web: WebConfig {
                 api_url: "http://127.0.0.1:8080".to_string(),
+                bind_addr: "127.0.0.1:8080".to_string(),
                 oauth: OAuthConfig {
                     client_id: "12345".to_string(),
                     client_secret: "test_client_secret".to_string(),

@@ -4,6 +4,7 @@ use clouder_core::database::mediaonly::MediaOnlyConfig;
 use clouder_core::utils::content_detection::has_allowed_content;
 use clouder_core::utils::get_default_embed_color;
 use poise::serenity_prelude as serenity;
+use std::time::Duration;
 
 pub async fn handle_media_only_message(
     ctx: &serenity::Context,
@@ -53,6 +54,8 @@ pub async fn handle_media_only_message(
     let allowed_types = build_allowed_types(&config);
     let footer = crate::serenity::CreateEmbedFooter::new(format!("allowed types: {allowed_types}"));
 
+    const AUTO_DELETE_DELAY: Duration = Duration::from_secs(5);
+
     tokio::spawn(async move {
         match http.delete_message(channel_id, message_id, None).await {
             Ok(_) => {
@@ -60,8 +63,11 @@ pub async fn handle_media_only_message(
                     .description(format!("<@{author_id}> this channel is media-only"))
                     .footer(footer)
                     .color(embed_color);
-                let _reply = poise::CreateReply::default().embed(embed).ephemeral(true);
-                // TODO: reply with `reply`
+                let message = serenity::builder::CreateMessage::new().embed(embed);
+                if let Ok(notification) = channel_id.send_message(&http, message).await {
+                    tokio::time::sleep(AUTO_DELETE_DELAY).await;
+                    let _ = notification.delete(&http).await;
+                }
             }
             Err(serenity::Error::Http(http_error)) => {
                 if let serenity::HttpError::UnsuccessfulRequest(error_response) = &http_error

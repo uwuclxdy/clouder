@@ -4,9 +4,10 @@ use crate::config::AppState;
 use crate::database;
 use crate::database::guild_cache::CachedGuild;
 use crate::database::selfroles::{SelfRoleConfig, SelfRoleLabel};
+use anyhow::Result;
 use serde_json::{Value, json};
-use serenity::all::GuildId;
-use tracing::warn;
+use serenity::all::{GuildId, Http};
+use tracing::{error, warn};
 
 pub fn format_selfrole_button_label(emoji: &str, label: &str) -> String {
     let trimmed = emoji.trim();
@@ -1296,4 +1297,30 @@ pub async fn disable_all_uwufy(app_state: &AppState, guild_id: u64) -> Result<Va
         "success": true,
         "disabled_count": count,
     }))
+}
+
+pub async fn send_dm_to_user(http: &Http, user_id: u64, content: &str) -> Result<()> {
+    let channel = http
+        .create_private_channel(&json!({ "recipient_id": user_id }))
+        .await?;
+
+    let channel_id = channel.id;
+    let mut remaining = content;
+    while !remaining.is_empty() {
+        let end = remaining
+            .char_indices()
+            .take_while(|(i, _)| *i < 2000)
+            .last()
+            .map(|(i, c)| i + c.len_utf8())
+            .unwrap_or(remaining.len());
+        let (chunk, rest) = remaining.split_at(end);
+        remaining = rest;
+
+        let msg = serenity::all::CreateMessage::new().content(chunk);
+        if let Err(e) = http.send_message(channel_id, Vec::new(), &msg).await {
+            error!("failed to send dm chunk to {}: {}", user_id, e);
+        }
+    }
+
+    Ok(())
 }

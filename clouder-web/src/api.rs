@@ -1,7 +1,7 @@
 use axum::{
     Json,
     extract::{Path, State},
-    http::StatusCode,
+    http::{HeaderMap, StatusCode},
 };
 use clouder_core::config::AppState;
 use serde_json::{Value, json};
@@ -375,4 +375,59 @@ pub async fn api_uwufy_disable_all(
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }
+}
+
+pub async fn api_send_dm(
+    Path(user_id): Path<String>,
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Json(payload): Json<Value>,
+) -> Result<Json<Value>, StatusCode> {
+    let key_str = headers
+        .get("x-api-key")
+        .and_then(|v| v.to_str().ok())
+        .ok_or(StatusCode::UNAUTHORIZED)?;
+
+    let record = clouder_core::DashboardUser::get_by_api_key(&state.db, key_str)
+        .await
+        .map_err(|e| {
+            error!("failed to lookup api key: {}", e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?
+        .ok_or(StatusCode::UNAUTHORIZED)?;
+
+    if record.user_id != user_id {
+        return Err(StatusCode::UNAUTHORIZED);
+    }
+
+    let content = match payload.as_object() {
+        Some(map) if map.len() == 1 => map.values().next().and_then(|v| v.as_str()),
+        _ => payload.get("content").and_then(|v| v.as_str()),
+    }
+    .ok_or(StatusCode::BAD_REQUEST)?;
+
+    let user_id_u64: u64 = user_id.parse().map_err(|_| StatusCode::BAD_REQUEST)?;
+
+    clouder_core::shared::send_dm_to_user(&state.http, user_id_u64, content)
+        .await
+        .map_err(|e| {
+            error!("failed to send dm to user {}: {}", user_id_u64, e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+
+    Ok(Json(json!({ "success": true })))
+}
+
+pub async fn api_regenerate_key(
+    auth: Auth,
+    State(state): State<AppState>,
+) -> Result<Json<Value>, StatusCode> {
+    let record = clouder_core::DashboardUser::regenerate_key(&state.db, &auth.0.user_id)
+        .await
+        .map_err(|e| {
+            error!("failed to regenerate api key: {}", e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+
+    Ok(Json(json!({ "api_key": record.api_key })))
 }

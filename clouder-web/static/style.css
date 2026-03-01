@@ -313,6 +313,13 @@ input[type="checkbox"] {
   font-family: var(--font-mono);
   font-size: 0.9rem;
   color: var(--ctp-subtext1);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.username:hover {
+  color: var(--primary);
+  text-decoration: none;
 }
 
 /* login page */

@@ -54,6 +54,9 @@ pub async fn callback(
     };
 
     info!("user {} ({}) logged in", user.username, user.user_id);
+    if let Err(e) = clouder_core::DashboardUser::upsert(&state.app_state.db, &user.user_id).await {
+        error!("failed to upsert dashboard user: {}", e);
+    }
     let secure = state.app_state.config.web.api_base.starts_with("https://");
     (session::store(jar, &user, secure), Redirect::to("/servers"))
 }

@@ -4,6 +4,7 @@ use std::path::Path;
 
 use tracing::info;
 
+pub mod dashboard_users;
 pub mod guild_cache;
 pub mod mediaonly;
 pub mod reminders;
@@ -40,6 +41,7 @@ async fn run_migrations(pool: &SqlitePool) -> Result<()> {
         include_str!("../../migrations/004_mediaonly.sql"),
         include_str!("../../migrations/005_uwufy.sql"),
         include_str!("../../migrations/006_selfrole_labels.sql"),
+        include_str!("../../migrations/007_dashboard_users.sql"),
     ];
 
     for migration_content in migrations {

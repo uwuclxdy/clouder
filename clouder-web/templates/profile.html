@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>clouder // profile</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        .profile-layout {
+            max-width: 640px;
+            padding-top: var(--spacing-lg);
+            padding-bottom: var(--spacing-lg);
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-md);
+        }
+
+        .api-key-row {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            background: var(--ctp-crust);
+            border: 1px solid var(--ctp-surface0);
+            padding: var(--spacing-sm);
+        }
+
+        .api-key-display {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            color: var(--ctp-text);
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            user-select: all;
+        }
+
+        .api-usage pre {
+            background: var(--ctp-crust);
+            border: 1px solid var(--ctp-surface0);
+            padding: var(--spacing-sm);
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            color: var(--ctp-subtext1);
+            overflow-x: auto;
+            white-space: pre;
+            line-height: 1.5;
+        }
+
+        .api-usage p {
+            font-size: 0.85rem;
+            color: var(--ctp-subtext0);
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .regen-area {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            margin-top: var(--spacing-sm);
+        }
+    </style>
+</head>
+
+<body>
+    <header class="topbar">
+        <div class="container topbar-inner">
+            <a href="/servers" class="logo" style="text-decoration:none;">clouder</a>
+            <div class="user-info">
+                <img src="{{AVATAR_URL}}" alt="" class="avatar">
+                <a href="/profile" class="username">{{USERNAME}}</a>
+                <a href="/auth/logout" class="btn btn-sm">sign out</a>
+            </div>
+        </div>
+    </header>
+    <main class="container profile-layout">
+        <h2>profile <span class="subtext">// api key &amp; usage</span></h2>
+
+        <div class="section-card">
+            <div class="section-header">
+                <span class="section-title">your api key</span>
+            </div>
+            <div class="api-key-row">
+                <code class="api-key-display" id="api-key-display">{{API_KEY}}</code>
+                <button class="btn btn-sm" onclick="copyKey()">copy</button>
+            </div>
+            <div class="regen-area">
+                <button class="btn btn-sm btn-danger" id="regen-btn" onclick="regenKey()">regenerate</button>
+                <span id="regen-confirm" style="display:none; font-size:0.8rem; color:var(--ctp-peach);">
+                    are you sure?
+                    <button class="btn btn-sm btn-danger" onclick="regenConfirm()">yes</button>
+                    <button class="btn btn-sm" onclick="regenCancel()">no</button>
+                </span>
+            </div>
+        </div>
+
+        <div class="section-card">
+            <div class="section-header">
+                <span class="section-title">usage</span>
+            </div>
+            <div class="api-usage">
+                <p>send a POST request to dm yourself via the bot:</p>
+                <pre>curl -X POST {{API_BASE}}/api/{{USER_ID}} \
+  -H "X-API-Key: {{API_KEY}}" \
+  -H "Content-Type: application/json" \
+  -d '{"content": "hello from the api"}'</pre>
+            </div>
+        </div>
+    </main>
+
+    <script src="/static/app.js"></script>
+    <script>
+        function copyKey() {
+            const key = document.getElementById('api-key-display').textContent;
+            navigator.clipboard.writeText(key).then(() => toast('copied!', 'success'));
+        }
+
+        function regenKey() {
+            document.getElementById('regen-btn').style.display = 'none';
+            document.getElementById('regen-confirm').style.display = '';
+        }
+
+        function regenCancel() {
+            document.getElementById('regen-btn').style.display = '';
+            document.getElementById('regen-confirm').style.display = 'none';
+        }
+
+        async function regenConfirm() {
+            try {
+                const res = await apiFetch('POST', '/api/profile/regenerate-key');
+                const data = await res.json();
+                document.getElementById('api-key-display').textContent = data.api_key;
+                toast('key regenerated', 'success');
+            } catch {
+                toast('failed to regenerate key', 'error');
+            }
+            regenCancel();
+        }
+    </script>
+</body>
+
+</html>

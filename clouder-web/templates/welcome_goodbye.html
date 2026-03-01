@@ -2,394 +2,388 @@
 <html lang="en">
 
 <head>
-	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>clouder // welcome &amp; goodbye</title>
-	<link rel="stylesheet" href="/static/style.css">
-	<style>
-		:root {
-			--embed-default-color: {
-					{
-					DEFAULT_EMBED_COLOR
-				}
-			}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>clouder // welcome &amp; goodbye</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        .placeholder-hints {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 6px;
+        }
 
-			;
-		}
-
-		.placeholder-hints {
-			display: flex;
-			flex-wrap: wrap;
-			gap: 6px;
-			margin-top: 6px;
-		}
-
-		.placeholder-chip {
-			font-family: var(--font-mono);
-			font-size: 0.75rem;
-			color: var(--ctp-blue);
-			background: var(--ctp-surface0);
-			padding: 2px 8px;
-			cursor: pointer;
-		}
-	</style>
+        .placeholder-chip {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--ctp-blue);
+            background: var(--ctp-surface0);
+            padding: 2px 8px;
+            cursor: pointer;
+        }
+    </style>
 </head>
 
 <body>
-	<header class="topbar">
-		<div class="container topbar-inner">
-			<a href="/servers" class="logo" style="text-decoration:none;">clouder</a>
-			<div class="user-info">
-				<img src="{{AVATAR_URL}}" alt="" class="avatar">
-				<a href="/profile" class="username">{{USERNAME}}</a>
-				<a href="/auth/logout" class="btn btn-sm">sign out</a>
-			</div>
-		</div>
-	</header>
-	<div class="dashboard-layout container">
-		<nav class="sidebar">
-			<a href="/dashboard/{{GUILD_ID}}/about" class="sidebar-link">about</a>
-			<a href="/dashboard/{{GUILD_ID}}/selfroles" class="sidebar-link">self-roles</a>
-			<a href="/dashboard/{{GUILD_ID}}/welcome-goodbye" class="sidebar-link active">welcome/goodbye</a>
-			<a href="/dashboard/{{GUILD_ID}}/mediaonly" class="sidebar-link">media-only</a>
-			<a href="/dashboard/{{GUILD_ID}}/uwufy" class="sidebar-link">uwufy</a>
-		</nav>
-		<main class="dash-content">
-			<h2>welcome &amp; goodbye <span class="subtext">// greet and farewell members</span></h2>
+    <header class="topbar">
+        <div class="container topbar-inner">
+            <a href="/servers" class="logo" style="text-decoration:none;">clouder</a>
+            <div class="user-info">
+                <img src="{{AVATAR_URL}}" alt="" class="avatar">
+                <a href="/profile" class="username">{{USERNAME}}</a>
+                <a href="/auth/logout" class="btn btn-sm">sign out</a>
+            </div>
+        </div>
+    </header>
+    <div class="dashboard-layout container">
+        <nav class="sidebar">
+            <a href="/dashboard/{{GUILD_ID}}/about" class="sidebar-link">about</a>
+            <a href="/dashboard/{{GUILD_ID}}/selfroles" class="sidebar-link">self-roles</a>
+            <a href="/dashboard/{{GUILD_ID}}/welcome-goodbye" class="sidebar-link active">welcome/goodbye</a>
+            <a href="/dashboard/{{GUILD_ID}}/mediaonly" class="sidebar-link">media-only</a>
+            <a href="/dashboard/{{GUILD_ID}}/uwufy" class="sidebar-link">uwufy</a>
+        </nav>
+        <main class="dash-content">
+            <h2>welcome &amp; goodbye <span class="subtext">// greet and farewell members</span></h2>
 
-			<div class="section-card">
-				<div class="tabs" data-group="wg-tabs">
-					<button class="tab active" data-group="wg-tabs" data-tab="welcome">welcome</button>
-					<button class="tab" data-group="wg-tabs" data-tab="goodbye">goodbye</button>
-				</div>
+            <div class="section-card">
+                <div class="tabs" data-group="wg-tabs">
+                    <button class="tab active" data-group="wg-tabs" data-tab="welcome">welcome</button>
+                    <button class="tab" data-group="wg-tabs" data-tab="goodbye">goodbye</button>
+                </div>
 
-				<!-- welcome tab -->
-				<div class="tab-panel active" data-tab-group="wg-tabs" data-tab-id="welcome">
-					<div class="toggle-row" style="margin-bottom:var(--spacing-md);">
-						<input type="checkbox" id="welcome-enabled">
-						<label for="welcome-enabled" style="color:var(--ctp-subtext1);">enable welcome messages</label>
-					</div>
-					<div class="form-group">
-						<label for="welcome-channel">channel</label>
-						<select id="welcome-channel">
-							<option value="">select channel</option>
-						</select>
-					</div>
-					<div class="form-group">
-						<label for="welcome-type">message type</label>
-						<select id="welcome-type" onchange="toggleWelcomeType()">
-							<option value="text">plain text</option>
-							<option value="embed">embed</option>
-						</select>
-					</div>
-					<div id="welcome-text-fields">
-						<div class="form-group">
-							<label for="welcome-content">message</label>
-							<textarea id="welcome-content" placeholder="welcome {user} to the server!"></textarea>
-							<div class="placeholder-hints">
-								<span class="placeholder-chip" onclick="insertPlaceholder('{user}')">{user}</span>
-								<span class="placeholder-chip"
-									onclick="insertPlaceholder('{username}')">{username}</span>
-								<span class="placeholder-chip" onclick="insertPlaceholder('{server}')">{server}</span>
-								<span class="placeholder-chip"
-									onclick="insertPlaceholder('{member_count}')">{member_count}</span>
-								<span class="placeholder-chip" onclick="insertPlaceholder('{user_id}')">{user_id}</span>
-								<span class="placeholder-chip"
-									onclick="insertPlaceholder('{join_date}')">{join_date}</span>
-							</div>
-						</div>
-					</div>
-					<div id="welcome-embed-fields" style="display:none;">
-						<div class="form-grid">
-							<div class="form-group">
-								<label for="welcome-embed-title">title</label>
-								<input type="text" id="welcome-embed-title" placeholder="welcome!">
-							</div>
-							<div class="form-group">
-								<label for="welcome-embed-color">color</label>
-								<input type="color" id="welcome-embed-color" value="{{DEFAULT_EMBED_COLOR}}"
-									style="height:38px;padding:2px 4px;">
-							</div>
-						</div>
-						<div class="form-group">
-							<label for="welcome-embed-desc">description</label>
-							<textarea id="welcome-embed-desc" placeholder="welcome {user} to our server!"></textarea>
-							<div class="placeholder-hints">
-								<span class="placeholder-chip" onclick="insertPlaceholder('{user}')">{user}</span>
-								<span class="placeholder-chip"
-									onclick="insertPlaceholder('{username}')">{username}</span>
-								<span class="placeholder-chip" onclick="insertPlaceholder('{server}')">{server}</span>
-								<span class="placeholder-chip"
-									onclick="insertPlaceholder('{member_count}')">{member_count}</span>
-								<span class="placeholder-chip" onclick="insertPlaceholder('{user_id}')">{user_id}</span>
-								<span class="placeholder-chip"
-									onclick="insertPlaceholder('{join_date}')">{join_date}</span>
-							</div>
-						</div>
-						<div class="form-grid">
-							<div class="form-group">
-								<label for="welcome-embed-footer">footer</label>
-								<input type="text" id="welcome-embed-footer" placeholder="optional footer">
-							</div>
-							<div class="form-group">
-								<label for="welcome-embed-thumbnail">thumbnail URL</label>
-								<input type="text" id="welcome-embed-thumbnail" placeholder="https://...">
-							</div>
-						</div>
-						<div class="form-group">
-							<label for="welcome-embed-image">image URL</label>
-							<input type="text" id="welcome-embed-image" placeholder="https://...">
-						</div>
-						<div class="toggle-row">
-							<input type="checkbox" id="welcome-embed-timestamp">
-							<label for="welcome-embed-timestamp" style="color:var(--ctp-subtext1);">include
-								timestamp</label>
-						</div>
-					</div>
-					<div style="display:flex;gap:var(--spacing-sm);margin-top:var(--spacing-md);">
-						<button class="btn btn-primary" onclick="saveConfig()">save</button>
-						<button class="btn" onclick="sendTest('welcome')">send test</button>
-					</div>
-				</div>
+                <!-- welcome tab -->
+                <div class="tab-panel active" data-tab-group="wg-tabs" data-tab-id="welcome">
+                    <div class="toggle-row" style="margin-bottom:var(--spacing-md);">
+                        <input type="checkbox" id="welcome-enabled">
+                        <label for="welcome-enabled" style="color:var(--ctp-subtext1);">enable welcome messages</label>
+                    </div>
+                    <div class="form-group">
+                        <label for="welcome-channel">channel</label>
+                        <select id="welcome-channel">
+                            <option value="">select channel</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="welcome-type">message type</label>
+                        <select id="welcome-type" onchange="toggleWelcomeType()">
+                            <option value="text">plain text</option>
+                            <option value="embed">embed</option>
+                        </select>
+                    </div>
+                    <div id="welcome-text-fields">
+                        <div class="form-group">
+                            <label for="welcome-content">message</label>
+                            <textarea id="welcome-content" placeholder="welcome {user} to the server!"></textarea>
+                            <div class="placeholder-hints">
+                                <span class="placeholder-chip" onclick="insertPlaceholder('{user}')">{user}</span>
+                                <span class="placeholder-chip"
+                                    onclick="insertPlaceholder('{username}')">{username}</span>
+                                <span class="placeholder-chip" onclick="insertPlaceholder('{server}')">{server}</span>
+                                <span class="placeholder-chip"
+                                    onclick="insertPlaceholder('{member_count}')">{member_count}</span>
+                                <span class="placeholder-chip" onclick="insertPlaceholder('{user_id}')">{user_id}</span>
+                                <span class="placeholder-chip"
+                                    onclick="insertPlaceholder('{join_date}')">{join_date}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="welcome-embed-fields" style="display:none;">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="welcome-embed-title">title</label>
+                                <input type="text" id="welcome-embed-title" placeholder="welcome!">
+                            </div>
+                            <div class="form-group">
+                                <label for="welcome-embed-color">color</label>
+                                <input type="color" id="welcome-embed-color" style="height:38px;padding:2px 4px">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="welcome-embed-desc">description</label>
+                            <textarea id="welcome-embed-desc" placeholder="welcome {user} to our server!"></textarea>
+                            <div class="placeholder-hints">
+                                <span class="placeholder-chip" onclick="insertPlaceholder('{user}')">{user}</span>
+                                <span class="placeholder-chip"
+                                    onclick="insertPlaceholder('{username}')">{username}</span>
+                                <span class="placeholder-chip" onclick="insertPlaceholder('{server}')">{server}</span>
+                                <span class="placeholder-chip"
+                                    onclick="insertPlaceholder('{member_count}')">{member_count}</span>
+                                <span class="placeholder-chip" onclick="insertPlaceholder('{user_id}')">{user_id}</span>
+                                <span class="placeholder-chip"
+                                    onclick="insertPlaceholder('{join_date}')">{join_date}</span>
+                            </div>
+                        </div>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="welcome-embed-footer">footer</label>
+                                <input type="text" id="welcome-embed-footer" placeholder="optional footer">
+                            </div>
+                            <div class="form-group">
+                                <label for="welcome-embed-thumbnail">thumbnail URL</label>
+                                <input type="text" id="welcome-embed-thumbnail" placeholder="https://...">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="welcome-embed-image">image URL</label>
+                            <input type="text" id="welcome-embed-image" placeholder="https://...">
+                        </div>
+                        <div class="toggle-row">
+                            <input type="checkbox" id="welcome-embed-timestamp">
+                            <label for="welcome-embed-timestamp" style="color:var(--ctp-subtext1);">include
+                                timestamp</label>
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:var(--spacing-sm);margin-top:var(--spacing-md);">
+                        <button class="btn btn-primary" onclick="saveConfig()">save</button>
+                        <button class="btn" onclick="sendTest('welcome')">send test</button>
+                    </div>
+                </div>
 
-				<!-- goodbye tab -->
-				<div class="tab-panel" data-tab-group="wg-tabs" data-tab-id="goodbye">
-					<div class="toggle-row" style="margin-bottom:var(--spacing-md);">
-						<input type="checkbox" id="goodbye-enabled">
-						<label for="goodbye-enabled" style="color:var(--ctp-subtext1);">enable goodbye messages</label>
-					</div>
-					<div class="form-group">
-						<label for="goodbye-channel">channel</label>
-						<select id="goodbye-channel">
-							<option value="">select channel</option>
-						</select>
-					</div>
-					<div class="form-group">
-						<label for="goodbye-type">message type</label>
-						<select id="goodbye-type" onchange="toggleGoodbyeType()">
-							<option value="text">plain text</option>
-							<option value="embed">embed</option>
-						</select>
-					</div>
-					<div id="goodbye-text-fields">
-						<div class="form-group">
-							<label for="goodbye-content">message</label>
-							<textarea id="goodbye-content" placeholder="goodbye {user}, we'll miss you!"></textarea>
-							<div class="placeholder-hints">
-								<span class="placeholder-chip" onclick="insertPlaceholder('{user}')">{user}</span>
-								<span class="placeholder-chip"
-									onclick="insertPlaceholder('{username}')">{username}</span>
-								<span class="placeholder-chip" onclick="insertPlaceholder('{server}')">{server}</span>
-								<span class="placeholder-chip"
-									onclick="insertPlaceholder('{member_count}')">{member_count}</span>
-								<span class="placeholder-chip" onclick="insertPlaceholder('{user_id}')">{user_id}</span>
-								<span class="placeholder-chip"
-									onclick="insertPlaceholder('{join_date}')">{join_date}</span>
-							</div>
-						</div>
-					</div>
-					<div id="goodbye-embed-fields" style="display:none;">
-						<div class="form-grid">
-							<div class="form-group">
-								<label for="goodbye-embed-title">title</label>
-								<input type="text" id="goodbye-embed-title" placeholder="goodbye!">
-							</div>
-							<div class="form-group">
-								<label for="goodbye-embed-color">color</label>
-								<input type="color" id="goodbye-embed-color" value="{{DEFAULT_EMBED_COLOR}}"
-									style="height:38px;padding:2px 4px;">
-							</div>
-						</div>
-						<div class="form-group">
-							<label for="goodbye-embed-desc">description</label>
-							<textarea id="goodbye-embed-desc" placeholder="{user} has left the server."></textarea>
-							<div class="placeholder-hints">
-								<span class="placeholder-chip" onclick="insertPlaceholder('{user}')">{user}</span>
-								<span class="placeholder-chip"
-									onclick="insertPlaceholder('{username}')">{username}</span>
-								<span class="placeholder-chip" onclick="insertPlaceholder('{server}')">{server}</span>
-								<span class="placeholder-chip"
-									onclick="insertPlaceholder('{member_count}')">{member_count}</span>
-								<span class="placeholder-chip" onclick="insertPlaceholder('{user_id}')">{user_id}</span>
-								<span class="placeholder-chip"
-									onclick="insertPlaceholder('{join_date}')">{join_date}</span>
-							</div>
-						</div>
-						<div class="form-grid">
-							<div class="form-group">
-								<label for="goodbye-embed-footer">footer</label>
-								<input type="text" id="goodbye-embed-footer" placeholder="optional footer">
-							</div>
-							<div class="form-group">
-								<label for="goodbye-embed-thumbnail">thumbnail URL</label>
-								<input type="text" id="goodbye-embed-thumbnail" placeholder="https://...">
-							</div>
-						</div>
-						<div class="form-group">
-							<label for="goodbye-embed-image">image URL</label>
-							<input type="text" id="goodbye-embed-image" placeholder="https://...">
-						</div>
-						<div class="toggle-row">
-							<input type="checkbox" id="goodbye-embed-timestamp">
-							<label for="goodbye-embed-timestamp" style="color:var(--ctp-subtext1);">include
-								timestamp</label>
-						</div>
-					</div>
-					<div style="display:flex;gap:var(--spacing-sm);margin-top:var(--spacing-md);">
-						<button class="btn btn-primary" onclick="saveConfig()">save</button>
-						<button class="btn" onclick="sendTest('goodbye')">send test</button>
-					</div>
-				</div>
-			</div>
-		</main>
-	</div>
+                <!-- goodbye tab -->
+                <div class="tab-panel" data-tab-group="wg-tabs" data-tab-id="goodbye">
+                    <div class="toggle-row" style="margin-bottom:var(--spacing-md);">
+                        <input type="checkbox" id="goodbye-enabled">
+                        <label for="goodbye-enabled" style="color:var(--ctp-subtext1);">enable goodbye messages</label>
+                    </div>
+                    <div class="form-group">
+                        <label for="goodbye-channel">channel</label>
+                        <select id="goodbye-channel">
+                            <option value="">select channel</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="goodbye-type">message type</label>
+                        <select id="goodbye-type" onchange="toggleGoodbyeType()">
+                            <option value="text">plain text</option>
+                            <option value="embed">embed</option>
+                        </select>
+                    </div>
+                    <div id="goodbye-text-fields">
+                        <div class="form-group">
+                            <label for="goodbye-content">message</label>
+                            <textarea id="goodbye-content" placeholder="goodbye {user}, we'll miss you!"></textarea>
+                            <div class="placeholder-hints">
+                                <span class="placeholder-chip" onclick="insertPlaceholder('{user}')">{user}</span>
+                                <span class="placeholder-chip"
+                                    onclick="insertPlaceholder('{username}')">{username}</span>
+                                <span class="placeholder-chip" onclick="insertPlaceholder('{server}')">{server}</span>
+                                <span class="placeholder-chip"
+                                    onclick="insertPlaceholder('{member_count}')">{member_count}</span>
+                                <span class="placeholder-chip" onclick="insertPlaceholder('{user_id}')">{user_id}</span>
+                                <span class="placeholder-chip"
+                                    onclick="insertPlaceholder('{join_date}')">{join_date}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="goodbye-embed-fields" style="display:none;">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="goodbye-embed-title">title</label>
+                                <input type="text" id="goodbye-embed-title" placeholder="goodbye!">
+                            </div>
+                            <div class="form-group">
+                                <label for="goodbye-embed-color">color</label>
+                                <input type="color" id="goodbye-embed-color" style="height:38px;padding:2px 4px;">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="goodbye-embed-desc">description</label>
+                            <textarea id="goodbye-embed-desc" placeholder="{user} has left the server."></textarea>
+                            <div class="placeholder-hints">
+                                <span class="placeholder-chip" onclick="insertPlaceholder('{user}')">{user}</span>
+                                <span class="placeholder-chip"
+                                    onclick="insertPlaceholder('{username}')">{username}</span>
+                                <span class="placeholder-chip" onclick="insertPlaceholder('{server}')">{server}</span>
+                                <span class="placeholder-chip"
+                                    onclick="insertPlaceholder('{member_count}')">{member_count}</span>
+                                <span class="placeholder-chip" onclick="insertPlaceholder('{user_id}')">{user_id}</span>
+                                <span class="placeholder-chip"
+                                    onclick="insertPlaceholder('{join_date}')">{join_date}</span>
+                            </div>
+                        </div>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="goodbye-embed-footer">footer</label>
+                                <input type="text" id="goodbye-embed-footer" placeholder="optional footer">
+                            </div>
+                            <div class="form-group">
+                                <label for="goodbye-embed-thumbnail">thumbnail URL</label>
+                                <input type="text" id="goodbye-embed-thumbnail" placeholder="https://...">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="goodbye-embed-image">image URL</label>
+                            <input type="text" id="goodbye-embed-image" placeholder="https://...">
+                        </div>
+                        <div class="toggle-row">
+                            <input type="checkbox" id="goodbye-embed-timestamp">
+                            <label for="goodbye-embed-timestamp" style="color:var(--ctp-subtext1);">include
+                                timestamp</label>
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:var(--spacing-sm);margin-top:var(--spacing-md);">
+                        <button class="btn btn-primary" onclick="saveConfig()">save</button>
+                        <button class="btn" onclick="sendTest('goodbye')">send test</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
 
-	<script src="/static/app.js"></script>
-	<script>
-		const GUILD_ID = '{{GUILD_ID}}';
+    <script src="/static/app.js"></script>
+    <script>
+        const GUILD_ID = '{{GUILD_ID}}';
 
-		function toggleWelcomeType() {
-			const type = document.getElementById('welcome-type').value;
-			document.getElementById('welcome-text-fields').style.display = type === 'text' ? 'block' : 'none';
-			document.getElementById('welcome-embed-fields').style.display = type === 'embed' ? 'block' : 'none';
-		}
+        function toggleWelcomeType() {
+            const type = document.getElementById('welcome-type').value;
+            document.getElementById('welcome-text-fields').style.display = type === 'text' ? 'block' : 'none';
+            document.getElementById('welcome-embed-fields').style.display = type === 'embed' ? 'block' : 'none';
+        }
 
-		function toggleGoodbyeType() {
-			const type = document.getElementById('goodbye-type').value;
-			document.getElementById('goodbye-text-fields').style.display = type === 'text' ? 'block' : 'none';
-			document.getElementById('goodbye-embed-fields').style.display = type === 'embed' ? 'block' : 'none';
-		}
+        function toggleGoodbyeType() {
+            const type = document.getElementById('goodbye-type').value;
+            document.getElementById('goodbye-text-fields').style.display = type === 'text' ? 'block' : 'none';
+            document.getElementById('goodbye-embed-fields').style.display = type === 'embed' ? 'block' : 'none';
+        }
 
-		function colorToInt(hex) {
-			return parseInt(hex.replace('#', ''), 16);
-		}
+        function colorToInt(hex) {
+            return parseInt(hex.replace('#', ''), 16);
+        }
 
-		async function loadChannels() {
-			const res = await apiFetch('GET', `/api/guild/${GUILD_ID}/channels`);
-			const data = await res.json();
-			const options = data.channels
-				.sort((a, b) => a.position - b.position)
-				.map(c => `<option value="${escHtml(c.id)}">#${escHtml(c.name)}</option>`)
-				.join('');
-			document.getElementById('welcome-channel').insertAdjacentHTML('beforeend', options);
-			document.getElementById('goodbye-channel').insertAdjacentHTML('beforeend', options);
-		}
+        async function loadChannels() {
+            const res = await apiFetch('GET', `/api/guild/${GUILD_ID}/channels`);
+            const data = await res.json();
+            const options = data.channels
+                .sort((a, b) => a.position - b.position)
+                .map(c => `<option value="${escHtml(c.id)}">#${escHtml(c.name)}</option>`)
+                .join('');
+            document.getElementById('welcome-channel').insertAdjacentHTML('beforeend', options);
+            document.getElementById('goodbye-channel').insertAdjacentHTML('beforeend', options);
+        }
 
-		async function loadConfig() {
-			const res = await apiFetch('GET', `/api/welcome-goodbye/${GUILD_ID}/config`);
-			const data = await res.json();
-			const c = data.config || {};
+        async function loadConfig() {
+            const res = await apiFetch('GET', `/api/welcome-goodbye/${GUILD_ID}/config`);
+            const data = await res.json();
+            const c = data.config || {};
+            const defaultColor = '#' + (data.default_color || 0xffffff).toString(16).padStart(6, '0');
 
-			document.getElementById('welcome-enabled').checked = c.welcome_enabled || false;
-			document.getElementById('goodbye-enabled').checked = c.goodbye_enabled || false;
+            document.getElementById('welcome-enabled').checked = c.welcome_enabled || false;
+            document.getElementById('goodbye-enabled').checked = c.goodbye_enabled || false;
 
-			if (c.welcome_channel_id) document.getElementById('welcome-channel').value = c.welcome_channel_id;
-			if (c.goodbye_channel_id) document.getElementById('goodbye-channel').value = c.goodbye_channel_id;
+            if (c.welcome_channel_id) document.getElementById('welcome-channel').value = c.welcome_channel_id;
+            if (c.goodbye_channel_id) document.getElementById('goodbye-channel').value = c.goodbye_channel_id;
 
-			document.getElementById('welcome-type').value = c.welcome_message_type || 'text';
-			document.getElementById('goodbye-type').value = c.goodbye_message_type || 'text';
+            document.getElementById('welcome-type').value = c.welcome_message_type || 'text';
+            document.getElementById('goodbye-type').value = c.goodbye_message_type || 'text';
 
-			document.getElementById('welcome-content').value = c.welcome_message_content || '';
-			document.getElementById('goodbye-content').value = c.goodbye_message_content || '';
+            document.getElementById('welcome-content').value = c.welcome_message_content || '';
+            document.getElementById('goodbye-content').value = c.goodbye_message_content || '';
 
-			document.getElementById('welcome-embed-title').value = c.welcome_embed_title || '';
-			document.getElementById('welcome-embed-desc').value = c.welcome_embed_description || '';
-			if (c.welcome_embed_color) document.getElementById('welcome-embed-color').value = '#' + c.welcome_embed_color.toString(16).padStart(6, '0');
-			document.getElementById('welcome-embed-footer').value = c.welcome_embed_footer || '';
-			document.getElementById('welcome-embed-thumbnail').value = c.welcome_embed_thumbnail || '';
-			document.getElementById('welcome-embed-image').value = c.welcome_embed_image || '';
-			document.getElementById('welcome-embed-timestamp').checked = c.welcome_embed_timestamp || false;
+            document.getElementById('welcome-embed-title').value = c.welcome_embed_title || '';
+            document.getElementById('welcome-embed-desc').value = c.welcome_embed_description || '';
+            const setColor = (id, colorInt) => {
+                const el = document.getElementById(id);
+                el.value = colorInt ? '#' + colorInt.toString(16).padStart(6, '0') : defaultColor;
+                el.style.accentColor = el.value;
+            };
+            setColor('welcome-embed-color', c.welcome_embed_color);
+            document.getElementById('welcome-embed-footer').value = c.welcome_embed_footer || '';
+            document.getElementById('welcome-embed-thumbnail').value = c.welcome_embed_thumbnail || '';
+            document.getElementById('welcome-embed-image').value = c.welcome_embed_image || '';
+            document.getElementById('welcome-embed-timestamp').checked = c.welcome_embed_timestamp || false;
 
-			document.getElementById('goodbye-embed-title').value = c.goodbye_embed_title || '';
-			document.getElementById('goodbye-embed-desc').value = c.goodbye_embed_description || '';
-			if (c.goodbye_embed_color) document.getElementById('goodbye-embed-color').value = '#' + c.goodbye_embed_color.toString(16).padStart(6, '0');
-			document.getElementById('goodbye-embed-footer').value = c.goodbye_embed_footer || '';
-			document.getElementById('goodbye-embed-thumbnail').value = c.goodbye_embed_thumbnail || '';
-			document.getElementById('goodbye-embed-image').value = c.goodbye_embed_image || '';
-			document.getElementById('goodbye-embed-timestamp').checked = c.goodbye_embed_timestamp || false;
+            document.getElementById('goodbye-embed-title').value = c.goodbye_embed_title || '';
+            document.getElementById('goodbye-embed-desc').value = c.goodbye_embed_description || '';
+            setColor('goodbye-embed-color', c.goodbye_embed_color);
+            document.getElementById('goodbye-embed-footer').value = c.goodbye_embed_footer || '';
+            document.getElementById('goodbye-embed-thumbnail').value = c.goodbye_embed_thumbnail || '';
+            document.getElementById('goodbye-embed-image').value = c.goodbye_embed_image || '';
+            document.getElementById('goodbye-embed-timestamp').checked = c.goodbye_embed_timestamp || false;
 
-			toggleWelcomeType();
-			toggleGoodbyeType();
-		}
+            toggleWelcomeType();
+            toggleGoodbyeType();
+        }
 
-		let lastFocusedTextarea = null;
+        let lastFocusedTextarea = null;
 
-		function insertPlaceholder(text) {
-			if (!lastFocusedTextarea) return;
-			const el = lastFocusedTextarea;
-			const start = el.selectionStart;
-			const end = el.selectionEnd;
-			el.value = el.value.slice(0, start) + text + el.value.slice(end);
-			el.selectionStart = el.selectionEnd = start + text.length;
-			el.focus();
-		}
+        function insertPlaceholder(text) {
+            if (!lastFocusedTextarea) return;
+            const el = lastFocusedTextarea;
+            const start = el.selectionStart;
+            const end = el.selectionEnd;
+            el.value = el.value.slice(0, start) + text + el.value.slice(end);
+            el.selectionStart = el.selectionEnd = start + text.length;
+            el.focus();
+        }
 
-		async function saveConfig() {
-			const welcomeEnabled = document.getElementById('welcome-enabled').checked;
-			const goodbyeEnabled = document.getElementById('goodbye-enabled').checked;
-			const welcomeChannel = document.getElementById('welcome-channel');
-			const goodbyeChannel = document.getElementById('goodbye-channel');
+        async function saveConfig() {
+            const welcomeEnabled = document.getElementById('welcome-enabled').checked;
+            const goodbyeEnabled = document.getElementById('goodbye-enabled').checked;
+            const welcomeChannel = document.getElementById('welcome-channel');
+            const goodbyeChannel = document.getElementById('goodbye-channel');
 
-			[welcomeChannel, goodbyeChannel].forEach(el => el.classList.remove('input-error'));
+            [welcomeChannel, goodbyeChannel].forEach(el => el.classList.remove('input-error'));
 
-			if (welcomeEnabled && !welcomeChannel.value) {
-				welcomeChannel.classList.add('input-error');
-				toast('select a welcome channel', 'error');
-				return false;
-			}
-			if (goodbyeEnabled && !goodbyeChannel.value) {
-				goodbyeChannel.classList.add('input-error');
-				toast('select a goodbye channel', 'error');
-				return false;
-			}
+            if (welcomeEnabled && !welcomeChannel.value) {
+                welcomeChannel.classList.add('input-error');
+                toast('select a welcome channel', 'error');
+                return false;
+            }
+            if (goodbyeEnabled && !goodbyeChannel.value) {
+                goodbyeChannel.classList.add('input-error');
+                toast('select a goodbye channel', 'error');
+                return false;
+            }
 
-			const payload = {
-				welcome_enabled: welcomeEnabled,
-				goodbye_enabled: goodbyeEnabled,
-				welcome_channel_id: welcomeChannel.value || null,
-				goodbye_channel_id: goodbyeChannel.value || null,
-				welcome_message_type: document.getElementById('welcome-type').value,
-				goodbye_message_type: document.getElementById('goodbye-type').value,
-				welcome_message_content: document.getElementById('welcome-content').value,
-				goodbye_message_content: document.getElementById('goodbye-content').value,
-				welcome_embed_title: document.getElementById('welcome-embed-title').value,
-				welcome_embed_description: document.getElementById('welcome-embed-desc').value,
-				welcome_embed_color: colorToInt(document.getElementById('welcome-embed-color').value),
-				welcome_embed_footer: document.getElementById('welcome-embed-footer').value,
-				welcome_embed_thumbnail: document.getElementById('welcome-embed-thumbnail').value,
-				welcome_embed_image: document.getElementById('welcome-embed-image').value,
-				welcome_embed_timestamp: document.getElementById('welcome-embed-timestamp').checked,
-				goodbye_embed_title: document.getElementById('goodbye-embed-title').value,
-				goodbye_embed_description: document.getElementById('goodbye-embed-desc').value,
-				goodbye_embed_color: colorToInt(document.getElementById('goodbye-embed-color').value),
-				goodbye_embed_footer: document.getElementById('goodbye-embed-footer').value,
-				goodbye_embed_thumbnail: document.getElementById('goodbye-embed-thumbnail').value,
-				goodbye_embed_image: document.getElementById('goodbye-embed-image').value,
-				goodbye_embed_timestamp: document.getElementById('goodbye-embed-timestamp').checked,
-			};
-			const res = await apiFetch('POST', `/api/welcome-goodbye/${GUILD_ID}/config`, payload);
-			toast(res.ok ? 'config saved' : 'save failed', res.ok ? 'success' : 'error');
-			return res.ok;
-		}
+            const payload = {
+                welcome_enabled: welcomeEnabled,
+                goodbye_enabled: goodbyeEnabled,
+                welcome_channel_id: welcomeChannel.value || null,
+                goodbye_channel_id: goodbyeChannel.value || null,
+                welcome_message_type: document.getElementById('welcome-type').value,
+                goodbye_message_type: document.getElementById('goodbye-type').value,
+                welcome_message_content: document.getElementById('welcome-content').value,
+                goodbye_message_content: document.getElementById('goodbye-content').value,
+                welcome_embed_title: document.getElementById('welcome-embed-title').value,
+                welcome_embed_description: document.getElementById('welcome-embed-desc').value,
+                welcome_embed_color: colorToInt(document.getElementById('welcome-embed-color').value),
+                welcome_embed_footer: document.getElementById('welcome-embed-footer').value,
+                welcome_embed_thumbnail: document.getElementById('welcome-embed-thumbnail').value,
+                welcome_embed_image: document.getElementById('welcome-embed-image').value,
+                welcome_embed_timestamp: document.getElementById('welcome-embed-timestamp').checked,
+                goodbye_embed_title: document.getElementById('goodbye-embed-title').value,
+                goodbye_embed_description: document.getElementById('goodbye-embed-desc').value,
+                goodbye_embed_color: colorToInt(document.getElementById('goodbye-embed-color').value),
+                goodbye_embed_footer: document.getElementById('goodbye-embed-footer').value,
+                goodbye_embed_thumbnail: document.getElementById('goodbye-embed-thumbnail').value,
+                goodbye_embed_image: document.getElementById('goodbye-embed-image').value,
+                goodbye_embed_timestamp: document.getElementById('goodbye-embed-timestamp').checked,
+            };
+            const res = await apiFetch('POST', `/api/welcome-goodbye/${GUILD_ID}/config`, payload);
+            toast(res.ok ? 'config saved' : 'save failed', res.ok ? 'success' : 'error');
+            return res.ok;
+        }
 
-		async function sendTest(type) {
-			const saved = await saveConfig();
-			if (!saved) return;
-			const res = await apiFetch('POST', `/api/welcome-goodbye/${GUILD_ID}/test/${type}`);
-			toast(res.ok ? `test ${type} message sent` : 'send failed', res.ok ? 'success' : 'error');
-		}
+        async function sendTest(type) {
+            const saved = await saveConfig();
+            if (!saved) return;
+            const res = await apiFetch('POST', `/api/welcome-goodbye/${GUILD_ID}/test/${type}`);
+            toast(res.ok ? `test ${type} message sent` : 'send failed', res.ok ? 'success' : 'error');
+        }
 
-		function escHtml(s) {
-			if (s == null) return '';
-			return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-		}
+        function escHtml(s) {
+            if (s == null) return '';
+            return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
 
-		['welcome-content', 'welcome-embed-desc', 'goodbye-content', 'goodbye-embed-desc'].forEach(id => {
-			document.getElementById(id).addEventListener('focus', e => { lastFocusedTextarea = e.target; });
-		});
+        ['welcome-content', 'welcome-embed-desc', 'goodbye-content', 'goodbye-embed-desc'].forEach(id => {
+            document.getElementById(id).addEventListener('focus', e => { lastFocusedTextarea = e.target; });
+        });
 
-		loadChannels().then(loadConfig);
-	</script>
+        loadChannels().then(loadConfig);
+    </script>
 </body>
 
 </html>

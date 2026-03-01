@@ -1,5 +1,5 @@
 use clouder_core::config::AppState;
-use clouder_core::utils::get_default_embed_color;
+use clouder_core::utils::get_embed_color;
 use poise::serenity_prelude as serenity;
 
 type Error = Box<dyn std::error::Error + Send + Sync>;
@@ -18,7 +18,7 @@ pub async fn selfroles(ctx: Context<'_>) -> Result<(), Error> {
             format!("{}/dashboard/{}/selfroles", dashboard_url, guild_id),
             false,
         )
-        .color(get_default_embed_color(ctx.data()))
+        .color(get_embed_color(ctx.data(), ctx.guild_id().map(|g| g.get())).await)
         .footer(serenity::CreateEmbedFooter::new(
             "you need 'manage roles' permission to configure self-roles",
         ));

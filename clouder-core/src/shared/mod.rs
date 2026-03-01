@@ -695,7 +695,7 @@ async fn build_selfrole_embed_and_components(
     let embed = CreateEmbed::new()
         .title(title)
         .description(body)
-        .colour(crate::utils::get_default_embed_color(app_state))
+        .colour(crate::utils::get_embed_color(app_state, Some(guild_id)).await)
         .footer(CreateEmbedFooter::new(footer_text));
 
     let guild_id_str = guild_id.to_string();
@@ -766,15 +766,18 @@ pub async fn get_welcome_goodbye_config(
         .await
         .map_err(|e| format!("Failed to get config: {}", e))?;
 
+    let default_color = app_state.config.web.embed.default_color;
     if let Some(config) = config {
         Ok(json!({
             "success": true,
-            "config": config
+            "config": config,
+            "default_color": default_color
         }))
     } else {
         Ok(json!({
             "success": true,
-            "config": WelcomeGoodbyeConfig::default()
+            "config": WelcomeGoodbyeConfig::default(),
+            "default_color": default_color
         }))
     }
 }
@@ -978,7 +981,64 @@ pub async fn delete_mediaonly_config(
     }))
 }
 
+pub async fn get_guild_config(app_state: &AppState, guild_id: u64) -> Result<Value, String> {
+    use crate::database::guild_configs::GuildConfig;
+
+    let config = GuildConfig::get_or_default(&app_state.db, &guild_id.to_string())
+        .await
+        .map_err(|e| format!("DB error: {}", e))?;
+
+    Ok(json!({
+        "timezone": config.timezone,
+        "command_prefix": config.command_prefix,
+        "embed_color": config.embed_color,
+    }))
+}
+
+pub async fn update_guild_config(
+    app_state: &AppState,
+    guild_id: u64,
+    payload: &Value,
+) -> Result<Value, String> {
+    use crate::database::guild_configs::GuildConfig;
+
+    let guild_id_str = guild_id.to_string();
+    let current = GuildConfig::get_or_default(&app_state.db, &guild_id_str)
+        .await
+        .map_err(|e| format!("DB error: {}", e))?;
+
+    let timezone = payload
+        .get("timezone")
+        .and_then(|v| v.as_str())
+        .unwrap_or(&current.timezone);
+    let command_prefix = payload
+        .get("command_prefix")
+        .and_then(|v| v.as_str())
+        .unwrap_or(&current.command_prefix);
+    let embed_color = payload.get("embed_color").and_then(|v| {
+        let s = v.as_str()?;
+        if s.is_empty() { None } else { Some(s) }
+    });
+
+    let updated = GuildConfig::upsert(
+        &app_state.db,
+        &guild_id_str,
+        timezone,
+        command_prefix,
+        embed_color,
+    )
+    .await
+    .map_err(|e| format!("DB error: {}", e))?;
+
+    Ok(json!({
+        "timezone": updated.timezone,
+        "command_prefix": updated.command_prefix,
+        "embed_color": updated.embed_color,
+    }))
+}
+
 pub async fn get_guild_about(app_state: &AppState, guild_id: u64) -> Result<Value, String> {
+    use crate::database::guild_configs::GuildConfig;
     use crate::database::mediaonly::MediaOnlyConfig;
     use crate::database::welcome_goodbye::WelcomeGoodbyeConfig;
 
@@ -1036,16 +1096,23 @@ pub async fn get_guild_about(app_state: &AppState, guild_id: u64) -> Result<Valu
     };
 
     let owner_id = guild.owner_id;
-    let (selfroles_result, mediaonly_result, wg_result, owner_result) = tokio::join!(
+    let (selfroles_result, mediaonly_result, wg_result, owner_result, config_result) = tokio::join!(
         database::selfroles::SelfRoleConfig::get_by_guild(&app_state.db, &guild_id_str),
         MediaOnlyConfig::get_by_guild(&app_state.db, &guild_id_str),
         WelcomeGoodbyeConfig::get_config(&app_state.db, &guild_id_str),
         app_state.http.get_user(owner_id),
+        GuildConfig::get_or_default(&app_state.db, &guild_id_str),
     );
 
     let selfroles_count = selfroles_result.map(|v| v.len()).unwrap_or(0);
     let mediaonly_count = mediaonly_result.map(|v| v.len()).unwrap_or(0);
     let wg = wg_result.unwrap_or(None);
+    let guild_config = config_result.unwrap_or_else(|_| GuildConfig {
+        guild_id: guild_id_str.clone(),
+        timezone: crate::database::guild_configs::DEFAULT_TIMEZONE.to_string(),
+        command_prefix: crate::database::guild_configs::DEFAULT_COMMAND_PREFIX.to_string(),
+        embed_color: None,
+    });
     let (owner_name, owner_avatar) = match owner_result {
         Ok(u) => (
             u.global_name.unwrap_or_else(|| u.name.clone()),
@@ -1080,6 +1147,10 @@ pub async fn get_guild_about(app_state: &AppState, guild_id: u64) -> Result<Valu
         "mediaonly_channels": mediaonly_count,
         "welcome_enabled": wg.as_ref().map(|c| c.welcome_enabled).unwrap_or(false),
         "goodbye_enabled": wg.as_ref().map(|c| c.goodbye_enabled).unwrap_or(false),
+        "config_timezone": guild_config.timezone,
+        "config_command_prefix": guild_config.command_prefix,
+        "config_embed_color": guild_config.embed_color,
+        "config_default_color": format!("#{:06X}", app_state.config.web.embed.default_color),
     }))
 }
 

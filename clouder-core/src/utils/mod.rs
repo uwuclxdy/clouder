@@ -4,7 +4,20 @@ use serenity::all::Color;
 pub mod content_detection;
 pub mod welcome_goodbye;
 
-pub fn get_default_embed_color(app_state: &AppState) -> Color {
+/// Resolves the embed color for an optional guild.
+/// Priority: guild DB override → global env default → hardcoded fallback.
+pub async fn get_embed_color(app_state: &AppState, guild_id: Option<u64>) -> Color {
+    use crate::database::guild_configs::GuildConfig;
+
+    if let Some(gid) = guild_id
+        && let Ok(config) = GuildConfig::get_or_default(&app_state.db, &gid.to_string()).await
+        && let Some(hex) = config.embed_color
+    {
+        let stripped = hex.trim_start_matches('#');
+        if let Ok(n) = u32::from_str_radix(stripped, 16) {
+            return Color::new(n);
+        }
+    }
     Color::new(app_state.config.web.embed.default_color)
 }
 

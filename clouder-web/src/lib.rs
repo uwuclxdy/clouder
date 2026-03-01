@@ -98,6 +98,10 @@ pub async fn run(app_state: AppState) -> Result<()> {
         )
         .route("/api/guild/{guild_id}/about", get(api::api_about_get))
         .route(
+            "/api/guild/{guild_id}/config",
+            get(api::api_guild_config_get).post(api::api_guild_config_post),
+        )
+        .route(
             "/api/uwufy/{guild_id}",
             get(api::api_uwufy_get).delete(api::api_uwufy_disable_all),
         )

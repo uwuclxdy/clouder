@@ -1,6 +1,6 @@
 use anyhow::Result;
 use clouder_core::config::AppState;
-use clouder_core::utils::{discord_timestamp, format_duration, get_default_embed_color};
+use clouder_core::utils::{discord_timestamp, format_duration, get_embed_color};
 use lazy_static::lazy_static;
 use poise::serenity_prelude as serenity;
 use serenity::CreateEmbed;
@@ -126,7 +126,7 @@ pub async fn bot(ctx: Context<'_>) -> Result<(), Error> {
             v{}",
             bot_user.id, bot_user.id, bot_version
         ))
-        .color(get_default_embed_color(ctx.data()))
+        .color(get_embed_color(ctx.data(), ctx.guild_id().map(|g| g.get())).await)
         .thumbnail(bot_user.face())
         .field(
             "performance",
@@ -329,7 +329,7 @@ pub async fn server(ctx: Context<'_>) -> Result<(), Error> {
 
     let mut embed = CreateEmbed::new()
         .title(format!("`{}` info", full_guild.name))
-        .color(get_default_embed_color(ctx.data()))
+        .color(get_embed_color(ctx.data(), Some(guild_id.get())).await)
         .field("members", format!("**`{member_count}`**"), true);
 
     if let Some(approximate_presence_count) = full_guild.approximate_presence_count {
@@ -609,7 +609,7 @@ pub async fn user(
     };
 
     let mut embed = CreateEmbed::new()
-        .color(get_default_embed_color(ctx.data()))
+        .color(get_embed_color(ctx.data(), ctx.guild_id().map(|g| g.get())).await)
         .title(format!("`{}` info", target_user.tag()))
         .description(format!("<@{}> `{}`", target_user.id, target_user.id))
         .field("display name", display_name, true)
@@ -1075,7 +1075,7 @@ pub async fn channel(
     let mut embed = CreateEmbed::new()
         .title(format!("`{}` info", target_channel.name))
         .description(format!("<#{}> `{}`", target_channel.id, target_channel.id))
-        .color(get_default_embed_color(ctx.data()))
+        .color(get_embed_color(ctx.data(), ctx.guild_id().map(|g| g.get())).await)
         .field("type", channel_type, true)
         .field(
             "position",

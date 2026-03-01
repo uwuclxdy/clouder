@@ -11,6 +11,17 @@ use tracing::{debug, error, info, warn};
 // web handlers can reference it instead of sprinkling the magic hex value.
 pub const DEFAULT_EMBED_COLOR: u32 = 0xFFFFFF; // white
 
+const DEFAULT_API_BASE: &str = "http://127.0.0.1:8080";
+const DEFAULT_BIND_ADDR: &str = "127.0.0.1:3000";
+const DEFAULT_DATABASE_URL: &str = "data/db.sqlite";
+const DEFAULT_OLLAMA_BASE_URL: &str = "http://localhost:11434/v1";
+const DEFAULT_OPENAI_BASE_URL: &str = "https://api.openai.com/v1";
+const DEFAULT_OLLAMA_MODEL: &str = "llama3.2";
+const DEFAULT_OPENAI_MODEL: &str = "gpt-3.5-turbo";
+const DEFAULT_LLM_TEMPERATURE: f32 = 0.7;
+const DEFAULT_LLM_MAX_TOKENS: u32 = 1000;
+const DEFAULT_LLM_TIMEOUT_SECONDS: u64 = 30;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
     pub discord: DiscordConfig,
@@ -134,8 +145,8 @@ impl Config {
                 url
             }
             Err(_) => {
-                info!("API_BASE not set, using http://127.0.0.1:8080");
-                "http://127.0.0.1:8080".to_string()
+                info!("API_BASE not set, using {}", DEFAULT_API_BASE);
+                DEFAULT_API_BASE.to_string()
             }
         };
         let bind_addr = match env::var("WEB_BIND_ADDR") {
@@ -144,8 +155,8 @@ impl Config {
                 addr
             }
             Err(_) => {
-                info!("WEB_BIND_ADDR not set, using 127.0.0.1:3000");
-                "127.0.0.1:3000".to_string()
+                info!("WEB_BIND_ADDR not set, using {}", DEFAULT_BIND_ADDR);
+                DEFAULT_BIND_ADDR.to_string()
             }
         };
         let database_url = match env::var("DATABASE_URL") {
@@ -154,8 +165,8 @@ impl Config {
                 url
             }
             Err(_) => {
-                info!("DATABASE_URL not set, using data/db.sqlite");
-                "data/db.sqlite".to_string()
+                info!("DATABASE_URL not set, using {}", DEFAULT_DATABASE_URL);
+                DEFAULT_DATABASE_URL.to_string()
             }
         };
 
@@ -209,8 +220,8 @@ impl Config {
         };
 
         let llm_base_url = env::var("LLM_BASE_URL").unwrap_or_else(|_| match llm_provider {
-            Some(LlmProvider::Ollama) => "http://localhost:11434/v1".to_string(),
-            _ => "https://api.openai.com/v1".to_string(),
+            Some(LlmProvider::Ollama) => DEFAULT_OLLAMA_BASE_URL.to_string(),
+            _ => DEFAULT_OPENAI_BASE_URL.to_string(),
         });
 
         let llm_api_key = env::var("LLM_API_KEY").unwrap_or_else(|_| {
@@ -221,24 +232,24 @@ impl Config {
         });
 
         let llm_model = env::var("LLM_MODEL").unwrap_or_else(|_| match llm_provider {
-            Some(LlmProvider::Ollama) => "llama3.2".to_string(),
-            _ => "gpt-3.5-turbo".to_string(),
+            Some(LlmProvider::Ollama) => DEFAULT_OLLAMA_MODEL.to_string(),
+            _ => DEFAULT_OPENAI_MODEL.to_string(),
         });
 
         let llm_temperature = env::var("LLM_TEMPERATURE")
-            .unwrap_or_else(|_| "0.7".to_string())
-            .parse::<f32>()
-            .unwrap_or(0.7);
+            .ok()
+            .and_then(|s| s.parse::<f32>().ok())
+            .unwrap_or(DEFAULT_LLM_TEMPERATURE);
 
         let llm_max_tokens = env::var("LLM_MAX_TOKENS")
-            .unwrap_or_else(|_| "1000".to_string())
-            .parse::<u32>()
-            .unwrap_or(1000);
+            .ok()
+            .and_then(|s| s.parse::<u32>().ok())
+            .unwrap_or(DEFAULT_LLM_MAX_TOKENS);
 
         let llm_timeout_seconds = env::var("LLM_TIMEOUT_SECONDS")
-            .unwrap_or_else(|_| "30".to_string())
-            .parse::<u64>()
-            .unwrap_or(30);
+            .ok()
+            .and_then(|s| s.parse::<u64>().ok())
+            .unwrap_or(DEFAULT_LLM_TIMEOUT_SECONDS);
 
         let llm_system_prompt = env::var("LLM_SYSTEM_PROMPT").unwrap_or_default();
         let llm_stop = env::var("LLM_STOP").unwrap_or_default();
@@ -300,12 +311,12 @@ impl Config {
                 bot_owner: 12345,
             },
             web: WebConfig {
-                api_base: "http://127.0.0.1:8080".to_string(),
+                api_base: DEFAULT_API_BASE.to_string(),
                 bind_addr: "127.0.0.1:8080".to_string(),
                 oauth: OAuthConfig {
                     client_id: "12345".to_string(),
                     client_secret: "test_client_secret".to_string(),
-                    redirect_uri: "http://127.0.0.1:8080/auth/callback".to_string(),
+                    redirect_uri: format!("{}/auth/callback", DEFAULT_API_BASE),
                 },
                 embed: EmbedConfig {
                     default_color: DEFAULT_EMBED_COLOR,
@@ -317,12 +328,12 @@ impl Config {
             },
             llm: LlmConfig {
                 provider: None,
-                base_url: "https://api.openai.com/v1".to_string(),
+                base_url: DEFAULT_OPENAI_BASE_URL.to_string(),
                 api_key: String::new(),
-                model: "gpt-3.5-turbo".to_string(),
-                temperature: 0.7,
-                max_tokens: 1000,
-                timeout_seconds: 30,
+                model: DEFAULT_OPENAI_MODEL.to_string(),
+                temperature: DEFAULT_LLM_TEMPERATURE,
+                max_tokens: DEFAULT_LLM_MAX_TOKENS,
+                timeout_seconds: DEFAULT_LLM_TIMEOUT_SECONDS,
                 system_prompt: String::new(),
                 stop: String::new(),
                 allowed_users: vec![],

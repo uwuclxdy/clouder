@@ -317,7 +317,7 @@ dependencies = [
 
 [[package]]
 name = "clouder"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "anyhow",
  "chrono",
@@ -341,7 +341,7 @@ dependencies = [
 
 [[package]]
 name = "clouder-core"
-version = "0.1.0"
+version = "0.1.2"
 dependencies = [
  "anyhow",
  "chrono",
@@ -360,7 +360,7 @@ dependencies = [
 
 [[package]]
 name = "clouder-llm"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "reqwest 0.13.2",
@@ -371,7 +371,7 @@ dependencies = [
 
 [[package]]
 name = "clouder-web"
-version = "0.1.0"
+version = "0.1.2"
 dependencies = [
  "anyhow",
  "axum",

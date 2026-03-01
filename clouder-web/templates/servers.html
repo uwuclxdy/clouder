@@ -2,83 +2,83 @@
 <html lang="en">
 
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>clouder // servers</title>
-  <link rel="stylesheet" href="/static/style.css">
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>clouder // servers</title>
+	<link rel="stylesheet" href="/static/style.css">
 </head>
 
 <body>
-  <header class="topbar">
-    <div class="container topbar-inner">
-      <span class="logo">clouder</span>
-      <div class="user-info">
-        <img src="{{AVATAR_URL}}" alt="" class="avatar">
-        <a href="/profile" class="username">{{USERNAME}}</a>
-        <a href="/auth/logout" class="btn btn-sm">sign out</a>
-      </div>
-    </div>
-  </header>
-  <main class="container page-main">
-    <h2>your servers <span class="subtext">// pick one to configure</span></h2>
-    <div id="server-grid" class="server-grid" data-has-cache="{{HAS_CACHE}}">
-      {{SERVER_CARDS}}
-    </div>
-    <div class="install-actions">
-      <a href="{{GUILD_INSTALL_URL}}" target="_blank" rel="noopener noreferrer" class="btn">add to server</a>
-      <a href="{{USER_INSTALL_URL}}" target="_blank" rel="noopener noreferrer" class="btn">add to apps</a>
-    </div>
-  </main>
-  <script>
-    (async () => {
-      const grid = document.getElementById('server-grid');
-      const hasCache = grid.dataset.hasCache === 'true';
+	<header class="topbar">
+		<div class="container topbar-inner">
+			<span class="logo">clouder</span>
+			<div class="user-info">
+				<img src="{{AVATAR_URL}}" alt="" class="avatar">
+				<a href="/profile" class="username">{{USERNAME}}</a>
+				<a href="/auth/logout" class="btn btn-sm">sign out</a>
+			</div>
+		</div>
+	</header>
+	<main class="container page-main">
+		<h2>your servers <span class="subtext">// pick one to configure</span></h2>
+		<div id="server-grid" class="server-grid" data-has-cache="{{HAS_CACHE}}">
+			{{SERVER_CARDS}}
+		</div>
+		<div class="install-actions">
+			<a href="{{GUILD_INSTALL_URL}}" target="_blank" rel="noopener noreferrer" class="btn">add to server</a>
+			<a href="{{USER_INSTALL_URL}}" target="_blank" rel="noopener noreferrer" class="btn">add to apps</a>
+		</div>
+	</main>
+	<script>
+		(async () => {
+			const grid = document.getElementById('server-grid');
+			const hasCache = grid.dataset.hasCache === 'true';
 
-      if (!hasCache) {
-        grid.innerHTML = '<p class="empty-state">checking your servers\u2026</p>';
-      }
+			if (!hasCache) {
+				grid.innerHTML = '<p class="empty-state">checking your servers\u2026</p>';
+			}
 
-      let data;
-      try {
-        const resp = await fetch('/api/guilds/refresh', { method: 'POST' });
-        if (!resp.ok) return;
-        data = await resp.json();
-      } catch (_) {
-        return;
-      }
+			let data;
+			try {
+				const resp = await fetch('/api/guilds/refresh', { method: 'POST' });
+				if (!resp.ok) return;
+				data = await resp.json();
+			} catch (_) {
+				return;
+			}
 
-      if (!data.updated && hasCache) return;
+			if (!data.updated && hasCache) return;
 
-      if (!data.guilds || data.guilds.length === 0) {
-        grid.innerHTML = '<p class="empty-state">no manageable servers found</p>';
-        return;
-      }
+			if (!data.guilds || data.guilds.length === 0) {
+				grid.innerHTML = '<p class="empty-state">no manageable servers found</p>';
+				return;
+			}
 
-      grid.innerHTML = data.guilds.map(g => {
-        const icon = g.icon
-          ? '<img src="https://cdn.discordapp.com/icons/' + g.id + '/' + g.icon + '.png?size=64" alt="" class="server-icon">'
-          : '<div class="server-icon-placeholder">' + esc(g.name[0] || '?').toUpperCase() + '</div>';
-        return '<div class="card server-card" role="button" tabindex="0"' +
-          ' onclick="location.href=\'/dashboard/' + g.id + '/selfroles\'"' +
-          ' onkeydown="if(event.key===\'Enter\')location.href=\'/dashboard/' + g.id + '/selfroles\'">' +
-          icon +
-          '<div class="server-info">' +
-          '<span class="server-name">' + esc(g.name) + '</span>' +
-          '<span class="label">' + esc(g.id) + '</span>' +
-          '</div>' +
-          '<span class="arrow">\u2192</span>' +
-          '</div>';
-      }).join('\n');
-    })();
+			grid.innerHTML = data.guilds.map(g => {
+				const icon = g.icon
+					? '<img src="https://cdn.discordapp.com/icons/' + g.id + '/' + g.icon + '.png?size=64" alt="" class="server-icon">'
+					: '<div class="server-icon-placeholder">' + esc(g.name[0] || '?').toUpperCase() + '</div>';
+				return '<div class="card server-card" role="button" tabindex="0"' +
+					' onclick="location.href=\'/dashboard/' + g.id + '/selfroles\'"' +
+					' onkeydown="if(event.key===\'Enter\')location.href=\'/dashboard/' + g.id + '/selfroles\'">' +
+					icon +
+					'<div class="server-info">' +
+					'<span class="server-name">' + esc(g.name) + '</span>' +
+					'<span class="label">' + esc(g.id) + '</span>' +
+					'</div>' +
+					'<span class="arrow">\u2192</span>' +
+					'</div>';
+			}).join('\n');
+		})();
 
-    function esc(s) {
-      return String(s)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
-    }
-  </script>
+		function esc(s) {
+			return String(s)
+				.replace(/&/g, '&amp;')
+				.replace(/</g, '&lt;')
+				.replace(/>/g, '&gt;')
+				.replace(/"/g, '&quot;');
+		}
+	</script>
 </body>
 
 </html>

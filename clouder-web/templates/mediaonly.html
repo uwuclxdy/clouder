@@ -94,31 +94,31 @@
         const ch = channels.find(x => x.id === c.channel_id);
         const name = ch ? '#' + ch.name : c.channel_id;
         return `<div class="config-item" id="mo-${c.channel_id}">
-          <div class="config-item-info">
-            <div class="config-item-title">${escHtml(name)}</div>
-            <div class="config-item-meta" style="display:flex;gap:var(--spacing-sm);flex-wrap:wrap;margin-top:6px;">
-              <label class="toggle-row" style="gap:6px;cursor:pointer;">
-                <input type="checkbox" ${c.allow_links ? 'checked' : ''} onchange="updateChannel('${c.channel_id}', 'allow_links', this.checked)">
-                <span style="font-size:0.8rem;color:var(--ctp-subtext1);">links</span>
-              </label>
-              <label class="toggle-row" style="gap:6px;cursor:pointer;">
-                <input type="checkbox" ${c.allow_attachments ? 'checked' : ''} onchange="updateChannel('${c.channel_id}', 'allow_attachments', this.checked)">
-                <span style="font-size:0.8rem;color:var(--ctp-subtext1);">attachments</span>
-              </label>
-              <label class="toggle-row" style="gap:6px;cursor:pointer;">
-                <input type="checkbox" ${c.allow_gifs ? 'checked' : ''} onchange="updateChannel('${c.channel_id}', 'allow_gifs', this.checked)">
-                <span style="font-size:0.8rem;color:var(--ctp-subtext1);">gifs</span>
-              </label>
-              <label class="toggle-row" style="gap:6px;cursor:pointer;">
-                <input type="checkbox" ${c.allow_stickers ? 'checked' : ''} onchange="updateChannel('${c.channel_id}', 'allow_stickers', this.checked)">
-                <span style="font-size:0.8rem;color:var(--ctp-subtext1);">stickers</span>
-              </label>
-            </div>
-          </div>
-          <div class="config-item-actions">
-            <button class="btn btn-sm btn-danger" onclick="removeChannel('${c.channel_id}')">remove</button>
-          </div>
-        </div>`;
+                    <div class="config-item-info">
+                        <div class="config-item-title">${escHtml(name)}</div>
+                        <div class="config-item-meta" style="display:flex;gap:var(--spacing-sm);flex-wrap:wrap;margin-top:6px;">
+                            <label class="toggle-row" style="gap:6px;cursor:pointer;">
+                                <input type="checkbox" ${c.allow_links ? 'checked' : ''} onchange="updateChannel('${c.channel_id}', 'allow_links', this.checked)">
+                                <span style="font-size:0.8rem;color:var(--ctp-subtext1);">links</span>
+                            </label>
+                            <label class="toggle-row" style="gap:6px;cursor:pointer;">
+                                <input type="checkbox" ${c.allow_attachments ? 'checked' : ''} onchange="updateChannel('${c.channel_id}', 'allow_attachments', this.checked)">
+                                <span style="font-size:0.8rem;color:var(--ctp-subtext1);">attachments</span>
+                            </label>
+                            <label class="toggle-row" style="gap:6px;cursor:pointer;">
+                                <input type="checkbox" ${c.allow_gifs ? 'checked' : ''} onchange="updateChannel('${c.channel_id}', 'allow_gifs', this.checked)">
+                                <span style="font-size:0.8rem;color:var(--ctp-subtext1);">gifs</span>
+                            </label>
+                            <label class="toggle-row" style="gap:6px;cursor:pointer;">
+                                <input type="checkbox" ${c.allow_stickers ? 'checked' : ''} onchange="updateChannel('${c.channel_id}', 'allow_stickers', this.checked)">
+                                <span style="font-size:0.8rem;color:var(--ctp-subtext1);">stickers</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="config-item-actions">
+                        <button class="btn btn-sm btn-danger" onclick="removeChannel('${c.channel_id}')">remove</button>
+                    </div>
+                </div>`;
       }).join('');
       container.innerHTML = rows;
     }

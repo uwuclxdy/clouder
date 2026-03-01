@@ -6,6 +6,14 @@ mod tests {
     use sqlx::SqlitePool;
     use std::collections::HashMap;
 
+    // helper to mirror the value returned by get_default_embed_color in normal code
+    fn test_default_color() -> u64 {
+        clouder_core::config::Config::test_config()
+            .web
+            .embed
+            .default_color as u64
+    }
+
     #[tokio::test]
     async fn test_placeholder_replacement() {
         let mut placeholders = HashMap::new();
@@ -135,12 +143,16 @@ mod tests {
 
         let guild_id = "987654321";
 
+        // choose a test color that is guaranteed to differ from whatever the default is
+        let default = test_default_color();
+        let cfg_color = (default.wrapping_add(0x123456) & 0xFFFFFF) as i32;
+
         let config = WelcomeGoodbyeConfig {
             guild_id: guild_id.to_string(),
             welcome_enabled: true,
             welcome_embed_title: Some("Welcome Title".to_string()),
             welcome_embed_description: Some("Welcome Description".to_string()),
-            welcome_embed_color: Some(0x5865F2),
+            welcome_embed_color: Some(cfg_color),
             welcome_embed_footer: Some("Footer Text".to_string()),
             welcome_embed_thumbnail: Some("https://example.com/thumb.png".to_string()),
             welcome_embed_image: Some("https://example.com/image.png".to_string()),
@@ -165,7 +177,7 @@ mod tests {
             retrieved.welcome_embed_description,
             Some("Welcome Description".to_string())
         );
-        assert_eq!(retrieved.welcome_embed_color, Some(0x5865F2));
+        assert_eq!(retrieved.welcome_embed_color, Some(cfg_color));
         assert_eq!(
             retrieved.welcome_embed_footer,
             Some("Footer Text".to_string())
@@ -217,15 +229,18 @@ mod tests {
 
     #[test]
     fn test_build_embed_basic() {
+        let default_color = test_default_color();
+
+        let override_color = (default_color.wrapping_add(1) & 0xFFFFFF) as i32;
         let config = EmbedConfig {
             title: &Some("Welcome {user}!".to_string()),
             description: &Some("Hello {username} to {server}".to_string()),
-            color: Some(0xFF5733),
+            color: Some(override_color),
             footer: &Some("Enjoy your stay!".to_string()),
             thumbnail: &None,
             image: &None,
             timestamp: false,
-            default_color: 0xFFFFFF,
+            default_color,
         };
 
         let mut placeholders = HashMap::new();
@@ -242,15 +257,18 @@ mod tests {
 
     #[test]
     fn test_build_embed_with_color_override() {
+        let default_color = test_default_color();
+        let override_color = (default_color.wrapping_add(0x010203) & 0xFFFFFF) as i32; // different from default
+
         let config = EmbedConfig {
             title: &Some("Test".to_string()),
             description: &None,
-            color: Some(0x5865F2), // Discord blurple
+            color: Some(override_color),
             footer: &None,
             thumbnail: &None,
             image: &None,
             timestamp: false,
-            default_color: 0xFFFFFF,
+            default_color,
         };
 
         let placeholders = HashMap::new();
@@ -260,6 +278,7 @@ mod tests {
 
     #[test]
     fn test_build_embed_uses_default_color_when_none() {
+        let default_color = test_default_color();
         let config = EmbedConfig {
             title: &Some("Test".to_string()),
             description: &None,
@@ -268,7 +287,7 @@ mod tests {
             thumbnail: &None,
             image: &None,
             timestamp: false,
-            default_color: 0x00FF00, // Green default
+            default_color,
         };
 
         let placeholders = HashMap::new();
@@ -287,7 +306,7 @@ mod tests {
             thumbnail: &Some("   ".to_string()),
             image: &Some("".to_string()),
             timestamp: false,
-            default_color: 0xFFFFFF,
+            default_color: test_default_color(),
         };
 
         let placeholders = HashMap::new();
@@ -305,7 +324,7 @@ mod tests {
             thumbnail: &None,
             image: &None,
             timestamp: false,
-            default_color: 0xFFFFFF,
+            default_color: test_default_color(),
         };
 
         let placeholders = HashMap::new();
@@ -323,7 +342,7 @@ mod tests {
             thumbnail: &None,
             image: &None,
             timestamp: true, // Timestamp enabled
-            default_color: 0xFFFFFF,
+            default_color: test_default_color(),
         };
 
         let placeholders = HashMap::new();
@@ -333,6 +352,7 @@ mod tests {
 
     #[test]
     fn test_build_embed_without_timestamp() {
+        let default_color = test_default_color();
         let config = EmbedConfig {
             title: &Some("Test".to_string()),
             description: &None,
@@ -341,7 +361,7 @@ mod tests {
             thumbnail: &None,
             image: &None,
             timestamp: false, // Timestamp disabled
-            default_color: 0xFFFFFF,
+            default_color,
         };
 
         let placeholders = HashMap::new();
@@ -351,15 +371,17 @@ mod tests {
 
     #[test]
     fn test_build_embed_with_all_fields() {
+        let default_color = test_default_color();
+        let override_color = (default_color.wrapping_add(0xABCDEF) & 0xFFFFFF) as i32;
         let config = EmbedConfig {
             title: &Some("Welcome {user}!".to_string()),
             description: &Some("Description for {username}".to_string()),
-            color: Some(0x5865F2),
+            color: Some(override_color),
             footer: &Some("Footer text".to_string()),
             thumbnail: &Some("https://example.com/thumb.png".to_string()),
             image: &Some("https://example.com/image.png".to_string()),
             timestamp: true,
-            default_color: 0xFFFFFF,
+            default_color,
         };
 
         let mut placeholders = HashMap::new();
@@ -380,7 +402,7 @@ mod tests {
             thumbnail: &Some("{avatar_url}".to_string()),
             image: &Some("{banner_url}".to_string()),
             timestamp: false,
-            default_color: 0xFFFFFF,
+            default_color: test_default_color(),
         };
 
         let mut placeholders = HashMap::new();
@@ -408,7 +430,7 @@ mod tests {
             thumbnail: &None,
             image: &None,
             timestamp: false,
-            default_color: 0xFFFFFF,
+            default_color: test_default_color(),
         };
 
         let placeholders = HashMap::new();
@@ -426,7 +448,7 @@ mod tests {
             thumbnail: &None,
             image: &None,
             timestamp: false,
-            default_color: 0xFFFFFF,
+            default_color: test_default_color(),
         };
 
         let placeholders = HashMap::new();
@@ -444,7 +466,7 @@ mod tests {
             thumbnail: &None,
             image: &None,
             timestamp: false,
-            default_color: 0xFFFFFF,
+            default_color: test_default_color(),
         };
 
         // Empty placeholders - placeholders remain unreplaced

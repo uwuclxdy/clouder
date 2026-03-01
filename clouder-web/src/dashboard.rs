@@ -164,19 +164,21 @@ pub async fn selfroles_page(
 }
 
 pub async fn welcome_goodbye_page(
-    _state: State<WebState>,
+    State(state): State<WebState>,
     jar: SignedCookieJar,
     Path(guild_id): Path<String>,
 ) -> Response {
     let Some(user) = session::extract(&jar) else {
         return Redirect::to("/login").into_response();
     };
+    let default_color_hex = format!("#{:06X}", state.app_state.config.web.embed.default_color);
     Html(render(
         WELCOME_HTML,
         &[
             ("USERNAME", &user.username),
             ("AVATAR_URL", &user.avatar_url()),
             ("GUILD_ID", &guild_id),
+            ("DEFAULT_EMBED_COLOR", &default_color_hex),
         ],
     ))
     .into_response()

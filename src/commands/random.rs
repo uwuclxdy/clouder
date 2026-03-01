@@ -1,6 +1,6 @@
 use anyhow::Result;
 use clouder_core::config::AppState;
-use clouder_core::utils::get_default_embed_color;
+use clouder_core::utils::get_embed_color;
 use poise::serenity_prelude as serenity;
 use serenity::CreateEmbed;
 
@@ -15,7 +15,7 @@ pub async fn random(ctx: Context<'_>) -> Result<(), Error> {
     let embed = CreateEmbed::new()
         .title("freaky link :3")
         .description(format!("[{}]({})", number, url))
-        .color(get_default_embed_color(ctx.data()));
+        .color(get_embed_color(ctx.data(), ctx.guild_id().map(|g| g.get())).await);
 
     ctx.send(poise::CreateReply::default().embed(embed)).await?;
 

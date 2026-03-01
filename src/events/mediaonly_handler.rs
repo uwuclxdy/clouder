@@ -2,7 +2,7 @@ use crate::logging::{error, warn};
 use clouder_core::config::AppState;
 use clouder_core::database::mediaonly::MediaOnlyConfig;
 use clouder_core::utils::content_detection::has_allowed_content;
-use clouder_core::utils::get_default_embed_color;
+use clouder_core::utils::get_embed_color;
 use poise::serenity_prelude as serenity;
 use std::time::Duration;
 
@@ -50,7 +50,7 @@ pub async fn handle_media_only_message(
     let author_id = message.author.id;
     let channel_id = message.channel_id;
     let http = ctx.http.clone();
-    let embed_color = get_default_embed_color(data);
+    let embed_color = get_embed_color(data, Some(guild_id.get())).await;
     let allowed_types = build_allowed_types(&config);
     let footer = crate::serenity::CreateEmbedFooter::new(format!("allowed types: {allowed_types}"));
 

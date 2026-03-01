@@ -1,6 +1,6 @@
 use anyhow::Result;
 use clouder_core::config::AppState;
-use clouder_core::utils::get_default_embed_color;
+use clouder_core::utils::get_embed_color;
 use poise::serenity_prelude as serenity;
 use serenity::{CreateEmbed, CreateEmbedFooter};
 
@@ -116,12 +116,13 @@ pub async fn help(
 }
 
 async fn show_general_help(ctx: Context<'_>, commands: &[CommandInfo]) -> Result<(), Error> {
-    let embed = create_help_embed(commands, ctx.data());
+    let color = get_embed_color(ctx.data(), ctx.guild_id().map(|g| g.get())).await;
+    let embed = create_help_embed(commands, color);
     ctx.send(poise::CreateReply::default().embed(embed)).await?;
     Ok(())
 }
 
-pub fn create_help_embed(commands: &[CommandInfo], app_state: &AppState) -> CreateEmbed {
+pub fn create_help_embed(commands: &[CommandInfo], color: serenity::Color) -> CreateEmbed {
     let mut categories = std::collections::HashMap::new();
     for cmd in commands {
         categories
@@ -133,7 +134,7 @@ pub fn create_help_embed(commands: &[CommandInfo], app_state: &AppState) -> Crea
     let mut embed = CreateEmbed::new()
         .title("command list")
         .description("`/help [category]` for more details")
-        .color(get_default_embed_color(app_state));
+        .color(color);
 
     for category in [
         CommandCategory::Core,
@@ -200,9 +201,10 @@ async fn show_category_help(
         return Ok(());
     }
 
+    let color = get_embed_color(ctx.data(), ctx.guild_id().map(|g| g.get())).await;
     let mut embed = CreateEmbed::new()
         .title(format!("{} - details", category.as_str()))
-        .color(get_default_embed_color(ctx.data()));
+        .color(color);
 
     for cmd in &category_commands {
         let mut field_value = format!("**desc:** {}\n", cmd.description);

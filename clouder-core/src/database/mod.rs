@@ -6,6 +6,7 @@ use tracing::info;
 
 pub mod dashboard_users;
 pub mod guild_cache;
+pub mod guild_configs;
 pub mod mediaonly;
 pub mod reminders;
 pub mod selfroles;

@@ -324,6 +324,58 @@ pub async fn api_about_get(
     }
 }
 
+pub async fn api_guild_config_get(
+    _auth: Auth,
+    Path(guild_id): Path<String>,
+    State(state): State<AppState>,
+) -> Result<Json<Value>, StatusCode> {
+    let guild_id_u64 = guild_id.parse().map_err(|_| StatusCode::BAD_REQUEST)?;
+    match clouder_core::shared::get_guild_config(&state, guild_id_u64).await {
+        Ok(result) => Ok(Json(result)),
+        Err(e) => {
+            error!("failed to get guild config: {}", e);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
+}
+
+pub async fn api_guild_config_post(
+    _auth: Auth,
+    Path(guild_id): Path<String>,
+    State(state): State<AppState>,
+    Json(payload): Json<Value>,
+) -> Result<Json<Value>, StatusCode> {
+    let guild_id_u64 = guild_id.parse().map_err(|_| StatusCode::BAD_REQUEST)?;
+
+    if let Some(tz) = payload.get("timezone").and_then(|v| v.as_str())
+        && (tz.is_empty() || tz.len() > 64)
+    {
+        return Err(StatusCode::BAD_REQUEST);
+    }
+    if let Some(prefix) = payload.get("command_prefix").and_then(|v| v.as_str())
+        && (prefix.is_empty() || prefix.len() > 5)
+    {
+        return Err(StatusCode::BAD_REQUEST);
+    }
+    if let Some(color) = payload.get("embed_color").and_then(|v| v.as_str())
+        && !color.is_empty()
+        && !color.starts_with('#')
+    {
+        return Err(StatusCode::BAD_REQUEST);
+    }
+
+    match clouder_core::shared::update_guild_config(&state, guild_id_u64, &payload).await {
+        Ok(result) => {
+            info!("guild config updated for guild {}", guild_id);
+            Ok(Json(result))
+        }
+        Err(e) => {
+            error!("failed to update guild config: {}", e);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
+}
+
 pub async fn api_uwufy_get(
     _auth: Auth,
     Path(guild_id): Path<String>,

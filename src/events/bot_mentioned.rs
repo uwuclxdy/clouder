@@ -272,7 +272,8 @@ async fn send_help_as_message(
     data: &AppState,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let commands = crate::commands::help::get_all_commands();
-    let embed = crate::commands::help::create_help_embed(&commands, data);
+    let color = clouder_core::utils::get_embed_color(data, message.guild_id.map(|g| g.get())).await;
+    let embed = crate::commands::help::create_help_embed(&commands, color);
 
     message
         .channel_id

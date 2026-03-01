@@ -171,14 +171,14 @@ pub async fn welcome_goodbye_page(
     let Some(user) = session::extract(&jar) else {
         return Redirect::to("/login").into_response();
     };
-    let default_color_hex = format!("#{:06X}", state.app_state.config.web.embed.default_color);
+    let default_color = format!("#{:06X}", state.app_state.config.web.embed.default_color);
     Html(render(
         WELCOME_HTML,
         &[
             ("USERNAME", &user.username),
             ("AVATAR_URL", &user.avatar_url()),
             ("GUILD_ID", &guild_id),
-            ("DEFAULT_EMBED_COLOR", &default_color_hex),
+            ("DEFAULT_COLOR", &default_color),
         ],
     ))
     .into_response()

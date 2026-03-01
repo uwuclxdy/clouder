@@ -74,7 +74,16 @@ pub async fn member_addition(ctx: &Context, guild_id: &GuildId, new_member: &Mem
         Some(new_member),
     );
 
-    if let Err(e) = send_welcome_message(ctx, &channel_id, &config, &placeholders, &data).await {
+    if let Err(e) = send_welcome_message(
+        ctx,
+        &channel_id,
+        &config,
+        &placeholders,
+        &data,
+        guild_id.get(),
+    )
+    .await
+    {
         error!("send welcome message: {}", e);
     }
 }
@@ -133,7 +142,16 @@ pub async fn member_removal(
         member_data_if_available.as_ref(),
     );
 
-    if let Err(e) = send_goodbye_message(ctx, &channel_id, &config, &placeholders, &data).await {
+    if let Err(e) = send_goodbye_message(
+        ctx,
+        &channel_id,
+        &config,
+        &placeholders,
+        &data,
+        guild_id.get(),
+    )
+    .await
+    {
         error!("send goodbye message: {}", e);
     }
 }
@@ -144,6 +162,7 @@ async fn send_welcome_message(
     config: &WelcomeGoodbyeConfig,
     placeholders: &std::collections::HashMap<String, String>,
     data: &tokio::sync::RwLockReadGuard<'_, TypeMap>,
+    guild_id: u64,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let channel = match ctx.http.get_channel(*channel_id).await {
         Ok(channel) => channel,
@@ -163,10 +182,10 @@ async fn send_welcome_message(
 
     match config.welcome_message_type.as_str() {
         "embed" => {
-            let default_color = data
-                .get::<AppStateKey>()
-                .map(|state| clouder_core::utils::get_default_embed_color(state).0 as u64)
-                .unwrap();
+            let state = data.get::<AppStateKey>().cloned().unwrap();
+            let default_color = clouder_core::utils::get_embed_color(&state, Some(guild_id))
+                .await
+                .0 as u64;
 
             let embed_config = EmbedConfig {
                 title: &config.welcome_embed_title,
@@ -207,6 +226,7 @@ async fn send_goodbye_message(
     config: &WelcomeGoodbyeConfig,
     placeholders: &std::collections::HashMap<String, String>,
     data: &tokio::sync::RwLockReadGuard<'_, TypeMap>,
+    guild_id: u64,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let channel = match ctx.http.get_channel(*channel_id).await {
         Ok(channel) => channel,
@@ -226,10 +246,10 @@ async fn send_goodbye_message(
 
     match config.goodbye_message_type.as_str() {
         "embed" => {
-            let default_color = data
-                .get::<AppStateKey>()
-                .map(|state| clouder_core::utils::get_default_embed_color(state).0 as u64)
-                .unwrap();
+            let state = data.get::<AppStateKey>().cloned().unwrap();
+            let default_color = clouder_core::utils::get_embed_color(&state, Some(guild_id))
+                .await
+                .0 as u64;
 
             let embed_config = EmbedConfig {
                 title: &config.goodbye_embed_title,

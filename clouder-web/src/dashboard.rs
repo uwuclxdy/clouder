@@ -74,11 +74,11 @@ pub async fn servers_page(State(state): State<WebState>, jar: SignedCookieJar) -
     let redirect_uri = urlencoding::encode(&state.app_state.config.web.oauth.redirect_uri);
     let client_id = &state.app_state.config.web.oauth.client_id;
     let guild_install_url = format!(
-        "https://discord.com/oauth2/authorize?client_id={}&permissions=8&redirect_uri={}&integration_type=0&scope=bot",
+        "https://discord.com/oauth2/authorize?client_id={}&permissions=8&response_type=code&redirect_uri={}&integration_type=0&scope=bot",
         client_id, redirect_uri,
     );
     let user_install_url = format!(
-        "https://discord.com/oauth2/authorize?client_id={}&permissions=8&redirect_uri={}&integration_type=1&scope=bot",
+        "https://discord.com/oauth2/authorize?client_id={}&response_type=code&redirect_uri={}&integration_type=1&scope=applications.commands",
         client_id, redirect_uri,
     );
 

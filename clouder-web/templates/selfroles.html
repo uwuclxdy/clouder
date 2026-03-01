@@ -2,497 +2,497 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>clouder // self-roles</title>
-    <link rel="stylesheet" href="/static/style.css">
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>clouder // self-roles</title>
+	<link rel="stylesheet" href="/static/style.css">
 </head>
 
 <body>
-    <header class="topbar">
-        <div class="container topbar-inner">
-            <a href="/servers" class="logo" style="text-decoration:none;">clouder</a>
-            <div class="user-info">
-                <img src="{{AVATAR_URL}}" alt="" class="avatar">
-                <a href="/profile" class="username">{{USERNAME}}</a>
-                <a href="/auth/logout" class="btn btn-sm">sign out</a>
-            </div>
-        </div>
-    </header>
-    <div class="dashboard-layout container">
-        <nav class="sidebar">
-            <a href="/dashboard/{{GUILD_ID}}/about" class="sidebar-link">about</a>
-            <a href="/dashboard/{{GUILD_ID}}/selfroles" class="sidebar-link active">self-roles</a>
-            <a href="/dashboard/{{GUILD_ID}}/welcome-goodbye" class="sidebar-link">welcome/goodbye</a>
-            <a href="/dashboard/{{GUILD_ID}}/mediaonly" class="sidebar-link">media-only</a>
-            <a href="/dashboard/{{GUILD_ID}}/uwufy" class="sidebar-link">uwufy</a>
-        </nav>
-        <main class="dash-content">
-            <h2>self-roles <span class="subtext">// let users pick their own roles</span></h2>
+	<header class="topbar">
+		<div class="container topbar-inner">
+			<a href="/servers" class="logo" style="text-decoration:none;">clouder</a>
+			<div class="user-info">
+				<img src="{{AVATAR_URL}}" alt="" class="avatar">
+				<a href="/profile" class="username">{{USERNAME}}</a>
+				<a href="/auth/logout" class="btn btn-sm">sign out</a>
+			</div>
+		</div>
+	</header>
+	<div class="dashboard-layout container">
+		<nav class="sidebar">
+			<a href="/dashboard/{{GUILD_ID}}/about" class="sidebar-link">about</a>
+			<a href="/dashboard/{{GUILD_ID}}/selfroles" class="sidebar-link active">self-roles</a>
+			<a href="/dashboard/{{GUILD_ID}}/welcome-goodbye" class="sidebar-link">welcome/goodbye</a>
+			<a href="/dashboard/{{GUILD_ID}}/mediaonly" class="sidebar-link">media-only</a>
+			<a href="/dashboard/{{GUILD_ID}}/uwufy" class="sidebar-link">uwufy</a>
+		</nav>
+		<main class="dash-content">
+			<h2>self-roles <span class="subtext">// let users pick their own roles</span></h2>
 
-            <!-- existing configs -->
-            <div class="section-card">
-                <div class="section-header">
-                    <span class="section-title">active panels</span>
-                </div>
-                <div id="configs-list">
-                    <p class="loading">fetching...</p>
-                </div>
-            </div>
+			<!-- existing configs -->
+			<div class="section-card">
+				<div class="section-header">
+					<span class="section-title">active panels</span>
+				</div>
+				<div id="configs-list">
+					<p class="loading">fetching...</p>
+				</div>
+			</div>
 
-            <!-- create new -->
-            <div class="section-card">
-                <div class="section-header">
-                    <span class="section-title">new panel</span>
-                </div>
-                <form id="create-form">
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label for="title">title</label>
-                            <input type="text" id="title" placeholder="pick your roles" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="channel">channel</label>
-                            <select id="channel" required>
-                                <option value="">loading channels...</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="description">description</label>
-                        <textarea id="description" placeholder="optional description"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label for="selection-type">selection mode</label>
-                        <select id="selection-type">
-                            <option value="multiple">multiple (users can pick many)</option>
-                            <option value="radio">single (users pick one)</option>
-                        </select>
-                    </div>
+			<!-- create new -->
+			<div class="section-card">
+				<div class="section-header">
+					<span class="section-title">new panel</span>
+				</div>
+				<form id="create-form">
+					<div class="form-grid">
+						<div class="form-group">
+							<label for="title">title</label>
+							<input type="text" id="title" placeholder="pick your roles" required>
+						</div>
+						<div class="form-group">
+							<label for="channel">channel</label>
+							<select id="channel" required>
+								<option value="">loading channels...</option>
+							</select>
+						</div>
+					</div>
+					<div class="form-group">
+						<label for="description">description</label>
+						<textarea id="description" placeholder="optional description"></textarea>
+					</div>
+					<div class="form-group">
+						<label for="selection-type">selection mode</label>
+						<select id="selection-type">
+							<option value="multiple">multiple (users can pick many)</option>
+							<option value="radio">single (users pick one)</option>
+						</select>
+					</div>
 
-                    <!-- roles builder -->
-                    <div style="margin-bottom:var(--spacing-sm);">
-                        <p class="label" style="margin-bottom:6px;">roles</p>
-                        <div id="roles-area">
-                            <div id="roles-list"></div>
-                        </div>
-                        <div class="add-row" style="margin-top:var(--spacing-xs);">
-                            <div class="form-group">
-                                <label>role</label>
-                                <select id="role-select">
-                                    <option value="">loading roles...</option>
-                                </select>
-                            </div>
-                            <div class="form-group" style="flex:0 0 auto;min-width:0;">
-                                <label>emoji</label>
-                                <button type="button" class="btn emoji-picker-btn" id="emoji-btn">+</button>
-                            </div>
-                            <div class="form-group">
-                                <label>label</label>
-                                <input type="text" id="role-label-input" placeholder="custom button name">
-                            </div>
-                            <button type="button" class="btn" onclick="addRole()">+ add role</button>
-                        </div>
-                    </div>
+					<!-- roles builder -->
+					<div style="margin-bottom:var(--spacing-sm);">
+						<p class="label" style="margin-bottom:6px;">roles</p>
+						<div id="roles-area">
+							<div id="roles-list"></div>
+						</div>
+						<div class="add-row" style="margin-top:var(--spacing-xs);">
+							<div class="form-group">
+								<label>role</label>
+								<select id="role-select">
+									<option value="">loading roles...</option>
+								</select>
+							</div>
+							<div class="form-group" style="flex:0 0 auto;min-width:0;">
+								<label>emoji</label>
+								<button type="button" class="btn emoji-picker-btn" id="emoji-btn">+</button>
+							</div>
+							<div class="form-group">
+								<label>label</label>
+								<input type="text" id="role-label-input" placeholder="custom button name">
+							</div>
+							<button type="button" class="btn" onclick="addRole()">+ add role</button>
+						</div>
+					</div>
 
-                    <button type="submit" class="btn btn-primary">deploy panel</button>
-                </form>
-            </div>
-        </main>
-    </div>
+					<button type="submit" class="btn btn-primary">deploy panel</button>
+				</form>
+			</div>
+		</main>
+	</div>
 
-    <script src="/static/app.js"></script>
-    <script>
-        const GUILD_ID = '{{GUILD_ID}}';
-        let roles = [];
-        let channels = [];
-        let allConfigs = [];
-        let pendingRoles = [];
-        let selectedEmoji = '';
-        let editState = { configId: null, roles: [], newRoleEmoji: '' };
+	<script src="/static/app.js"></script>
+	<script>
+		const GUILD_ID = '{{GUILD_ID}}';
+		let roles = [];
+		let channels = [];
+		let allConfigs = [];
+		let pendingRoles = [];
+		let selectedEmoji = '';
+		let editState = { configId: null, roles: [], newRoleEmoji: '' };
 
-        window.setCreateEmoji = (emoji) => {
-            selectedEmoji = emoji;
-            const btn = document.getElementById('emoji-btn');
-            btn.textContent = emoji || '+';
-            btn.classList.toggle('has-emoji', !!emoji);
-        };
+		window.setCreateEmoji = (emoji) => {
+			selectedEmoji = emoji;
+			const btn = document.getElementById('emoji-btn');
+			btn.textContent = emoji || '+';
+			btn.classList.toggle('has-emoji', !!emoji);
+		};
 
-        async function loadData() {
-            await Promise.all([loadConfigs(), loadChannels(), loadRoles()]);
-        }
+		async function loadData() {
+			await Promise.all([loadConfigs(), loadChannels(), loadRoles()]);
+		}
 
-        async function loadConfigs() {
-            const res = await apiFetch('GET', `/api/selfroles/${GUILD_ID}`);
-            const data = await res.json();
-            allConfigs = data.configs || [];
-            const list = document.getElementById('configs-list');
-            if (allConfigs.length === 0) {
-                list.innerHTML = '<p class="loading">no panels yet. create one below.</p>';
-                return;
-            }
-            list.innerHTML = allConfigs.map(c => `
-                <div id="config-wrapper-${c.id}">
-                  <div class="config-item">
-                    <div class="config-item-info">
-                      <div class="config-item-title">${escHtml(c.title)}</div>
-                      <div class="config-item-meta">${c.roles.length} roles · ${c.selection_type === 'radio' ? 'single' : 'multiple'}</div>
-                    </div>
-                    <div class="config-item-actions">
-                      <button class="btn btn-sm" onclick="toggleEdit(${c.id})">edit</button>
-                      <button class="btn btn-sm btn-danger" onclick="deleteConfig(${c.id})">delete</button>
-                    </div>
-                  </div>
-                  <div class="edit-form-container" id="edit-form-${c.id}" style="display:none;"></div>
-                </div>
-            `).join('');
-        }
+		async function loadConfigs() {
+			const res = await apiFetch('GET', `/api/selfroles/${GUILD_ID}`);
+			const data = await res.json();
+			allConfigs = data.configs || [];
+			const list = document.getElementById('configs-list');
+			if (allConfigs.length === 0) {
+				list.innerHTML = '<p class="loading">no panels yet. create one below.</p>';
+				return;
+			}
+			list.innerHTML = allConfigs.map(c => `
+								<div id="config-wrapper-${c.id}">
+									<div class="config-item">
+										<div class="config-item-info">
+											<div class="config-item-title">${escHtml(c.title)}</div>
+											<div class="config-item-meta">${c.roles.length} roles · ${c.selection_type === 'radio' ? 'single' : 'multiple'}</div>
+										</div>
+										<div class="config-item-actions">
+											<button class="btn btn-sm" onclick="toggleEdit(${c.id})">edit</button>
+											<button class="btn btn-sm btn-danger" onclick="deleteConfig(${c.id})">delete</button>
+										</div>
+									</div>
+									<div class="edit-form-container" id="edit-form-${c.id}" style="display:none;"></div>
+								</div>
+						`).join('');
+		}
 
-        async function loadChannels() {
-            const res = await apiFetch('GET', `/api/guild/${GUILD_ID}/channels`);
-            const data = await res.json();
-            channels = data.channels.sort((a, b) => a.position - b.position);
-            document.getElementById('channel').innerHTML = channels
-                .map(c => `<option value="${escHtml(c.id)}">#${escHtml(c.name)}</option>`).join('');
-        }
+		async function loadChannels() {
+			const res = await apiFetch('GET', `/api/guild/${GUILD_ID}/channels`);
+			const data = await res.json();
+			channels = data.channels.sort((a, b) => a.position - b.position);
+			document.getElementById('channel').innerHTML = channels
+				.map(c => `<option value="${escHtml(c.id)}">#${escHtml(c.name)}</option>`).join('');
+		}
 
-        async function loadRoles() {
-            const res = await apiFetch('GET', `/api/guild/${GUILD_ID}/roles`);
-            const data = await res.json();
-            roles = data.roles.sort((a, b) => b.position - a.position);
-            document.getElementById('role-select').innerHTML = roles
-                .map(r => `<option value="${escHtml(r.id)}">${escHtml(r.name)}</option>`).join('');
-        }
+		async function loadRoles() {
+			const res = await apiFetch('GET', `/api/guild/${GUILD_ID}/roles`);
+			const data = await res.json();
+			roles = data.roles.sort((a, b) => b.position - a.position);
+			document.getElementById('role-select').innerHTML = roles
+				.map(r => `<option value="${escHtml(r.id)}">${escHtml(r.name)}</option>`).join('');
+		}
 
-        function buildChannelOptions(selectedId) {
-            return channels.map(c =>
-                `<option value="${escHtml(c.id)}"${c.id === selectedId ? ' selected' : ''}>#${escHtml(c.name)}</option>`
-            ).join('');
-        }
+		function buildChannelOptions(selectedId) {
+			return channels.map(c =>
+				`<option value="${escHtml(c.id)}"${c.id === selectedId ? ' selected' : ''}>#${escHtml(c.name)}</option>`
+			).join('');
+		}
 
-        // ===== Create form =====
-        function clearEmoji() {
-            selectedEmoji = '';
-            const btn = document.getElementById('emoji-btn');
-            btn.textContent = '+';
-            btn.classList.remove('has-emoji');
-        }
+		// ===== Create form =====
+		function clearEmoji() {
+			selectedEmoji = '';
+			const btn = document.getElementById('emoji-btn');
+			btn.textContent = '+';
+			btn.classList.remove('has-emoji');
+		}
 
-        function addRole() {
-            const roleId = document.getElementById('role-select').value;
-            const role = roles.find(r => r.id === roleId);
-            if (!role) return;
-            if (pendingRoles.find(r => r.role_id === roleId)) {
-                toast('role already added', 'error'); return;
-            }
-            const label = document.getElementById('role-label-input').value.trim();
-            pendingRoles.push({ role_id: roleId, emoji: selectedEmoji, label });
-            renderPendingRoles();
-            clearEmoji();
-            document.getElementById('role-label-input').value = '';
-        }
+		function addRole() {
+			const roleId = document.getElementById('role-select').value;
+			const role = roles.find(r => r.id === roleId);
+			if (!role) return;
+			if (pendingRoles.find(r => r.role_id === roleId)) {
+				toast('role already added', 'error'); return;
+			}
+			const label = document.getElementById('role-label-input').value.trim();
+			pendingRoles.push({ role_id: roleId, emoji: selectedEmoji, label });
+			renderPendingRoles();
+			clearEmoji();
+			document.getElementById('role-label-input').value = '';
+		}
 
-        function removeRole(roleId) {
-            pendingRoles = pendingRoles.filter(r => r.role_id !== roleId);
-            renderPendingRoles();
-        }
+		function removeRole(roleId) {
+			pendingRoles = pendingRoles.filter(r => r.role_id !== roleId);
+			renderPendingRoles();
+		}
 
-        function openEmojiForPendingRole(roleId, triggerEl) {
-            const role = pendingRoles.find(r => r.role_id === roleId);
-            if (!role) return;
-            role.emoji = '';
-            triggerEl.textContent = '+';
-            triggerEl.classList.remove('has-emoji');
-            window.activeEmojiCallback = (emoji) => {
-                role.emoji = emoji;
-                renderPendingRoles();
-            };
-            window.__picker.togglePicker(triggerEl);
-        }
+		function openEmojiForPendingRole(roleId, triggerEl) {
+			const role = pendingRoles.find(r => r.role_id === roleId);
+			if (!role) return;
+			role.emoji = '';
+			triggerEl.textContent = '+';
+			triggerEl.classList.remove('has-emoji');
+			window.activeEmojiCallback = (emoji) => {
+				role.emoji = emoji;
+				renderPendingRoles();
+			};
+			window.__picker.togglePicker(triggerEl);
+		}
 
-        function setPendingRoleLabel(roleId, value) {
-            const role = pendingRoles.find(r => r.role_id === roleId);
-            if (role) role.label = value;
-        }
+		function setPendingRoleLabel(roleId, value) {
+			const role = pendingRoles.find(r => r.role_id === roleId);
+			if (role) role.label = value;
+		}
 
-        function renderPendingRoles() {
-            const list = document.getElementById('roles-list');
-            list.innerHTML = pendingRoles.map(r => {
-                const role = roles.find(x => x.id === r.role_id);
-                return `<div class="role-row">
-                    <button type="button" class="btn emoji-picker-btn${r.emoji ? ' has-emoji' : ''}" title="change emoji" onclick="openEmojiForPendingRole('${escHtml(r.role_id)}', this)">${r.emoji ? escHtml(r.emoji) : '+'}</button>
-                    <span class="role-name">${escHtml(role?.name || r.role_id)}</span>
-                    <input type="text" class="edit-role-label" placeholder="custom name" value="${escHtml(r.label)}" oninput="setPendingRoleLabel('${escHtml(r.role_id)}', this.value)">
-                    <button type="button" class="btn btn-sm btn-danger" onclick="removeRole('${escHtml(r.role_id)}')">×</button>
-                </div>`;
-            }).join('');
-        }
+		function renderPendingRoles() {
+			const list = document.getElementById('roles-list');
+			list.innerHTML = pendingRoles.map(r => {
+				const role = roles.find(x => x.id === r.role_id);
+				return `<div class="role-row">
+										<button type="button" class="btn emoji-picker-btn${r.emoji ? ' has-emoji' : ''}" title="change emoji" onclick="openEmojiForPendingRole('${escHtml(r.role_id)}', this)">${r.emoji ? escHtml(r.emoji) : '+'}</button>
+										<span class="role-name">${escHtml(role?.name || r.role_id)}</span>
+										<input type="text" class="edit-role-label" placeholder="custom name" value="${escHtml(r.label)}" oninput="setPendingRoleLabel('${escHtml(r.role_id)}', this.value)">
+										<button type="button" class="btn btn-sm btn-danger" onclick="removeRole('${escHtml(r.role_id)}')">×</button>
+								</div>`;
+			}).join('');
+		}
 
-        // ===== Edit form =====
-        function toggleEdit(configId) {
-            const container = document.getElementById(`edit-form-${configId}`);
-            if (!container) return;
-            if (container.style.display === 'none') {
-                const config = allConfigs.find(c => c.id === configId);
-                if (!config) return;
-                renderEditForm(config);
-                container.style.display = 'block';
-            } else {
-                cancelEdit(configId);
-            }
-        }
+		// ===== Edit form =====
+		function toggleEdit(configId) {
+			const container = document.getElementById(`edit-form-${configId}`);
+			if (!container) return;
+			if (container.style.display === 'none') {
+				const config = allConfigs.find(c => c.id === configId);
+				if (!config) return;
+				renderEditForm(config);
+				container.style.display = 'block';
+			} else {
+				cancelEdit(configId);
+			}
+		}
 
-        function renderEditForm(config) {
-            const container = document.getElementById(`edit-form-${config.id}`);
-            editState = {
-                configId: config.id,
-                roles: config.roles.map(r => ({ role_id: r.role_id, emoji: r.emoji || '', label: r.label || '' })),
-                newRoleEmoji: '',
-            };
-            const roleOptions = roles.map(r => `<option value="${escHtml(r.id)}">${escHtml(r.name)}</option>`).join('');
-            container.innerHTML = `
-              <div class="edit-form">
-                <div class="form-grid">
-                  <div class="form-group">
-                    <label>title</label>
-                    <input type="text" id="edit-title-${config.id}" value="${escHtml(config.title)}" required>
-                  </div>
-                  <div class="form-group">
-                    <label>channel</label>
-                    <select id="edit-channel-${config.id}">${buildChannelOptions(config.channel_id)}</select>
-                  </div>
-                </div>
-                <div class="form-group">
-                  <label>description</label>
-                  <textarea id="edit-desc-${config.id}">${escHtml(config.description || '')}</textarea>
-                </div>
-                <div class="form-group">
-                  <label>selection mode</label>
-                  <select id="edit-sel-${config.id}">
-                    <option value="multiple"${config.selection_type === 'multiple' ? ' selected' : ''}>multiple (users can pick many)</option>
-                    <option value="radio"${config.selection_type === 'radio' ? ' selected' : ''}>single (users pick one)</option>
-                  </select>
-                </div>
-                <div style="margin-bottom:var(--spacing-sm);">
-                  <p class="label" style="margin-bottom:6px;">roles</p>
-                  <div id="edit-roles-${config.id}"></div>
-                  <div class="add-row" style="margin-top:var(--spacing-xs);">
-                    <div class="form-group">
-                      <label>role</label>
-                      <select id="edit-role-sel-${config.id}">${roleOptions}</select>
-                    </div>
-                    <div class="form-group" style="flex:0 0 auto;min-width:0;">
-                      <label>emoji</label>
-                      <button type="button" class="btn emoji-picker-btn" id="edit-new-emoji-${config.id}" onclick="openEmojiForNew(${config.id}, this)">+</button>
-                    </div>
-                    <div class="form-group">
-                      <label>label</label>
-                      <input type="text" id="edit-new-label-${config.id}" placeholder="custom button name">
-                    </div>
-                    <button type="button" class="btn" onclick="addEditRole(${config.id})">+ add role</button>
-                  </div>
-                </div>
-                <div style="display:flex;gap:var(--spacing-xs);">
-                  <button type="button" class="btn btn-primary" onclick="saveEdit(${config.id})">save changes</button>
-                  <button type="button" class="btn" onclick="cancelEdit(${config.id})">cancel</button>
-                </div>
-              </div>
-            `;
-            renderEditRoles(config.id);
-        }
+		function renderEditForm(config) {
+			const container = document.getElementById(`edit-form-${config.id}`);
+			editState = {
+				configId: config.id,
+				roles: config.roles.map(r => ({ role_id: r.role_id, emoji: r.emoji || '', label: r.label || '' })),
+				newRoleEmoji: '',
+			};
+			const roleOptions = roles.map(r => `<option value="${escHtml(r.id)}">${escHtml(r.name)}</option>`).join('');
+			container.innerHTML = `
+							<div class="edit-form">
+								<div class="form-grid">
+									<div class="form-group">
+										<label>title</label>
+										<input type="text" id="edit-title-${config.id}" value="${escHtml(config.title)}" required>
+									</div>
+									<div class="form-group">
+										<label>channel</label>
+										<select id="edit-channel-${config.id}">${buildChannelOptions(config.channel_id)}</select>
+									</div>
+								</div>
+								<div class="form-group">
+									<label>description</label>
+									<textarea id="edit-desc-${config.id}">${escHtml(config.description || '')}</textarea>
+								</div>
+								<div class="form-group">
+									<label>selection mode</label>
+									<select id="edit-sel-${config.id}">
+										<option value="multiple"${config.selection_type === 'multiple' ? ' selected' : ''}>multiple (users can pick many)</option>
+										<option value="radio"${config.selection_type === 'radio' ? ' selected' : ''}>single (users pick one)</option>
+									</select>
+								</div>
+								<div style="margin-bottom:var(--spacing-sm);">
+									<p class="label" style="margin-bottom:6px;">roles</p>
+									<div id="edit-roles-${config.id}"></div>
+									<div class="add-row" style="margin-top:var(--spacing-xs);">
+										<div class="form-group">
+											<label>role</label>
+											<select id="edit-role-sel-${config.id}">${roleOptions}</select>
+										</div>
+										<div class="form-group" style="flex:0 0 auto;min-width:0;">
+											<label>emoji</label>
+											<button type="button" class="btn emoji-picker-btn" id="edit-new-emoji-${config.id}" onclick="openEmojiForNew(${config.id}, this)">+</button>
+										</div>
+										<div class="form-group">
+											<label>label</label>
+											<input type="text" id="edit-new-label-${config.id}" placeholder="custom button name">
+										</div>
+										<button type="button" class="btn" onclick="addEditRole(${config.id})">+ add role</button>
+									</div>
+								</div>
+								<div style="display:flex;gap:var(--spacing-xs);">
+									<button type="button" class="btn btn-primary" onclick="saveEdit(${config.id})">save changes</button>
+									<button type="button" class="btn" onclick="cancelEdit(${config.id})">cancel</button>
+								</div>
+							</div>
+						`;
+			renderEditRoles(config.id);
+		}
 
-        function renderEditRoles(configId) {
-            const list = document.getElementById(`edit-roles-${configId}`);
-            if (!list) return;
-            list.innerHTML = editState.roles.map(r => {
-                const role = roles.find(x => x.id === r.role_id);
-                return `<div class="role-row">
-                    <button type="button" class="btn emoji-picker-btn${r.emoji ? ' has-emoji' : ''}" title="change emoji" onclick="openEmojiForRole('${escHtml(r.role_id)}', ${configId}, this)">${r.emoji ? escHtml(r.emoji) : '+'}</button>
-                    <span class="role-name">${escHtml(role?.name || r.role_id)}</span>
-                    <input type="text" class="edit-role-label" placeholder="custom name" value="${escHtml(r.label)}" oninput="setEditRoleLabel('${escHtml(r.role_id)}', this.value)">
-                    <button type="button" class="btn btn-sm btn-danger" onclick="removeEditRole('${escHtml(r.role_id)}', ${configId})">×</button>
-                </div>`;
-            }).join('');
-        }
+		function renderEditRoles(configId) {
+			const list = document.getElementById(`edit-roles-${configId}`);
+			if (!list) return;
+			list.innerHTML = editState.roles.map(r => {
+				const role = roles.find(x => x.id === r.role_id);
+				return `<div class="role-row">
+										<button type="button" class="btn emoji-picker-btn${r.emoji ? ' has-emoji' : ''}" title="change emoji" onclick="openEmojiForRole('${escHtml(r.role_id)}', ${configId}, this)">${r.emoji ? escHtml(r.emoji) : '+'}</button>
+										<span class="role-name">${escHtml(role?.name || r.role_id)}</span>
+										<input type="text" class="edit-role-label" placeholder="custom name" value="${escHtml(r.label)}" oninput="setEditRoleLabel('${escHtml(r.role_id)}', this.value)">
+										<button type="button" class="btn btn-sm btn-danger" onclick="removeEditRole('${escHtml(r.role_id)}', ${configId})">×</button>
+								</div>`;
+			}).join('');
+		}
 
-        function openEmojiForRole(roleId, configId, triggerEl) {
-            const role = editState.roles.find(r => r.role_id === roleId);
-            if (!role) return;
-            role.emoji = '';
-            triggerEl.textContent = '+';
-            triggerEl.classList.remove('has-emoji');
-            window.activeEmojiCallback = (emoji) => {
-                role.emoji = emoji;
-                renderEditRoles(configId);
-            };
-            window.__picker.togglePicker(triggerEl);
-        }
+		function openEmojiForRole(roleId, configId, triggerEl) {
+			const role = editState.roles.find(r => r.role_id === roleId);
+			if (!role) return;
+			role.emoji = '';
+			triggerEl.textContent = '+';
+			triggerEl.classList.remove('has-emoji');
+			window.activeEmojiCallback = (emoji) => {
+				role.emoji = emoji;
+				renderEditRoles(configId);
+			};
+			window.__picker.togglePicker(triggerEl);
+		}
 
-        function openEmojiForNew(configId, triggerEl) {
-            editState.newRoleEmoji = '';
-            triggerEl.textContent = '+';
-            triggerEl.classList.remove('has-emoji');
-            window.activeEmojiCallback = (emoji) => {
-                editState.newRoleEmoji = emoji;
-                triggerEl.textContent = emoji;
-                triggerEl.classList.add('has-emoji');
-            };
-            window.__picker.togglePicker(triggerEl);
-        }
+		function openEmojiForNew(configId, triggerEl) {
+			editState.newRoleEmoji = '';
+			triggerEl.textContent = '+';
+			triggerEl.classList.remove('has-emoji');
+			window.activeEmojiCallback = (emoji) => {
+				editState.newRoleEmoji = emoji;
+				triggerEl.textContent = emoji;
+				triggerEl.classList.add('has-emoji');
+			};
+			window.__picker.togglePicker(triggerEl);
+		}
 
-        function setEditRoleLabel(roleId, value) {
-            const role = editState.roles.find(r => r.role_id === roleId);
-            if (role) role.label = value;
-        }
+		function setEditRoleLabel(roleId, value) {
+			const role = editState.roles.find(r => r.role_id === roleId);
+			if (role) role.label = value;
+		}
 
-        function addEditRole(configId) {
-            const roleId = document.getElementById(`edit-role-sel-${configId}`).value;
-            if (!roleId) return;
-            if (editState.roles.find(r => r.role_id === roleId)) {
-                toast('role already added', 'error'); return;
-            }
-            const label = (document.getElementById(`edit-new-label-${configId}`)?.value || '').trim();
-            editState.roles.push({ role_id: roleId, emoji: editState.newRoleEmoji, label });
-            editState.newRoleEmoji = '';
-            const btn = document.getElementById(`edit-new-emoji-${configId}`);
-            if (btn) { btn.textContent = '+'; btn.classList.remove('has-emoji'); }
-            document.getElementById(`edit-new-label-${configId}`).value = '';
-            renderEditRoles(configId);
-        }
+		function addEditRole(configId) {
+			const roleId = document.getElementById(`edit-role-sel-${configId}`).value;
+			if (!roleId) return;
+			if (editState.roles.find(r => r.role_id === roleId)) {
+				toast('role already added', 'error'); return;
+			}
+			const label = (document.getElementById(`edit-new-label-${configId}`)?.value || '').trim();
+			editState.roles.push({ role_id: roleId, emoji: editState.newRoleEmoji, label });
+			editState.newRoleEmoji = '';
+			const btn = document.getElementById(`edit-new-emoji-${configId}`);
+			if (btn) { btn.textContent = '+'; btn.classList.remove('has-emoji'); }
+			document.getElementById(`edit-new-label-${configId}`).value = '';
+			renderEditRoles(configId);
+		}
 
-        function removeEditRole(roleId, configId) {
-            editState.roles = editState.roles.filter(r => r.role_id !== roleId);
-            renderEditRoles(configId);
-        }
+		function removeEditRole(roleId, configId) {
+			editState.roles = editState.roles.filter(r => r.role_id !== roleId);
+			renderEditRoles(configId);
+		}
 
-        async function saveEdit(configId) {
-            const titleEl = document.getElementById(`edit-title-${configId}`);
-            const title = titleEl?.value.trim();
-            if (!title) {
-                titleEl?.classList.add('input-error');
-                toast('title is required', 'error');
-                return;
-            }
-            if (editState.roles.length === 0) { toast('add at least one role', 'error'); return; }
+		async function saveEdit(configId) {
+			const titleEl = document.getElementById(`edit-title-${configId}`);
+			const title = titleEl?.value.trim();
+			if (!title) {
+				titleEl?.classList.add('input-error');
+				toast('title is required', 'error');
+				return;
+			}
+			if (editState.roles.length === 0) { toast('add at least one role', 'error'); return; }
 
-            const payload = {
-                title,
-                description: document.getElementById(`edit-desc-${configId}`)?.value || '',
-                channel_id: document.getElementById(`edit-channel-${configId}`)?.value,
-                selection_type: document.getElementById(`edit-sel-${configId}`)?.value || 'multiple',
-                roles: editState.roles,
-            };
-            const saveBtn = document.querySelector(`#edit-form-${configId} .btn-primary`);
-            if (saveBtn) { saveBtn.textContent = 'saving...'; saveBtn.disabled = true; }
-            try {
-                const res = await apiFetch('PUT', `/api/selfroles/${GUILD_ID}/${configId}`, payload);
-                const data = await res.json();
-                if (res.ok && data.success) {
-                    toast('panel updated!', 'success');
-                    cancelEdit(configId);
-                    loadConfigs();
-                } else {
-                    toast(data.message || 'update failed', 'error');
-                }
-            } catch {
-                toast('something went wrong', 'error');
-            } finally {
-                if (saveBtn) { saveBtn.textContent = 'save changes'; saveBtn.disabled = false; }
-            }
-        }
+			const payload = {
+				title,
+				description: document.getElementById(`edit-desc-${configId}`)?.value || '',
+				channel_id: document.getElementById(`edit-channel-${configId}`)?.value,
+				selection_type: document.getElementById(`edit-sel-${configId}`)?.value || 'multiple',
+				roles: editState.roles,
+			};
+			const saveBtn = document.querySelector(`#edit-form-${configId} .btn-primary`);
+			if (saveBtn) { saveBtn.textContent = 'saving...'; saveBtn.disabled = true; }
+			try {
+				const res = await apiFetch('PUT', `/api/selfroles/${GUILD_ID}/${configId}`, payload);
+				const data = await res.json();
+				if (res.ok && data.success) {
+					toast('panel updated!', 'success');
+					cancelEdit(configId);
+					loadConfigs();
+				} else {
+					toast(data.message || 'update failed', 'error');
+				}
+			} catch {
+				toast('something went wrong', 'error');
+			} finally {
+				if (saveBtn) { saveBtn.textContent = 'save changes'; saveBtn.disabled = false; }
+			}
+		}
 
-        function cancelEdit(configId) {
-            const container = document.getElementById(`edit-form-${configId}`);
-            if (container) { container.style.display = 'none'; container.innerHTML = ''; }
-            if (editState.configId === configId) editState = { configId: null, roles: [], newRoleEmoji: '' };
-        }
+		function cancelEdit(configId) {
+			const container = document.getElementById(`edit-form-${configId}`);
+			if (container) { container.style.display = 'none'; container.innerHTML = ''; }
+			if (editState.configId === configId) editState = { configId: null, roles: [], newRoleEmoji: '' };
+		}
 
-        async function deleteConfig(id) {
-            if (!confirm('delete this self-role panel? the discord message will also be removed.')) return;
-            const res = await apiFetch('DELETE', `/api/selfroles/${GUILD_ID}/${id}`);
-            if (res.ok) {
-                toast('panel deleted', 'success');
-                loadConfigs();
-            } else {
-                toast('failed to delete panel', 'error');
-            }
-        }
+		async function deleteConfig(id) {
+			if (!confirm('delete this self-role panel? the discord message will also be removed.')) return;
+			const res = await apiFetch('DELETE', `/api/selfroles/${GUILD_ID}/${id}`);
+			if (res.ok) {
+				toast('panel deleted', 'success');
+				loadConfigs();
+			} else {
+				toast('failed to delete panel', 'error');
+			}
+		}
 
-        document.getElementById('create-form').addEventListener('submit', async e => {
-            e.preventDefault();
-            const titleInput = document.getElementById('title');
-            const rolesArea = document.getElementById('roles-area');
-            titleInput.classList.remove('input-error');
-            rolesArea.classList.remove('input-error');
-            if (!titleInput.value.trim()) {
-                titleInput.classList.add('input-error');
-                toast('title is required', 'error');
-                return;
-            }
-            if (pendingRoles.length === 0) {
-                rolesArea.classList.add('input-error');
-                toast('add at least one role', 'error');
-                return;
-            }
-            const payload = {
-                title: titleInput.value,
-                description: document.getElementById('description').value,
-                channel_id: document.getElementById('channel').value,
-                selection_type: document.getElementById('selection-type').value,
-                roles: pendingRoles,
-            };
-            const btn = e.target.querySelector('[type=submit]');
-            btn.textContent = 'deploying...';
-            btn.disabled = true;
-            try {
-                const res = await apiFetch('POST', `/api/selfroles/${GUILD_ID}`, payload);
-                const data = await res.json();
-                if (res.ok && data.success) {
-                    toast('panel deployed!', 'success');
-                    e.target.reset();
-                    pendingRoles = [];
-                    clearEmoji();
-                    renderPendingRoles();
-                    loadConfigs();
-                } else {
-                    toast(data.message || 'deployment failed', 'error');
-                }
-            } catch {
-                toast('something went wrong', 'error');
-            } finally {
-                btn.textContent = 'deploy panel';
-                btn.disabled = false;
-            }
-        });
+		document.getElementById('create-form').addEventListener('submit', async e => {
+			e.preventDefault();
+			const titleInput = document.getElementById('title');
+			const rolesArea = document.getElementById('roles-area');
+			titleInput.classList.remove('input-error');
+			rolesArea.classList.remove('input-error');
+			if (!titleInput.value.trim()) {
+				titleInput.classList.add('input-error');
+				toast('title is required', 'error');
+				return;
+			}
+			if (pendingRoles.length === 0) {
+				rolesArea.classList.add('input-error');
+				toast('add at least one role', 'error');
+				return;
+			}
+			const payload = {
+				title: titleInput.value,
+				description: document.getElementById('description').value,
+				channel_id: document.getElementById('channel').value,
+				selection_type: document.getElementById('selection-type').value,
+				roles: pendingRoles,
+			};
+			const btn = e.target.querySelector('[type=submit]');
+			btn.textContent = 'deploying...';
+			btn.disabled = true;
+			try {
+				const res = await apiFetch('POST', `/api/selfroles/${GUILD_ID}`, payload);
+				const data = await res.json();
+				if (res.ok && data.success) {
+					toast('panel deployed!', 'success');
+					e.target.reset();
+					pendingRoles = [];
+					clearEmoji();
+					renderPendingRoles();
+					loadConfigs();
+				} else {
+					toast(data.message || 'deployment failed', 'error');
+				}
+			} catch {
+				toast('something went wrong', 'error');
+			} finally {
+				btn.textContent = 'deploy panel';
+				btn.disabled = false;
+			}
+		});
 
-        function escHtml(s) {
-            if (s == null) return '';
-            return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-        }
+		function escHtml(s) {
+			if (s == null) return '';
+			return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+		}
 
-        loadData();
-    </script>
-    <script type="module">
-        import { EmojiButton } from 'https://cdn.jsdelivr.net/npm/@joeattardi/emoji-button@4.6.4/+esm';
-        const picker = new EmojiButton({ theme: 'dark' });
-        window.__picker = picker;
-        const trigger = document.getElementById('emoji-btn');
+		loadData();
+	</script>
+	<script type="module">
+		import { EmojiButton } from 'https://cdn.jsdelivr.net/npm/@joeattardi/emoji-button@4.6.4/+esm';
+		const picker = new EmojiButton({ theme: 'dark' });
+		window.__picker = picker;
+		const trigger = document.getElementById('emoji-btn');
 
-        picker.on('emoji', selection => {
-            if (window.activeEmojiCallback) {
-                window.activeEmojiCallback(selection.emoji);
-                window.activeEmojiCallback = null;
-                return;
-            }
-            window.setCreateEmoji(selection.emoji);
-        });
+		picker.on('emoji', selection => {
+			if (window.activeEmojiCallback) {
+				window.activeEmojiCallback(selection.emoji);
+				window.activeEmojiCallback = null;
+				return;
+			}
+			window.setCreateEmoji(selection.emoji);
+		});
 
-        trigger.addEventListener('click', () => {
-            window.setCreateEmoji('');
-            window.activeEmojiCallback = null;
-            picker.togglePicker(trigger);
-        });
-    </script>
+		trigger.addEventListener('click', () => {
+			window.setCreateEmoji('');
+			window.activeEmojiCallback = null;
+			picker.togglePicker(trigger);
+		});
+	</script>
 </body>
 
 </html>

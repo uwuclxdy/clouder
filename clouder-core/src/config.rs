@@ -7,6 +7,10 @@ use std::env;
 use std::sync::Arc;
 use tracing::{debug, error, info, warn};
 
+// default color for embeds when none is configured; exposed publicly so tests and
+// web handlers can reference it instead of sprinkling the magic hex value.
+pub const DEFAULT_EMBED_COLOR: u32 = 0xFFFFFF; // white
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
     pub discord: DiscordConfig,
@@ -174,10 +178,10 @@ impl Config {
                         info!("EMBED_DEFAULT_COLOR: {:#06X}", color);
                         color
                     }
-                    Err(_) => 0xFFFFFF,
+                    Err(_) => DEFAULT_EMBED_COLOR,
                 }
             }
-            Err(_) => 0xFFFFFF,
+            Err(_) => DEFAULT_EMBED_COLOR,
         };
 
         let redirect_uri = env::var("DISCORD_REDIRECT_URI")
@@ -304,7 +308,7 @@ impl Config {
                     redirect_uri: "http://127.0.0.1:8080/auth/callback".to_string(),
                 },
                 embed: EmbedConfig {
-                    default_color: 0xFFFFFF,
+                    default_color: DEFAULT_EMBED_COLOR,
                 },
                 session_secret: "test_session_secret_at_least_32_bytes".to_string(),
             },

@@ -166,7 +166,7 @@ async fn send_welcome_message(
             let default_color = data
                 .get::<AppStateKey>()
                 .map(|state| clouder_core::utils::get_default_embed_color(state).0 as u64)
-                .unwrap_or(0x5865F2);
+                .unwrap();
 
             let embed_config = EmbedConfig {
                 title: &config.welcome_embed_title,
@@ -229,7 +229,7 @@ async fn send_goodbye_message(
             let default_color = data
                 .get::<AppStateKey>()
                 .map(|state| clouder_core::utils::get_default_embed_color(state).0 as u64)
-                .unwrap_or(0x5865F2);
+                .unwrap();
 
             let embed_config = EmbedConfig {
                 title: &config.goodbye_embed_title,

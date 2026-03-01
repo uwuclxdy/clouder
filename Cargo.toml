@@ -68,8 +68,6 @@ lazy_static = { workspace = true }
 sysinfo = { workspace = true }
 rand = { workspace = true }
 uwurs = { workspace = true }
-# used in unit tests
-tempfile = "3.26.0"
 
 clouder-core = { path = "clouder-core" }
 clouder-llm = { path = "clouder-llm", optional = true }
@@ -79,3 +77,7 @@ clouder-web = { path = "clouder-web", optional = true }
 default = ["web", "llm"]
 web = ["dep:clouder-web"]
 llm = ["clouder-llm", "clouder-core/llm"]
+
+[dev-dependencies]
+# unit tests
+tempfile = "3.26.0"

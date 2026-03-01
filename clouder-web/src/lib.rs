@@ -29,7 +29,7 @@ impl axum::extract::FromRef<WebState> for Key {
 }
 
 pub async fn run(app_state: AppState) -> Result<()> {
-    info!("starting API: {}/api", app_state.config.web.api_base,);
+    info!("starting API: {}/api/", app_state.config.web.api_base,);
 
     let key = cookie_key_from_secret(&app_state.config.web.session_secret);
     let state = WebState {
@@ -57,6 +57,7 @@ pub async fn run(app_state: AppState) -> Result<()> {
             get(dashboard::mediaonly_page),
         )
         .route("/dashboard/{guild_id}/uwufy", get(dashboard::uwufy_page))
+        .route("/profile", get(dashboard::profile_page))
         // auth
         .route("/auth/login", get(auth::login))
         .route("/auth/callback", get(auth::callback))
@@ -104,6 +105,8 @@ pub async fn run(app_state: AppState) -> Result<()> {
             "/api/uwufy/{guild_id}/{user_id}",
             axum::routing::put(api::api_uwufy_toggle),
         )
+        .route("/api/profile/regenerate-key", post(api::api_regenerate_key))
+        .route("/api/{user_id}", post(api::api_send_dm))
         .with_state(state.clone());
 
     let listener = tokio::net::TcpListener::bind(&state.app_state.config.web.bind_addr).await?;

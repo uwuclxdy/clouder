@@ -10,3 +10,4 @@ pub mod utils;
 
 // Re-export commonly used types
 pub use config::{AppState, Config};
+pub use database::dashboard_users::DashboardUser;

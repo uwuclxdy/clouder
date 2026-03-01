@@ -13,6 +13,7 @@ static WELCOME_HTML: &str = include_str!("../templates/welcome_goodbye.html");
 static MEDIAONLY_HTML: &str = include_str!("../templates/mediaonly.html");
 static ABOUT_HTML: &str = include_str!("../templates/about.html");
 static UWUFY_HTML: &str = include_str!("../templates/uwufy.html");
+static PROFILE_HTML: &str = include_str!("../templates/profile.html");
 
 fn html_escape(s: &str) -> String {
     s.replace('&', "&amp;")
@@ -233,6 +234,35 @@ pub async fn uwufy_page(
             ("USERNAME", &user.username),
             ("AVATAR_URL", &user.avatar_url()),
             ("GUILD_ID", &guild_id),
+        ],
+    ))
+    .into_response()
+}
+
+pub async fn profile_page(State(state): State<WebState>, jar: SignedCookieJar) -> Response {
+    let Some(user) = session::extract(&jar) else {
+        return Redirect::to("/login").into_response();
+    };
+
+    let dashboard_user =
+        match clouder_core::DashboardUser::upsert(&state.app_state.db, &user.user_id).await {
+            Ok(u) => u,
+            Err(e) => {
+                tracing::error!("failed to upsert dashboard user: {}", e);
+                return Redirect::to("/servers").into_response();
+            }
+        };
+
+    let api_base = &state.app_state.config.web.api_base;
+
+    Html(render(
+        PROFILE_HTML,
+        &[
+            ("USERNAME", &user.username),
+            ("AVATAR_URL", &user.avatar_url()),
+            ("API_KEY", &dashboard_user.api_key),
+            ("USER_ID", &user.user_id),
+            ("API_BASE", api_base),
         ],
     ))
     .into_response()

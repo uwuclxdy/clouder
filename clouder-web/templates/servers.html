@@ -1,18 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>clouder // servers</title>
   <link rel="stylesheet" href="/static/style.css">
 </head>
+
 <body>
   <header class="topbar">
     <div class="container topbar-inner">
       <span class="logo">clouder</span>
       <div class="user-info">
         <img src="{{AVATAR_URL}}" alt="" class="avatar">
-        <span class="username">{{USERNAME}}</span>
+        <a href="/profile" class="username">{{USERNAME}}</a>
         <a href="/auth/logout" class="btn btn-sm">sign out</a>
       </div>
     </div>
@@ -78,4 +80,5 @@
     }
   </script>
 </body>
+
 </html>

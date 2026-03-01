@@ -197,7 +197,7 @@ pub async fn bot(ctx: Context<'_>) -> Result<(), Error> {
             "vibecoder",
             "**[uwuclxdy](https://github.com/uwuclxdy)**
             bot is FOSS btw: **[clouder](https://github.com/uwuclxdy/clouder)**
-            **Claude 4 Sonnet <3**",
+            **Claude 4 - 4.6 Sonnet <3**",
             true,
         )
         .timestamp(serenity::Timestamp::now());

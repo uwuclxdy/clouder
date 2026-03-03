@@ -122,6 +122,13 @@ mod tests {
         // Verify the expected permission constant exists
         let perm_name = "MANAGE_MESSAGES";
         assert!(!perm_name.is_empty());
+
+        // ensure administrator would be allowed as well (simple bit check)
+        use poise::serenity_prelude::Permissions;
+        assert!(clouder_core::utils::has_permission(
+            Permissions::ADMINISTRATOR,
+            Permissions::MANAGE_MESSAGES
+        ));
     }
 
     #[test]

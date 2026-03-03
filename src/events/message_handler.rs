@@ -130,11 +130,14 @@ pub async fn handle_uwufy_message(
 /// uwufying.  we need both manage messages (delete) and manage webhooks
 /// (repost); whenever either is missing we build a user-friendly sentence.
 fn permission_error_message(perms: serenity::Permissions) -> Option<String> {
+    // if the bot has administrator privileges we treat it as having every
+    // permission; the helper consolidates the logic and makes unit testing
+    // straightforward.
     let mut missing = Vec::new();
-    if !perms.manage_messages() {
+    if !clouder_core::utils::has_permission(perms, serenity::Permissions::MANAGE_MESSAGES) {
         missing.push("manage messages");
     }
-    if !perms.manage_webhooks() {
+    if !clouder_core::utils::has_permission(perms, serenity::Permissions::MANAGE_WEBHOOKS) {
         missing.push("manage webhooks");
     }
     if missing.is_empty() {
@@ -165,13 +168,24 @@ mod tests {
         let perms = Permissions::MANAGE_MESSAGES;
         assert_eq!(
             permission_error_message(perms).unwrap(),
-            "i need the following permissions to uwufy messages: manage webhooks"
+            "i need these to uwufy messages: `manage webhooks`"
         );
         let perms2 = Permissions::MANAGE_WEBHOOKS;
         assert_eq!(
             permission_error_message(perms2).unwrap(),
-            "i need the following permissions to uwufy messages: manage messages"
+            "i need these to uwufy messages: `manage messages`"
         );
+    }
+
+    #[test]
+    fn permission_message_admin_override() {
+        // an administrator permission should satisfy both requirements
+        let perms = Permissions::ADMINISTRATOR;
+        assert!(permission_error_message(perms).is_none());
+
+        // even if one of the checks would otherwise fail, administrator wins
+        let perms2 = Permissions::ADMINISTRATOR | Permissions::empty();
+        assert!(permission_error_message(perms2).is_none());
     }
 
     #[test]

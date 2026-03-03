@@ -57,3 +57,22 @@ pub fn discord_timestamp(timestamp: i64, style: char) -> String {
         _ => format!("<t:{}:f>", timestamp),
     }
 }
+
+/// check whether `perms` satisfies `required`, taking administrator into account.
+///
+/// serenity's `Permissions` bitflags do not consider `ADMINISTRATOR` to imply all
+/// other permissions; we need to explicitly treat `administrator` as overriding the
+/// requirement. this helper exists so that permission checks across the codebase
+/// remain consistent and easier to test.
+///
+/// returning `true` means the caller has the required permission or is an admin.
+pub fn has_permission(
+    perms: serenity::all::Permissions,
+    required: serenity::all::Permissions,
+) -> bool {
+    // administrator bypasses everything
+    if perms.administrator() {
+        return true;
+    }
+    perms.contains(required)
+}

@@ -6,7 +6,7 @@ use crate::database::guild_cache::CachedGuild;
 use crate::database::selfroles::{SelfRoleConfig, SelfRoleLabel};
 use anyhow::Result;
 use serde_json::{Value, json};
-use serenity::all::{GuildId, Http};
+use serenity::all::{GuildId, Http, Permissions};
 use tracing::{error, warn};
 
 pub fn format_selfrole_button_label(emoji: &str, label: &str) -> String {
@@ -1171,7 +1171,8 @@ pub async fn refresh_guild_cache(
         .filter_map(|g| {
             let id = g["id"].as_str()?;
             let perms: u64 = g["permissions"].as_str()?.parse().ok()?;
-            if perms & 0x20 == 0 && perms & 0x8 == 0 {
+            let perms_flags = Permissions::from_bits_truncate(perms);
+            if !crate::utils::has_permission(perms_flags, Permissions::MANAGE_GUILD) {
                 return None;
             }
             if !bot_guild_ids.contains(id) {

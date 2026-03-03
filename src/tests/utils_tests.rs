@@ -83,7 +83,7 @@ mod tests {
 
     #[test]
     fn test_hierarchy_permissions() {
-        // Test admin permissions bypass
+        // Test admin permissions bypass (bitwise)
         let admin_permissions = 0x8; // ADMINISTRATOR
         assert_eq!(admin_permissions & 0x8, 0x8);
 
@@ -95,6 +95,37 @@ mod tests {
         let combined = admin_permissions | manage_roles_permission;
         assert_eq!(combined & 0x8, 0x8); // Still has admin
         assert_eq!(combined & 0x10000000, 0x10000000); // Still has manage roles
+    }
+
+    #[test]
+    fn test_has_permission_helper() {
+        use poise::serenity_prelude::Permissions;
+        // with only manage_messages we should not satisfy manage_webhooks
+        let perms = Permissions::MANAGE_MESSAGES;
+        assert!(!clouder_core::utils::has_permission(
+            perms,
+            Permissions::MANAGE_WEBHOOKS
+        ));
+        // admin should satisfy anything
+        let admin = Permissions::ADMINISTRATOR;
+        assert!(clouder_core::utils::has_permission(
+            admin,
+            Permissions::MANAGE_MESSAGES
+        ));
+        assert!(clouder_core::utils::has_permission(
+            admin,
+            Permissions::MANAGE_WEBHOOKS
+        ));
+        // combined case where required bit is present explicitly
+        let combo = Permissions::ADMINISTRATOR | Permissions::MANAGE_MESSAGES;
+        assert!(clouder_core::utils::has_permission(
+            combo,
+            Permissions::MANAGE_MESSAGES
+        ));
+        assert!(clouder_core::utils::has_permission(
+            combo,
+            Permissions::MANAGE_WEBHOOKS
+        ));
     }
 
     #[test]

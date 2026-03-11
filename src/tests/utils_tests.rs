@@ -178,4 +178,150 @@ mod tests {
             .unwrap_or(0);
         assert_eq!(negative_highest, 1);
     }
+
+    fn make_message(
+        content: &str,
+        attachments: Vec<serde_json::Value>,
+        embeds: Vec<serde_json::Value>,
+    ) -> poise::serenity_prelude::Message {
+        serde_json::from_value(serde_json::json!({
+            "id": "1",
+            "channel_id": "1",
+            "author": { "id": "1", "username": "test", "discriminator": "0000", "global_name": null, "avatar": null },
+            "content": content,
+            "timestamp": "2024-01-01T00:00:00Z",
+            "tts": false,
+            "mention_everyone": false,
+            "mentions": [],
+            "mention_roles": [],
+            "attachments": attachments,
+            "embeds": embeds,
+            "pinned": false,
+            "type": 0
+        }))
+        .unwrap()
+    }
+
+    fn make_attachment(filename: &str, content_type: Option<&str>) -> serde_json::Value {
+        let mut v = serde_json::json!({
+            "id": "1",
+            "filename": filename,
+            "size": 1024,
+            "url": "https://cdn.discordapp.com/attachments/1/1/file",
+            "proxy_url": "https://media.discordapp.net/attachments/1/1/file"
+        });
+        if let Some(ct) = content_type {
+            v["content_type"] = serde_json::json!(ct);
+        }
+        v
+    }
+
+    #[test]
+    fn test_content_detection_attachments_true_gifs_true() {
+        use clouder_core::utils::content_detection::has_allowed_content;
+        // all attachments pass including GIFs
+        let gif = make_message(
+            "",
+            vec![make_attachment("cat.gif", Some("image/gif"))],
+            vec![],
+        );
+        assert!(has_allowed_content(&gif, false, true, true, false));
+
+        let png = make_message(
+            "",
+            vec![make_attachment("cat.png", Some("image/png"))],
+            vec![],
+        );
+        assert!(has_allowed_content(&png, false, true, true, false));
+    }
+
+    #[test]
+    fn test_content_detection_attachments_true_gifs_false() {
+        use clouder_core::utils::content_detection::has_allowed_content;
+        // GIF file attachments should be rejected
+        let gif_only = make_message(
+            "",
+            vec![make_attachment("cat.gif", Some("image/gif"))],
+            vec![],
+        );
+        assert!(!has_allowed_content(&gif_only, false, true, false, false));
+
+        // non-GIF attachments should pass
+        let png = make_message(
+            "",
+            vec![make_attachment("cat.png", Some("image/png"))],
+            vec![],
+        );
+        assert!(has_allowed_content(&png, false, true, false, false));
+
+        // mixed: at least one non-GIF passes
+        let mixed = make_message(
+            "",
+            vec![
+                make_attachment("cat.gif", Some("image/gif")),
+                make_attachment("dog.png", Some("image/png")),
+            ],
+            vec![],
+        );
+        assert!(has_allowed_content(&mixed, false, true, false, false));
+    }
+
+    #[test]
+    fn test_content_detection_attachments_false_gifs_true() {
+        use clouder_core::utils::content_detection::has_allowed_content;
+        // GIF file attachments pass via has_gif
+        let gif = make_message(
+            "",
+            vec![make_attachment("cat.gif", Some("image/gif"))],
+            vec![],
+        );
+        assert!(has_allowed_content(&gif, false, false, true, false));
+
+        // non-GIF attachments should be rejected
+        let png = make_message(
+            "",
+            vec![make_attachment("cat.png", Some("image/png"))],
+            vec![],
+        );
+        assert!(!has_allowed_content(&png, false, false, true, false));
+
+        // Tenor URL passes
+        let tenor = make_message("https://tenor.com/view/cat-12345", vec![], vec![]);
+        assert!(has_allowed_content(&tenor, false, false, true, false));
+    }
+
+    #[test]
+    fn test_content_detection_attachments_false_gifs_false() {
+        use clouder_core::utils::content_detection::has_allowed_content;
+        // nothing passes
+        let gif = make_message(
+            "",
+            vec![make_attachment("cat.gif", Some("image/gif"))],
+            vec![],
+        );
+        assert!(!has_allowed_content(&gif, false, false, false, false));
+
+        let png = make_message(
+            "",
+            vec![make_attachment("cat.png", Some("image/png"))],
+            vec![],
+        );
+        assert!(!has_allowed_content(&png, false, false, false, false));
+
+        let text = make_message("hello", vec![], vec![]);
+        assert!(!has_allowed_content(&text, false, false, false, false));
+    }
+
+    #[test]
+    fn test_content_detection_links_and_stickers() {
+        use clouder_core::utils::content_detection::has_allowed_content;
+        // link passes when allow_links = true
+        let link = make_message("check https://example.com", vec![], vec![]);
+        assert!(has_allowed_content(&link, true, false, false, false));
+        assert!(!has_allowed_content(&link, false, false, false, false));
+
+        // text without media fails
+        let text = make_message("just text", vec![], vec![]);
+        assert!(!has_allowed_content(&text, true, true, true, true));
+    }
 }

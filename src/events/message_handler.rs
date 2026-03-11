@@ -84,12 +84,13 @@ pub async fn handle_uwufy_message(
     let mut uwufier = uwurs::UwUifier::new();
     uwufier.set_stutter_probability(0.5);
     uwufier.set_emoji_probability(0.25);
-    let uwufied = uwufier.uwuify(&message.content).unwrap();
-
-    if let Err(e) = message.delete(&ctx.http).await {
-        warn!("delete message for uwufy: {}", e);
-        return;
-    }
+    let uwufied = match uwufier.uwuify(&message.content) {
+        Ok(text) => text,
+        Err(e) => {
+            warn!("uwuify failed: {:?}", e);
+            return;
+        }
+    };
 
     let webhooks = ctx
         .http
@@ -97,24 +98,42 @@ pub async fn handle_uwufy_message(
         .await
         .unwrap_or_default();
 
-    let webhook = if let Some(wh) = webhooks
+    let existing = webhooks
         .iter()
-        .find(|w| w.name.as_deref() == Some("clouder"))
-    {
-        wh.clone()
-    } else {
-        match message
+        .find(|w| w.name.as_deref() == Some("clouder"));
+
+    let create_webhook = || async {
+        message
             .channel_id
             .create_webhook(&ctx.http, serenity::CreateWebhook::new("clouder"))
             .await
-        {
+    };
+
+    let webhook = match existing {
+        Some(wh) if wh.token.is_some() => wh.clone(),
+        Some(wh) => {
+            let _ = wh.delete(&ctx.http).await;
+            match create_webhook().await {
+                Ok(wh) => wh,
+                Err(e) => {
+                    warn!("recreate webhook: {}", e);
+                    return;
+                }
+            }
+        }
+        None => match create_webhook().await {
             Ok(wh) => wh,
             Err(e) => {
                 warn!("create webhook: {}", e);
                 return;
             }
-        }
+        },
     };
+
+    if let Err(e) = message.delete(&ctx.http).await {
+        warn!("delete message for uwufy: {}", e);
+        return;
+    }
 
     let execute = serenity::ExecuteWebhook::new()
         .content(&uwufied)
@@ -123,6 +142,9 @@ pub async fn handle_uwufy_message(
 
     if let Err(e) = webhook.execute(&ctx.http, false, execute).await {
         warn!("execute uwufy webhook: {}", e);
+        let fallback = serenity::CreateMessage::new()
+            .content(format!("**{}:** {}", &message.author.name, &uwufied));
+        let _ = message.channel_id.send_message(&ctx.http, fallback).await;
     }
 }
 

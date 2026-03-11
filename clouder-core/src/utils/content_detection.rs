@@ -74,6 +74,16 @@ pub fn has_sticker(message: &Message) -> bool {
     !message.sticker_items.is_empty()
 }
 
+fn has_non_gif_attachment(message: &Message) -> bool {
+    message.attachments.iter().any(|a| {
+        !a.filename.to_lowercase().ends_with(".gif")
+            && !a
+                .content_type
+                .as_ref()
+                .is_some_and(|ct| ct.starts_with("image/gif"))
+    })
+}
+
 /// Check if a message contains any allowed content based on configuration
 pub fn has_allowed_content(
     message: &Message,
@@ -86,8 +96,15 @@ pub fn has_allowed_content(
         return true;
     }
 
-    if allow_attachments && has_attachment(message) {
-        return true;
+    if allow_attachments {
+        let valid = if allow_gifs {
+            has_attachment(message)
+        } else {
+            has_non_gif_attachment(message)
+        };
+        if valid {
+            return true;
+        }
     }
 
     if allow_gifs && has_gif(message) {

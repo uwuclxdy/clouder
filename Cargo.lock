@@ -335,6 +335,7 @@ dependencies = [
  "clouder-core",
  "clouder-llm",
  "clouder-web",
+ "dotenvy",
  "lazy_static",
  "poise",
  "rand 0.10.0",

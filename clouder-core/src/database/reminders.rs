@@ -124,7 +124,6 @@ impl GuildConfig {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ReminderType {
     Wysi,
-    FemboyFriday,
     Custom,
 }
 
@@ -132,7 +131,6 @@ impl ReminderType {
     pub fn as_str(&self) -> &str {
         match self {
             Self::Wysi => "wysi",
-            Self::FemboyFriday => "femboy_friday",
             Self::Custom => "custom",
         }
     }
@@ -140,7 +138,6 @@ impl ReminderType {
     pub fn parse(s: &str) -> Option<Self> {
         match s {
             "wysi" => Some(Self::Wysi),
-            "femboy_friday" => Some(Self::FemboyFriday),
             "custom" => Some(Self::Custom),
             _ => None,
         }
@@ -161,7 +158,6 @@ pub struct ReminderConfig {
     pub embed_color: Option<i64>,
     pub wysi_morning_time: Option<String>,
     pub wysi_evening_time: Option<String>,
-    pub femboy_friday_time: Option<String>,
     pub timezone: String,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
@@ -182,7 +178,6 @@ fn parse_reminder_config_row(row: sqlx::sqlite::SqliteRow) -> ReminderConfig {
         embed_color: row.get("embed_color"),
         wysi_morning_time: row.get("wysi_morning_time"),
         wysi_evening_time: row.get("wysi_evening_time"),
-        femboy_friday_time: row.get("femboy_friday_time"),
         timezone: row.get("timezone"),
         created_at: parse_sqlite_datetime(&row.get::<String, _>("created_at")),
         updated_at: parse_sqlite_datetime(&row.get::<String, _>("updated_at")),
@@ -195,7 +190,7 @@ impl ReminderConfig {
             r#"
             SELECT id, guild_id, reminder_type, enabled, channel_id, message_type,
                    message_content, embed_title, embed_description, embed_color,
-                   wysi_morning_time, wysi_evening_time, femboy_friday_time,
+                   wysi_morning_time, wysi_evening_time,
                    timezone, created_at, updated_at
             FROM reminder_configs
             WHERE guild_id = ?
@@ -217,7 +212,7 @@ impl ReminderConfig {
             r#"
             SELECT id, guild_id, reminder_type, enabled, channel_id, message_type,
                    message_content, embed_title, embed_description, embed_color,
-                   wysi_morning_time, wysi_evening_time, femboy_friday_time,
+                   wysi_morning_time, wysi_evening_time,
                    timezone, created_at, updated_at
             FROM reminder_configs
             WHERE guild_id = ? AND reminder_type = ?
@@ -236,7 +231,7 @@ impl ReminderConfig {
             r#"
             SELECT id, guild_id, reminder_type, enabled, channel_id, message_type,
                    message_content, embed_title, embed_description, embed_color,
-                   wysi_morning_time, wysi_evening_time, femboy_friday_time,
+                   wysi_morning_time, wysi_evening_time,
                    timezone, created_at, updated_at
             FROM reminder_configs
             WHERE id = ?
@@ -262,18 +257,28 @@ impl ReminderConfig {
         embed_color: Option<i64>,
         wysi_morning_time: Option<&str>,
         wysi_evening_time: Option<&str>,
-        femboy_friday_time: Option<&str>,
         timezone: &str,
     ) -> Result<i64, sqlx::Error> {
         let row = sqlx::query(
             r#"
-            INSERT OR REPLACE INTO reminder_configs (
+            INSERT INTO reminder_configs (
                 guild_id, reminder_type, channel_id, message_type, message_content,
                 embed_title, embed_description, embed_color,
-                wysi_morning_time, wysi_evening_time, femboy_friday_time,
+                wysi_morning_time, wysi_evening_time,
                 timezone, updated_at
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(guild_id, reminder_type) DO UPDATE SET
+                channel_id = excluded.channel_id,
+                message_type = excluded.message_type,
+                message_content = excluded.message_content,
+                embed_title = excluded.embed_title,
+                embed_description = excluded.embed_description,
+                embed_color = excluded.embed_color,
+                wysi_morning_time = excluded.wysi_morning_time,
+                wysi_evening_time = excluded.wysi_evening_time,
+                timezone = excluded.timezone,
+                updated_at = CURRENT_TIMESTAMP
             RETURNING id
             "#,
         )
@@ -287,7 +292,6 @@ impl ReminderConfig {
         .bind(embed_color)
         .bind(wysi_morning_time)
         .bind(wysi_evening_time)
-        .bind(femboy_friday_time)
         .bind(timezone)
         .fetch_one(pool)
         .await?;
@@ -366,29 +370,22 @@ impl ReminderPingRole {
         config_id: i64,
         role_ids: &[String],
     ) -> Result<(), sqlx::Error> {
-        sqlx::query(
-            r#"
-            DELETE FROM reminder_ping_roles
-            WHERE config_id = ?
-            "#,
-        )
-        .bind(config_id)
-        .execute(pool)
-        .await?;
+        let mut tx = pool.begin().await?;
+
+        sqlx::query("DELETE FROM reminder_ping_roles WHERE config_id = ?")
+            .bind(config_id)
+            .execute(&mut *tx)
+            .await?;
 
         for role_id in role_ids {
-            sqlx::query(
-                r#"
-                INSERT INTO reminder_ping_roles (config_id, role_id)
-                VALUES (?, ?)
-                "#,
-            )
-            .bind(config_id)
-            .bind(role_id)
-            .execute(pool)
-            .await?;
+            sqlx::query("INSERT INTO reminder_ping_roles (config_id, role_id) VALUES (?, ?)")
+                .bind(config_id)
+                .bind(role_id)
+                .execute(&mut *tx)
+                .await?;
         }
 
+        tx.commit().await?;
         Ok(())
     }
 

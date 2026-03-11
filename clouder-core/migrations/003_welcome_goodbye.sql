@@ -1,4 +1,4 @@
--- 003: Welcome and Goodbye messages system
+-- 003: Welcome and Goodbye system
 
 CREATE TABLE IF NOT EXISTS welcome_goodbye_configs (
     guild_id TEXT PRIMARY KEY,

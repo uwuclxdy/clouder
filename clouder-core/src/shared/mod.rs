@@ -1427,7 +1427,6 @@ pub async fn get_reminders_config(app_state: &AppState, guild_id: u64) -> Result
             "embed_color": cfg.embed_color,
             "wysi_morning_time": cfg.wysi_morning_time,
             "wysi_evening_time": cfg.wysi_evening_time,
-            "femboy_friday_time": cfg.femboy_friday_time,
             "timezone": cfg.timezone,
             "ping_roles": role_ids,
         }));
@@ -1436,7 +1435,7 @@ pub async fn get_reminders_config(app_state: &AppState, guild_id: u64) -> Result
     Ok(json!({ "success": true, "configs": result }))
 }
 
-/// Upsert a reminder config (WYSI or Femboy Friday) for a guild
+/// Upsert a reminder config for a guild
 #[allow(clippy::too_many_arguments)]
 pub async fn upsert_reminder_config(
     app_state: &AppState,
@@ -1485,10 +1484,6 @@ pub async fn upsert_reminder_config(
         .get("wysi_evening_time")
         .and_then(|v| v.as_str())
         .filter(|s| !s.is_empty());
-    let femboy_time = payload
-        .get("femboy_friday_time")
-        .and_then(|v| v.as_str())
-        .filter(|s| !s.is_empty());
     let timezone = payload
         .get("timezone")
         .and_then(|v| v.as_str())
@@ -1497,6 +1492,18 @@ pub async fn upsert_reminder_config(
     // validate timezone
     if timezone.parse::<chrono_tz::Tz>().is_err() {
         return Err(format!("invalid timezone: {}", timezone));
+    }
+
+    // Ensure guild_config exists before creating reminder_config (foreign key requirement)
+    use crate::database::reminders::GuildConfig;
+    if GuildConfig::get(&app_state.db, &guild_id_str)
+        .await
+        .map_err(|e| e.to_string())?
+        .is_none()
+    {
+        GuildConfig::upsert(&app_state.db, &guild_id_str, "!", None, timezone)
+            .await
+            .map_err(|e| format!("Failed to create guild config: {}", e))?;
     }
 
     let config_id = ReminderConfig::upsert(
@@ -1511,7 +1518,6 @@ pub async fn upsert_reminder_config(
         embed_color,
         wysi_morning,
         wysi_evening,
-        femboy_time,
         timezone,
     )
     .await

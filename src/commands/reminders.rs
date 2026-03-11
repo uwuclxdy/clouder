@@ -36,7 +36,6 @@ pub async fn reminders(ctx: Context<'_>) -> Result<(), Error> {
         for cfg in &configs {
             let type_label = match cfg.reminder_type {
                 ReminderType::Wysi => "wysi (7:27)",
-                ReminderType::FemboyFriday => "femboy friday",
                 ReminderType::Custom => "custom",
             };
             let status = if cfg.enabled { "✓" } else { "✗" };
@@ -51,10 +50,6 @@ pub async fn reminders(ctx: Context<'_>) -> Result<(), Error> {
                     "{} AM / {} PM",
                     cfg.wysi_morning_time.as_deref().unwrap_or("07:27"),
                     cfg.wysi_evening_time.as_deref().unwrap_or("19:27")
-                ),
-                ReminderType::FemboyFriday => format!(
-                    "fridays @ {}",
-                    cfg.femboy_friday_time.as_deref().unwrap_or("00:00")
                 ),
                 ReminderType::Custom => "custom schedule".to_string(),
             };

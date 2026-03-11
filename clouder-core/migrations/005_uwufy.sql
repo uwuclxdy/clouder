@@ -1,4 +1,4 @@
--- 005: Uwufy toggles
+-- 005: UwUfy toggles
 
 CREATE TABLE IF NOT EXISTS uwufy_toggles (
     guild_id TEXT NOT NULL,

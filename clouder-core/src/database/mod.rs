@@ -1,6 +1,6 @@
 use anyhow::Result;
-use sqlx::{Sqlite, migrate::MigrateDatabase, sqlite::SqlitePool};
-use std::path::Path;
+use sqlx::{Sqlite, migrate::MigrateDatabase, sqlite::SqliteConnectOptions, sqlite::SqlitePool};
+use std::{path::Path, str::FromStr};
 
 use tracing::info;
 
@@ -26,7 +26,8 @@ pub async fn initialize_database(db_url: &str) -> Result<SqlitePool> {
         info!("created db: {}", db_path);
     }
 
-    let pool = SqlitePool::connect(db_path).await?;
+    let options = SqliteConnectOptions::from_str(db_path)?.pragma("foreign_keys", "ON");
+    let pool = SqlitePool::connect_with(options).await?;
 
     run_migrations(&pool).await?;
 
@@ -43,6 +44,7 @@ async fn run_migrations(pool: &SqlitePool) -> Result<()> {
         include_str!("../../migrations/005_uwufy.sql"),
         include_str!("../../migrations/006_selfrole_labels.sql"),
         include_str!("../../migrations/007_dashboard_users.sql"),
+        include_str!("../../migrations/008_fix_reminder_unique.sql"),
     ];
 
     for migration_content in migrations {

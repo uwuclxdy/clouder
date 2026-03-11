@@ -6,6 +6,7 @@ pub mod events_tests;
 mod help_tests;
 mod mediaonly_tests;
 mod purge_tests;
+mod reminders_tests;
 pub mod utils_tests;
 mod uwufy_tests;
 mod welcome_goodbye_tests;
@@ -151,10 +152,10 @@ pub async fn create_test_db() -> SqlitePool {
             embed_color INTEGER,
             wysi_morning_time TEXT DEFAULT '07:27',
             wysi_evening_time TEXT DEFAULT '19:27',
-            femboy_friday_time TEXT DEFAULT '00:00',
             timezone TEXT NOT NULL DEFAULT 'UTC',
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(guild_id, reminder_type)
         );
     "#,
     )

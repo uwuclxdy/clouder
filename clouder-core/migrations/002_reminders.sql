@@ -1,4 +1,4 @@
--- 002: Reminders system and user settings
+-- 002: Reminders and user settings
 -- User settings for timezone and DM preferences
 CREATE TABLE IF NOT EXISTS user_settings (
     user_id TEXT PRIMARY KEY,
@@ -18,12 +18,12 @@ CREATE TABLE IF NOT EXISTS guild_configs (
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
--- Reminder configurations for different types (WYSI, Femboy Friday, custom)
+-- Reminder configurations for different types (WYSI, custom)
 CREATE TABLE IF NOT EXISTS reminder_configs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     guild_id TEXT NOT NULL,
     reminder_type TEXT NOT NULL CHECK (
-        reminder_type IN ('wysi', 'femboy_friday', 'custom')
+        reminder_type IN ('wysi', 'custom')
     ),
     enabled BOOLEAN NOT NULL DEFAULT FALSE,
     channel_id TEXT,
@@ -34,7 +34,6 @@ CREATE TABLE IF NOT EXISTS reminder_configs (
     embed_color INTEGER,
     wysi_morning_time TEXT DEFAULT '07:27',
     wysi_evening_time TEXT DEFAULT '19:27',
-    femboy_friday_time TEXT DEFAULT '00:00',
     timezone TEXT NOT NULL DEFAULT 'UTC',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,

@@ -45,6 +45,7 @@ pub fn run() -> Result<()> {
 }
 
 async fn async_main() -> Result<()> {
+    let _ = dotenvy::dotenv();
     logging::init();
 
     info!("starting clouder");

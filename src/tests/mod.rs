@@ -104,6 +104,110 @@ pub async fn create_test_db() -> SqlitePool {
     .await
     .unwrap();
 
+    // reminder tables (mirror migration 002_reminders.sql)
+    sqlx::query(
+        r#"
+        CREATE TABLE user_settings (
+            user_id TEXT PRIMARY KEY,
+            timezone TEXT NOT NULL DEFAULT 'UTC',
+            dm_reminders_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+    "#,
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    sqlx::query(
+        r#"
+        CREATE TABLE guild_configs (
+            guild_id TEXT PRIMARY KEY,
+            command_prefix TEXT NOT NULL DEFAULT '!',
+            embed_color INTEGER DEFAULT NULL,
+            timezone TEXT NOT NULL DEFAULT 'UTC',
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+    "#,
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    sqlx::query(
+        r#"
+        CREATE TABLE reminder_configs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            guild_id TEXT NOT NULL,
+            reminder_type TEXT NOT NULL,
+            enabled BOOLEAN NOT NULL DEFAULT FALSE,
+            channel_id TEXT,
+            message_type TEXT NOT NULL DEFAULT 'embed',
+            message_content TEXT,
+            embed_title TEXT,
+            embed_description TEXT,
+            embed_color INTEGER,
+            wysi_morning_time TEXT DEFAULT '07:27',
+            wysi_evening_time TEXT DEFAULT '19:27',
+            femboy_friday_time TEXT DEFAULT '00:00',
+            timezone TEXT NOT NULL DEFAULT 'UTC',
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+    "#,
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    sqlx::query(
+        r#"
+        CREATE TABLE reminder_ping_roles (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            config_id INTEGER NOT NULL,
+            role_id TEXT NOT NULL
+        );
+    "#,
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    sqlx::query(
+        r#"
+        CREATE TABLE reminder_subscriptions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            config_id INTEGER NOT NULL,
+            subscribed_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+    "#,
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    sqlx::query(
+        r#"
+        CREATE TABLE reminder_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            config_id INTEGER NOT NULL,
+            execution_time DATETIME NOT NULL,
+            status TEXT NOT NULL,
+            error_message TEXT,
+            channel_sent BOOLEAN DEFAULT FALSE,
+            dm_count INTEGER DEFAULT 0,
+            dm_failed_count INTEGER DEFAULT 0,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+    "#,
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
+
     pool
 }
 

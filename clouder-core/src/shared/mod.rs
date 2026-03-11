@@ -1279,8 +1279,9 @@ pub async fn list_uwufy_members(app_state: &AppState, guild_id: u64) -> Result<V
             break;
         }
         after = members.last().map(|m| m.user.id.get());
+        let is_last_page = members.len() < 1000;
         all_members.extend(members);
-        if all_members.len() < 1000 {
+        if is_last_page {
             break;
         }
     }
@@ -1395,4 +1396,254 @@ pub async fn send_dm_to_user(http: &Http, user_id: u64, content: &str) -> Result
     }
 
     Ok(())
+}
+
+// Reminder functions
+
+/// Get all reminder configs for a guild, with their ping roles
+pub async fn get_reminders_config(app_state: &AppState, guild_id: u64) -> Result<Value, String> {
+    use crate::database::reminders::{ReminderConfig, ReminderPingRole};
+
+    let guild_id_str = guild_id.to_string();
+    let configs = ReminderConfig::get_by_guild(&app_state.db, &guild_id_str)
+        .await
+        .map_err(|e| format!("DB error: {}", e))?;
+
+    let mut result = Vec::new();
+    for cfg in configs {
+        let roles = ReminderPingRole::get_by_config(&app_state.db, cfg.id)
+            .await
+            .unwrap_or_default();
+        let role_ids: Vec<String> = roles.into_iter().map(|r| r.role_id).collect();
+        result.push(json!({
+            "id": cfg.id,
+            "reminder_type": cfg.reminder_type.as_str(),
+            "enabled": cfg.enabled,
+            "channel_id": cfg.channel_id,
+            "message_type": cfg.message_type,
+            "message_content": cfg.message_content,
+            "embed_title": cfg.embed_title,
+            "embed_description": cfg.embed_description,
+            "embed_color": cfg.embed_color,
+            "wysi_morning_time": cfg.wysi_morning_time,
+            "wysi_evening_time": cfg.wysi_evening_time,
+            "femboy_friday_time": cfg.femboy_friday_time,
+            "timezone": cfg.timezone,
+            "ping_roles": role_ids,
+        }));
+    }
+
+    Ok(json!({ "success": true, "configs": result }))
+}
+
+/// Upsert a reminder config (WYSI or Femboy Friday) for a guild
+#[allow(clippy::too_many_arguments)]
+pub async fn upsert_reminder_config(
+    app_state: &AppState,
+    guild_id: u64,
+    payload: &Value,
+) -> Result<Value, String> {
+    use crate::database::reminders::{ReminderConfig, ReminderPingRole, ReminderType};
+
+    let reminder_type_str = payload
+        .get("reminder_type")
+        .and_then(|v| v.as_str())
+        .ok_or("reminder_type required")?;
+
+    let rtype = ReminderType::parse(reminder_type_str).ok_or("invalid reminder_type")?;
+    if rtype == ReminderType::Custom {
+        return Err("custom reminders not yet supported".to_string());
+    }
+
+    let guild_id_str = guild_id.to_string();
+    let channel_id = payload
+        .get("channel_id")
+        .and_then(|v| v.as_str())
+        .filter(|s| !s.is_empty());
+    let message_type = payload
+        .get("message_type")
+        .and_then(|v| v.as_str())
+        .unwrap_or("embed");
+    let message_content = payload
+        .get("message_content")
+        .and_then(|v| v.as_str())
+        .filter(|s| !s.is_empty());
+    let embed_title = payload
+        .get("embed_title")
+        .and_then(|v| v.as_str())
+        .filter(|s| !s.is_empty());
+    let embed_description = payload
+        .get("embed_description")
+        .and_then(|v| v.as_str())
+        .filter(|s| !s.is_empty());
+    let embed_color = payload.get("embed_color").and_then(|v| v.as_i64());
+    let wysi_morning = payload
+        .get("wysi_morning_time")
+        .and_then(|v| v.as_str())
+        .filter(|s| !s.is_empty());
+    let wysi_evening = payload
+        .get("wysi_evening_time")
+        .and_then(|v| v.as_str())
+        .filter(|s| !s.is_empty());
+    let femboy_time = payload
+        .get("femboy_friday_time")
+        .and_then(|v| v.as_str())
+        .filter(|s| !s.is_empty());
+    let timezone = payload
+        .get("timezone")
+        .and_then(|v| v.as_str())
+        .unwrap_or("UTC");
+
+    // validate timezone
+    if timezone.parse::<chrono_tz::Tz>().is_err() {
+        return Err(format!("invalid timezone: {}", timezone));
+    }
+
+    let config_id = ReminderConfig::upsert(
+        &app_state.db,
+        &guild_id_str,
+        &rtype,
+        channel_id,
+        message_type,
+        message_content,
+        embed_title,
+        embed_description,
+        embed_color,
+        wysi_morning,
+        wysi_evening,
+        femboy_time,
+        timezone,
+    )
+    .await
+    .map_err(|e| format!("DB error: {}", e))?;
+
+    // update enabled flag
+    if let Some(enabled) = payload.get("enabled").and_then(|v| v.as_bool()) {
+        ReminderConfig::set_enabled(&app_state.db, config_id, enabled)
+            .await
+            .map_err(|e| format!("DB error: {}", e))?;
+    }
+
+    // replace ping roles
+    if let Some(roles) = payload.get("ping_roles").and_then(|v| v.as_array()) {
+        let role_ids: Vec<String> = roles
+            .iter()
+            .filter_map(|v| v.as_str().map(str::to_string))
+            .collect();
+        ReminderPingRole::set_roles(&app_state.db, config_id, &role_ids)
+            .await
+            .map_err(|e| format!("DB error: {}", e))?;
+    }
+
+    Ok(json!({
+        "success": true,
+        "id": config_id,
+        "message": "reminder config saved"
+    }))
+}
+
+/// Update or create user reminder settings (timezone + dm enabled)
+pub async fn update_user_reminder_settings(
+    app_state: &AppState,
+    user_id: &str,
+    timezone: &str,
+    dm_enabled: bool,
+) -> Result<Value, String> {
+    use crate::database::reminders::UserSettings;
+
+    if timezone.parse::<chrono_tz::Tz>().is_err() {
+        return Err(format!("invalid timezone: {}", timezone));
+    }
+
+    UserSettings::upsert(&app_state.db, user_id, timezone, dm_enabled)
+        .await
+        .map_err(|e| format!("DB error: {}", e))?;
+
+    Ok(json!({ "success": true }))
+}
+
+/// Get current user reminder settings
+pub async fn get_user_reminder_settings(
+    app_state: &AppState,
+    user_id: &str,
+) -> Result<Value, String> {
+    use crate::database::reminders::UserSettings;
+
+    let settings = UserSettings::get(&app_state.db, user_id)
+        .await
+        .map_err(|e| format!("DB error: {}", e))?;
+
+    if let Some(s) = settings {
+        Ok(json!({
+            "success": true,
+            "timezone": s.timezone,
+            "dm_reminders_enabled": s.dm_reminders_enabled,
+        }))
+    } else {
+        Ok(json!({
+            "success": true,
+            "timezone": "UTC",
+            "dm_reminders_enabled": true,
+        }))
+    }
+}
+
+/// List a user's active reminder subscriptions with minimal details
+pub async fn list_user_subscriptions(app_state: &AppState, user_id: &str) -> Result<Value, String> {
+    use crate::database::reminders::{ReminderConfig, ReminderSubscription};
+
+    let subs = ReminderSubscription::get_by_user(&app_state.db, user_id)
+        .await
+        .map_err(|e| format!("DB error: {}", e))?;
+
+    let mut arr = Vec::new();
+    for sub in subs {
+        if let Ok(Some(cfg)) = ReminderConfig::get_by_id(&app_state.db, sub.config_id).await {
+            arr.push(json!({
+                "subscription_id": sub.id,
+                "config_id": cfg.id,
+                "guild_id": cfg.guild_id,
+                "reminder_type": cfg.reminder_type.as_str(),
+            }));
+        }
+    }
+    Ok(json!({ "success": true, "subscriptions": arr }))
+}
+
+/// Subscribe a user to a reminder config
+pub async fn add_user_subscription(
+    app_state: &AppState,
+    user_id: &str,
+    config_id: i64,
+) -> Result<Value, String> {
+    use crate::database::reminders::ReminderSubscription;
+    ReminderSubscription::subscribe(&app_state.db, user_id, config_id)
+        .await
+        .map_err(|e| format!("DB error: {}", e))?;
+    Ok(json!({ "success": true }))
+}
+
+/// Unsubscribe a user from a reminder config
+pub async fn remove_user_subscription(
+    app_state: &AppState,
+    user_id: &str,
+    config_id: i64,
+) -> Result<Value, String> {
+    use crate::database::reminders::ReminderSubscription;
+    ReminderSubscription::unsubscribe(&app_state.db, user_id, config_id)
+        .await
+        .map_err(|e| format!("DB error: {}", e))?;
+    Ok(json!({ "success": true }))
+}
+
+/// Delete subscription by its database id (used for manage page)
+pub async fn remove_subscription_by_id(
+    app_state: &AppState,
+    subscription_id: i64,
+) -> Result<Value, String> {
+    use crate::database::reminders::ReminderSubscription;
+    ReminderSubscription::delete_by_id(&app_state.db, subscription_id)
+        .await
+        .map_err(|e| format!("DB error: {}", e))?;
+    Ok(json!({ "success": true }))
 }

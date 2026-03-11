@@ -21,3 +21,5 @@ chrono = { workspace = true }
 once_cell = { workspace = true }
 axum-extra = { workspace = true }
 clouder-core = { path = "../clouder-core" }
+serenity = { workspace = true }
+sqlx = { workspace = true }

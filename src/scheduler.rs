@@ -1,4 +1,4 @@
-use chrono::{Datelike, Duration, NaiveTime, Utc, Weekday};
+use chrono::{Duration, NaiveTime, Utc};
 use chrono_tz::Tz;
 use clouder_core::{
     config::AppState,
@@ -28,15 +28,15 @@ async fn run_due_reminders(state: &AppState) -> anyhow::Result<()> {
     let now_utc = Utc::now();
 
     // fetch all enabled reminders
-    let rows = sqlx::query_as::<_, (i64, String, String, Option<String>, Option<String>, Option<String>, String)>(
-        "SELECT id, guild_id, reminder_type, wysi_morning_time, wysi_evening_time, femboy_friday_time, timezone
+    let rows = sqlx::query_as::<_, (i64, String, String, Option<String>, Option<String>, String)>(
+        "SELECT id, guild_id, reminder_type, wysi_morning_time, wysi_evening_time, timezone
          FROM reminder_configs
          WHERE enabled = 1 AND channel_id IS NOT NULL",
     )
     .fetch_all(state.db.as_ref())
     .await?;
 
-    for (id, guild_id, reminder_type_str, morning, evening, friday_time, tz_str) in rows {
+    for (id, guild_id, reminder_type_str, morning, evening, tz_str) in rows {
         let Some(rtype) = ReminderType::parse(&reminder_type_str) else {
             continue;
         };
@@ -62,13 +62,7 @@ async fn run_due_reminders(state: &AppState) -> anyhow::Result<()> {
                 // fire if within the current minute window
                 is_within_minute(current, morning_time) || is_within_minute(current, evening_time)
             }
-            ReminderType::FemboyFriday => {
-                let trigger = parse_hhmm(friday_time.as_deref().unwrap_or("00:00"))
-                    .unwrap_or(NaiveTime::from_hms_opt(0, 0, 0).unwrap());
-                let current = now_local.time();
-                now_local.weekday() == Weekday::Fri && is_within_minute(current, trigger)
-            }
-            ReminderType::Custom => false, // TODO: custom reminders
+            ReminderType::Custom => false,
         };
 
         if !should_fire {
@@ -81,7 +75,11 @@ async fn run_due_reminders(state: &AppState) -> anyhow::Result<()> {
         }
 
         // fetch full config for message content
-        let config = match get_reminder_config(state, id).await {
+        let config = match ReminderConfig::get_by_id(&state.db, id)
+            .await
+            .ok()
+            .flatten()
+        {
             Some(c) => c,
             None => continue,
         };
@@ -129,7 +127,7 @@ async fn run_due_reminders(state: &AppState) -> anyhow::Result<()> {
         }
 
         // DM subscribers
-        let (dm_count, dm_failed) = send_dms(state, &config, &rtype, next_727.as_deref()).await;
+        let (dm_count, dm_failed) = send_dms(state, &config, &rtype).await;
 
         let status = if channel_sent { "success" } else { "error" };
         let err_msg = if !channel_sent {
@@ -157,7 +155,6 @@ async fn send_dms(
     state: &AppState,
     config: &ReminderConfig,
     rtype: &ReminderType,
-    _next_727: Option<&str>,
 ) -> (usize, usize) {
     let subs = match ReminderSubscription::get_by_config(&state.db, config.id).await {
         Ok(s) => s,
@@ -172,19 +169,16 @@ async fn send_dms(
         let settings = UserSettings::get(&state.db, &sub.user_id)
             .await
             .unwrap_or(None);
-        if let Some(ref s) = settings {
-            if !s.dm_reminders_enabled {
-                continue;
-            }
+        if settings.as_ref().is_some_and(|s| !s.dm_reminders_enabled) {
+            continue;
         }
 
         let user_tz = settings
             .as_ref()
-            .map(|s| s.timezone.parse::<Tz>().ok())
-            .flatten();
+            .and_then(|s| s.timezone.parse::<Tz>().ok());
 
         let next_str: Option<String> = match rtype {
-            ReminderType::Wysi => user_tz.as_ref().map(|tz| next_727_timestamp(tz)).flatten(),
+            ReminderType::Wysi => user_tz.as_ref().and_then(next_727_timestamp),
             _ => None,
         };
 
@@ -246,13 +240,11 @@ fn build_reminder_message(
                     .unwrap_or_default();
                 format!("it's 7:27! when you see it :3{}", countdown)
             }
-            ReminderType::FemboyFriday => "happy femboy friday :3".to_string(),
             ReminderType::Custom => String::new(),
         };
 
         let title = config.embed_title.as_deref().unwrap_or(match rtype {
             ReminderType::Wysi => "7:27",
-            ReminderType::FemboyFriday => "femboy friday",
             ReminderType::Custom => "reminder",
         });
 
@@ -275,7 +267,6 @@ fn build_reminder_message(
                     .unwrap_or_default();
                 format!("it's 7:27! when you see it :3{}", countdown)
             }
-            ReminderType::FemboyFriday => "happy femboy friday :3".to_string(),
             ReminderType::Custom => String::new(),
         };
 
@@ -298,7 +289,7 @@ fn build_reminder_message(
     msg
 }
 
-pub(crate) fn parse_hhmm(s: &str) -> Option<NaiveTime> {
+pub fn parse_hhmm(s: &str) -> Option<NaiveTime> {
     let parts: Vec<&str> = s.splitn(2, ':').collect();
     if parts.len() != 2 {
         return None;
@@ -313,7 +304,7 @@ fn is_within_minute(current: NaiveTime, target: NaiveTime) -> bool {
     diff >= Duration::zero() && diff < Duration::minutes(1)
 }
 
-pub(crate) fn next_727_timestamp(tz: &Tz) -> Option<String> {
+pub fn next_727_timestamp(tz: &Tz) -> Option<String> {
     let now = Utc::now().with_timezone(tz);
     let current_time = now.time();
     let morning = NaiveTime::from_hms_opt(7, 27, 0)?;
@@ -322,14 +313,12 @@ pub(crate) fn next_727_timestamp(tz: &Tz) -> Option<String> {
     let candidates = [morning, evening];
     let next = candidates
         .iter()
-        .filter_map(|&t| {
+        .map(|&t| {
             let diff = t.signed_duration_since(current_time);
             if diff > Duration::zero() {
-                Some(diff)
+                diff
             } else {
-                // tomorrow's morning
-                let tomorrow = Duration::hours(24) + diff;
-                Some(tomorrow)
+                Duration::hours(24) + diff
             }
         })
         .min()?;
@@ -351,124 +340,4 @@ async fn already_fired_recently(state: &AppState, config_id: i64, within_secs: i
     .await;
 
     matches!(result, Ok((n,)) if n > 0)
-}
-
-async fn get_reminder_config(state: &AppState, id: i64) -> Option<ReminderConfig> {
-    sqlx::query_as::<
-        _,
-        (
-            i64,
-            String,
-            String,
-            bool,
-            Option<String>,
-            String,
-            Option<String>,
-            Option<String>,
-            Option<String>,
-            Option<i64>,
-            Option<String>,
-            Option<String>,
-            Option<String>,
-            String,
-        ),
-    >(
-        "SELECT id, guild_id, reminder_type, enabled, channel_id, message_type,
-                message_content, embed_title, embed_description, embed_color,
-                wysi_morning_time, wysi_evening_time, femboy_friday_time, timezone
-         FROM reminder_configs WHERE id = ?",
-    )
-    .bind(id)
-    .fetch_optional(state.db.as_ref())
-    .await
-    .ok()
-    .flatten()
-    .map(
-        |(
-            id,
-            guild_id,
-            rt_str,
-            enabled,
-            channel_id,
-            message_type,
-            message_content,
-            embed_title,
-            embed_description,
-            embed_color,
-            wysi_morning,
-            wysi_evening,
-            femboy_time,
-            timezone,
-        )| {
-            use chrono::Utc;
-            ReminderConfig {
-                id,
-                guild_id,
-                reminder_type: ReminderType::parse(&rt_str).unwrap_or(ReminderType::Custom),
-                enabled,
-                channel_id,
-                message_type,
-                message_content,
-                embed_title,
-                embed_description,
-                embed_color,
-                wysi_morning_time: wysi_morning,
-                wysi_evening_time: wysi_evening,
-                femboy_friday_time: femboy_time,
-                timezone,
-                created_at: Utc::now(),
-                updated_at: Utc::now(),
-            }
-        },
-    )
-}
-
-/// Execute a reminder immediately for testing (called from web API)
-pub async fn fire_reminder_now(state: &AppState, config_id: i64) -> Result<(), String> {
-    let config = get_reminder_config(state, config_id)
-        .await
-        .ok_or("reminder config not found")?;
-
-    let channel_id: u64 = config
-        .channel_id
-        .as_deref()
-        .ok_or("no channel configured")?
-        .parse()
-        .map_err(|_| "invalid channel id")?;
-
-    let ping_roles =
-        clouder_core::database::reminders::ReminderPingRole::get_by_config(&state.db, config_id)
-            .await
-            .unwrap_or_default();
-
-    let role_mentions: String = ping_roles
-        .iter()
-        .map(|r| format!("<@&{}>", r.role_id))
-        .collect::<Vec<_>>()
-        .join(" ");
-
-    let tz: Tz = config.timezone.parse().unwrap_or(chrono_tz::UTC);
-
-    let next_727 = if config.reminder_type == ReminderType::Wysi {
-        next_727_timestamp(&tz)
-    } else {
-        None
-    };
-
-    let msg = build_reminder_message(
-        &config,
-        &config.reminder_type,
-        &role_mentions,
-        next_727.as_deref(),
-    );
-
-    state
-        .http
-        .send_message(ChannelId::new(channel_id), vec![], &msg)
-        .await
-        .map_err(|e| format!("failed to send: {}", e))?;
-
-    let _ = ReminderLog::create(&state.db, config_id, "success", None, true, 0, 0).await;
-
-    Ok(())
 }

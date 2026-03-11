@@ -608,12 +608,10 @@ async fn clouder_web_reminder_test(state: &AppState, config_id: i64) -> Result<(
 
     let default_title = match config.reminder_type {
         ReminderType::Wysi => "7:27",
-        ReminderType::FemboyFriday => "femboy friday",
         ReminderType::Custom => "reminder",
     };
     let default_desc = match config.reminder_type {
         ReminderType::Wysi => "it's 7:27! when you see it :3 (test)".to_string(),
-        ReminderType::FemboyFriday => "happy femboy friday :3 (test)".to_string(),
         ReminderType::Custom => "(test reminder)".to_string(),
     };
 

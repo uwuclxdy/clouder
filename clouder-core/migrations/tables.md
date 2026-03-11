@@ -30,7 +30,7 @@
 
 ### `reminder_configs`
 - primary key `id` (int)
-- `guild_id` (text), `reminder_type` (text: 'wysi'/'femboy_friday'/'custom'), `enabled` (boolean), `channel_id` (text, nullable), `message_type` (text: 'embed'/'text'), `message_content` (text, nullable), `embed_title` (text, nullable), `embed_description` (text, nullable), `embed_color` (integer, nullable), `wysi_morning_time` (text), `wysi_evening_time` (text), `femboy_friday_time` (text), `timezone` (text), `created_at` (datetime), `updated_at` (datetime)
+- `guild_id` (text), `reminder_type` (text: 'wysi'/'custom'), `enabled` (boolean), `channel_id` (text, nullable), `message_type` (text: 'embed'/'text'), `message_content` (text, nullable), `embed_title` (text, nullable), `embed_description` (text, nullable), `embed_color` (integer, nullable), `wysi_morning_time` (text), `wysi_evening_time` (text), `timezone` (text), `created_at` (datetime), `updated_at` (datetime)
 
 ### `reminder_ping_roles`
 - primary key `id` (int)

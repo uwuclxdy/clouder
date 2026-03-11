@@ -1,11 +1,9 @@
 #[cfg(test)]
 mod tests {
     use crate::tests::create_test_db;
-    use chrono::{Duration, Utc};
     use clouder_core::database::reminders::{
         ReminderConfig, ReminderPingRole, ReminderSubscription, ReminderType, UserSettings,
     };
-    use sqlx::SqlitePool;
 
     #[tokio::test]
     async fn test_user_settings_crud() {
@@ -49,7 +47,6 @@ mod tests {
             None,
             Some("08:00"),
             Some("20:00"),
-            None,
             "UTC",
         )
         .await
@@ -96,22 +93,24 @@ mod tests {
         let config_id = ReminderConfig::upsert(
             &db,
             guild,
-            &ReminderType::FemboyFriday,
+            &ReminderType::Wysi,
             Some("123"),
             "text",
             Some("hello"),
             None,
             None,
             None,
-            None,
-            Some("00:00"),
+            Some("07:27"),
+            Some("19:27"),
             "UTC",
         )
         .await
         .unwrap();
 
         // subscribe
-        ReminderSubscription::subscribe(&db, user, config_id).await.unwrap();
+        ReminderSubscription::subscribe(&db, user, config_id)
+            .await
+            .unwrap();
         let subs = ReminderSubscription::get_by_user(&db, user).await.unwrap();
         assert_eq!(subs.len(), 1);
         assert_eq!(subs[0].config_id, config_id);
@@ -124,7 +123,9 @@ mod tests {
         assert!(subs.is_empty());
 
         // subscribe twice and then unsubscribe all
-        ReminderSubscription::subscribe(&db, user, config_id).await.unwrap();
+        ReminderSubscription::subscribe(&db, user, config_id)
+            .await
+            .unwrap();
         ReminderSubscription::unsubscribe_all_for_user(&db, user)
             .await
             .unwrap();
@@ -134,7 +135,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_hhmm_parsing_and_next727() {
-        use clouder::scheduler::{parse_hhmm, next_727_timestamp};
+        use chrono::Timelike;
+        use clouder::scheduler::{next_727_timestamp, parse_hhmm};
         let t = parse_hhmm("07:27").unwrap();
         assert_eq!(t.hour(), 7);
         assert_eq!(t.minute(), 27);

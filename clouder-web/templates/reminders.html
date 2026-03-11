@@ -190,89 +190,6 @@
                 </div>
             </div>
 
-            <!-- Femboy Friday -->
-            <div class="section-card" id="femboy-card">
-                <span class="type-badge" style="color:var(--ctp-pink);">femboy friday</span>
-                <div class="section-header">
-                    <div>
-                        <span class="section-title">femboy friday</span>
-                        <p style="color:var(--ctp-subtext1);font-size:0.875rem;margin:4px 0 0;">fires when the timezone enters friday</p>
-                    </div>
-                    <div class="toggle-row">
-                        <input type="checkbox" id="femboy-enabled">
-                        <label for="femboy-enabled" style="color:var(--ctp-subtext1);">enabled</label>
-                    </div>
-                </div>
-
-                <div class="reminder-section" style="margin-top:var(--spacing-md);">
-                    <div class="form-group">
-                        <label for="femboy-channel">channel</label>
-                        <select id="femboy-channel">
-                            <option value="">select channel</option>
-                        </select>
-                    </div>
-
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label for="femboy-time">trigger time</label>
-                            <input type="time" id="femboy-time" value="00:00">
-                        </div>
-                        <div class="form-group">
-                            <label for="femboy-timezone">timezone</label>
-                            <select id="femboy-timezone"></select>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="femboy-roles">ping roles</label>
-                        <div style="display:flex;gap:var(--spacing-sm);align-items:center;">
-                            <select id="femboy-role-select" style="flex:1;">
-                                <option value="">add role...</option>
-                            </select>
-                            <button class="btn btn-sm" onclick="addRole('femboy')">add</button>
-                        </div>
-                        <div class="roles-container" id="femboy-roles"></div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="femboy-msg-type">message type</label>
-                        <select id="femboy-msg-type" onchange="toggleMsgType('femboy')">
-                            <option value="embed">embed</option>
-                            <option value="text">plain text</option>
-                        </select>
-                    </div>
-
-                    <div id="femboy-embed-fields">
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label for="femboy-embed-title">title</label>
-                                <input type="text" id="femboy-embed-title" placeholder="femboy friday">
-                            </div>
-                            <div class="form-group">
-                                <label for="femboy-embed-color">color</label>
-                                <input type="color" id="femboy-embed-color" value="#ff80d5" style="height:38px;padding:2px 4px">
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label for="femboy-embed-desc">description</label>
-                            <textarea id="femboy-embed-desc" placeholder="happy femboy friday :3"></textarea>
-                        </div>
-                    </div>
-
-                    <div id="femboy-text-fields" style="display:none;">
-                        <div class="form-group">
-                            <label for="femboy-content">message</label>
-                            <textarea id="femboy-content" placeholder="happy femboy friday :3"></textarea>
-                        </div>
-                    </div>
-
-                    <div style="display:flex;gap:var(--spacing-sm);margin-top:var(--spacing-sm);">
-                        <button class="btn btn-primary" onclick="saveReminder('femboy')">save</button>
-                        <button class="btn" id="femboy-test-btn" onclick="testReminder('femboy')" disabled>test now</button>
-                    </div>
-                </div>
-            </div>
-
             <!-- Custom (coming soon) -->
             <div class="section-card coming-soon-card">
                 <div class="section-header">
@@ -290,12 +207,11 @@
         const GUILD_ID = '{{GUILD_ID}}';
 
         // state
-        const roleState = { wysi: [], femboy: [] };
-        const configIds = { wysi: null, femboy: null };
+        const roleState = { wysi: [] };
+        const configIds = { wysi: null };
 
-        // map: reminder_type string → prefix used in DOM ids
-        const TYPE_MAP = { wysi: 'wysi', femboy_friday: 'femboy' };
-        const API_TYPE = { wysi: 'wysi', femboy: 'femboy_friday' };
+        const TYPE_MAP = { wysi: 'wysi' };
+        const API_TYPE = { wysi: 'wysi' };
 
         // ---- timezone list ----
         const TIMEZONES = [
@@ -316,7 +232,7 @@
         ];
 
         function populateTimezones() {
-            ['wysi-timezone', 'femboy-timezone'].forEach(id => {
+            ['wysi-timezone'].forEach(id => {
                 const sel = document.getElementById(id);
                 sel.innerHTML = TIMEZONES.map(tz =>
                     `<option value="${tz}"${tz === 'UTC' ? ' selected' : ''}>${tz}</option>`
@@ -338,7 +254,7 @@
             const data = await res.json();
             allRoles = data.roles || [];
             const opts = allRoles.map(r => `<option value="${escHtml(r.id)}">${escHtml(r.name)}</option>`).join('');
-            ['wysi-role-select', 'femboy-role-select'].forEach(id => {
+            ['wysi-role-select'].forEach(id => {
                 document.getElementById(id).insertAdjacentHTML('beforeend', opts);
             });
         }
@@ -374,7 +290,7 @@
                 .sort((a, b) => a.position - b.position)
                 .map(c => `<option value="${escHtml(c.id)}">#${escHtml(c.name)}</option>`)
                 .join('');
-            ['wysi-channel', 'femboy-channel'].forEach(id => {
+            ['wysi-channel'].forEach(id => {
                 document.getElementById(id).insertAdjacentHTML('beforeend', options);
             });
         }
@@ -394,14 +310,9 @@
 
                 if (cfg.channel_id) document.getElementById(`${prefix}-channel`).value = cfg.channel_id;
 
-                if (prefix === 'wysi') {
-                    if (cfg.wysi_morning_time) document.getElementById('wysi-morning').value = cfg.wysi_morning_time;
-                    if (cfg.wysi_evening_time) document.getElementById('wysi-evening').value = cfg.wysi_evening_time;
-                    if (cfg.timezone) document.getElementById('wysi-timezone').value = cfg.timezone;
-                } else {
-                    if (cfg.femboy_friday_time) document.getElementById('femboy-time').value = cfg.femboy_friday_time;
-                    if (cfg.timezone) document.getElementById('femboy-timezone').value = cfg.timezone;
-                }
+                if (cfg.wysi_morning_time) document.getElementById('wysi-morning').value = cfg.wysi_morning_time;
+                if (cfg.wysi_evening_time) document.getElementById('wysi-evening').value = cfg.wysi_evening_time;
+                if (cfg.timezone) document.getElementById('wysi-timezone').value = cfg.timezone;
 
                 document.getElementById(`${prefix}-msg-type`).value = cfg.message_type || 'embed';
                 toggleMsgType(prefix);
@@ -449,12 +360,8 @@
                 ping_roles: roleState[prefix],
             };
 
-            if (prefix === 'wysi') {
-                payload.wysi_morning_time = document.getElementById('wysi-morning').value;
-                payload.wysi_evening_time = document.getElementById('wysi-evening').value;
-            } else {
-                payload.femboy_friday_time = document.getElementById('femboy-time').value;
-            }
+            payload.wysi_morning_time = document.getElementById('wysi-morning').value;
+            payload.wysi_evening_time = document.getElementById('wysi-evening').value;
 
             const res = await apiFetch('POST', `/api/reminders/${GUILD_ID}`, payload);
             if (res.ok) {

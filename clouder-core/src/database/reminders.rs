@@ -231,6 +231,24 @@ impl ReminderConfig {
         Ok(row.map(parse_reminder_config_row))
     }
 
+    pub async fn get_by_id(pool: &SqlitePool, id: i64) -> Result<Option<Self>, sqlx::Error> {
+        let row = sqlx::query(
+            r#"
+            SELECT id, guild_id, reminder_type, enabled, channel_id, message_type,
+                   message_content, embed_title, embed_description, embed_color,
+                   wysi_morning_time, wysi_evening_time, femboy_friday_time,
+                   timezone, created_at, updated_at
+            FROM reminder_configs
+            WHERE id = ?
+            "#,
+        )
+        .bind(id)
+        .fetch_optional(pool)
+        .await?;
+
+        Ok(row.map(parse_reminder_config_row))
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub async fn upsert(
         pool: &SqlitePool,
@@ -500,6 +518,20 @@ impl ReminderSubscription {
             "#,
         )
         .bind(user_id)
+        .execute(pool)
+        .await?;
+
+        Ok(())
+    }
+
+    pub async fn delete_by_id(pool: &SqlitePool, sub_id: i64) -> Result<(), sqlx::Error> {
+        sqlx::query(
+            r#"
+            DELETE FROM reminder_subscriptions
+            WHERE id = ?
+            "#,
+        )
+        .bind(sub_id)
         .execute(pool)
         .await?;
 

@@ -11,12 +11,14 @@ pub use clouder_core::shared::{
 pub mod commands;
 mod events;
 mod logging;
+pub mod scheduler;
 
 pub use crate::commands::about::about;
 pub use crate::commands::help::help;
 pub use crate::commands::mediaonly::mediaonly;
 pub use crate::commands::purge::purge;
 pub use crate::commands::random::random;
+pub use crate::commands::reminders::reminders;
 pub use crate::commands::selfroles::selfroles;
 pub use crate::commands::uwufy::uwufy;
 pub use crate::events::event_handler;
@@ -74,6 +76,7 @@ async fn async_main() -> Result<()> {
                 mediaonly(),
                 random(),
                 uwufy(),
+                reminders(),
             ],
             event_handler: |ctx, event, framework, data| {
                 Box::pin(event_handler(ctx, event, framework, data))
@@ -112,6 +115,7 @@ async fn async_main() -> Result<()> {
     let app_state = AppState::new(config.clone(), Arc::new(db), http);
 
     start_cleanup_task(app_state.clone());
+    scheduler::start_scheduler(app_state.clone());
 
     info!("starting discord client");
 

@@ -107,6 +107,29 @@
 	-d '{"content": "hello from the api"}'</pre>
 			</div>
 		</div>
+
+		<!-- dm reminder settings -->
+		<div class="section-card" id="dm-settings-card">
+			<div class="section-header">
+				<span class="section-title">dm reminders</span>
+			</div>
+			<div class="form-group">
+				<label for="user-timezone">timezone</label>
+				<select id="user-timezone"></select>
+			</div>
+			<div class="form-group">
+				<label><input type="checkbox" id="user-dm-enabled"> enabled</label>
+			</div>
+			<button class="btn btn-primary" onclick="saveUserSettings()">save</button>
+		</div>
+
+		<!-- subscriptions list -->
+		<div class="section-card" id="subscriptions-card">
+			<div class="section-header">
+				<span class="section-title">subscriptions</span>
+			</div>
+			<ul id="subscriptions-list"></ul>
+		</div>
 	</main>
 
 	<script src="/static/app.js"></script>
@@ -137,6 +160,66 @@
 			}
 			regenCancel();
 		}
+
+        // user reminder utilities
+        async function loadUserSettings() {
+            try {
+                const res = await apiFetch('GET', '/api/user/dm_reminders');
+                if (!res.ok) return;
+                const data = await res.json();
+                document.getElementById('user-timezone').value = data.timezone || 'UTC';
+                document.getElementById('user-dm-enabled').checked = !!data.dm_reminders_enabled;
+            } catch {}
+        }
+
+        async function saveUserSettings() {
+            const tz = document.getElementById('user-timezone').value;
+            const enabled = document.getElementById('user-dm-enabled').checked;
+            const res = await apiFetch('POST', '/api/user/dm_reminders', { timezone: tz, dm_reminders_enabled: enabled });
+            if (res.ok) toast('settings saved', 'success');
+            else toast('save failed', 'error');
+        }
+
+        async function loadSubscriptions() {
+            try {
+                const res = await apiFetch('GET', '/api/user/subscriptions');
+                if (!res.ok) return;
+                const data = await res.json();
+                const list = document.getElementById('subscriptions-list');
+                list.innerHTML = '';
+                for (const s of data.subscriptions || []) {
+                    const li = document.createElement('li');
+                    li.textContent = `${s.reminder_type} in guild ${s.guild_id}`;
+                    const btn = document.createElement('button');
+                    btn.textContent = 'unsubscribe';
+                    btn.className = 'btn btn-sm';
+                    btn.onclick = async () => {
+                        const r = await apiFetch('DELETE', `/api/user/subscription/${s.subscription_id}`);
+                        if (r.ok) { loadSubscriptions(); toast('removed', 'success'); }
+                        else toast('failed', 'error');
+                    };
+                    li.appendChild(btn);
+                    list.appendChild(li);
+                }
+            } catch {}
+        }
+
+        function populateTimezones() {
+            const sel = document.getElementById('user-timezone');
+            if (!sel) return;
+            const zones = Intl.supportedValuesOf('timeZone');
+            for (const z of zones) {
+                const opt = document.createElement('option');
+                opt.value = z;
+                opt.textContent = z;
+                sel.appendChild(opt);
+            }
+        }
+
+        // boot
+        populateTimezones();
+        loadUserSettings();
+        loadSubscriptions();
 	</script>
 </body>
 

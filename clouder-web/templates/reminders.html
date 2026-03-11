@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>clouder // reminders</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        .reminder-section {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-md);
+        }
+
+        .type-badge {
+            font-size: 0.7rem;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            padding: 2px 8px;
+            background: var(--ctp-surface1);
+            color: var(--ctp-mauve);
+            border-radius: 4px;
+            display: inline-block;
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .time-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--spacing-sm);
+        }
+
+        .roles-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 6px;
+        }
+
+        .role-chip {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.8rem;
+            padding: 3px 8px;
+            background: var(--ctp-surface1);
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .role-chip:hover {
+            background: var(--ctp-surface2);
+        }
+
+        .role-chip .remove-icon {
+            color: var(--ctp-red);
+            font-size: 0.75rem;
+        }
+
+        .coming-soon-card {
+            opacity: 0.45;
+            pointer-events: none;
+            user-select: none;
+        }
+
+        .coming-soon-badge {
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            background: var(--ctp-surface1);
+            color: var(--ctp-subtext0);
+            border-radius: 4px;
+            display: inline-block;
+            margin-left: var(--spacing-sm);
+        }
+    </style>
+</head>
+
+<body>
+    <header class="topbar">
+        <div class="container topbar-inner">
+            <a href="/servers" class="logo" style="text-decoration:none;">clouder</a>
+            <div class="user-info">
+                <img src="{{AVATAR_URL}}" alt="" class="avatar">
+                <a href="/profile" class="username">{{USERNAME}}</a>
+                <a href="/auth/logout" class="btn btn-sm">sign out</a>
+            </div>
+        </div>
+    </header>
+
+    <div class="dashboard-layout container">
+        <nav class="sidebar">
+            <a href="/dashboard/{{GUILD_ID}}/about" class="sidebar-link">about</a>
+            <a href="/dashboard/{{GUILD_ID}}/selfroles" class="sidebar-link">self-roles</a>
+            <a href="/dashboard/{{GUILD_ID}}/welcome-goodbye" class="sidebar-link">welcome/goodbye</a>
+            <a href="/dashboard/{{GUILD_ID}}/reminders" class="sidebar-link active">reminders</a>
+            <a href="/dashboard/{{GUILD_ID}}/mediaonly" class="sidebar-link">media-only</a>
+            <a href="/dashboard/{{GUILD_ID}}/uwufy" class="sidebar-link">uwufy</a>
+        </nav>
+
+        <main class="dash-content">
+            <h2>reminders <span class="subtext">// scheduled messages</span></h2>
+
+            <!-- WYSI -->
+            <div class="section-card" id="wysi-card">
+                <span class="type-badge">wysi</span>
+                <div class="section-header">
+                    <div>
+                        <span class="section-title">7:27 reminder</span>
+                        <p style="color:var(--ctp-subtext1);font-size:0.875rem;margin:4px 0 0;">fires at 7:27 AM and 7:27 PM in the configured timezone</p>
+                    </div>
+                    <div class="toggle-row">
+                        <input type="checkbox" id="wysi-enabled">
+                        <label for="wysi-enabled" style="color:var(--ctp-subtext1);">enabled</label>
+                    </div>
+                </div>
+
+                <div class="reminder-section" style="margin-top:var(--spacing-md);">
+                    <div class="form-group">
+                        <label for="wysi-channel">channel</label>
+                        <select id="wysi-channel">
+                            <option value="">select channel</option>
+                        </select>
+                    </div>
+
+                    <div class="time-row">
+                        <div class="form-group">
+                            <label for="wysi-morning">morning time</label>
+                            <input type="time" id="wysi-morning" value="07:27">
+                        </div>
+                        <div class="form-group">
+                            <label for="wysi-evening">evening time</label>
+                            <input type="time" id="wysi-evening" value="19:27">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="wysi-timezone">timezone</label>
+                        <select id="wysi-timezone"></select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="wysi-roles">ping roles</label>
+                        <div style="display:flex;gap:var(--spacing-sm);align-items:center;">
+                            <select id="wysi-role-select" style="flex:1;">
+                                <option value="">add role...</option>
+                            </select>
+                            <button class="btn btn-sm" onclick="addRole('wysi')">add</button>
+                        </div>
+                        <div class="roles-container" id="wysi-roles"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="wysi-msg-type">message type</label>
+                        <select id="wysi-msg-type" onchange="toggleMsgType('wysi')">
+                            <option value="embed">embed</option>
+                            <option value="text">plain text</option>
+                        </select>
+                    </div>
+
+                    <div id="wysi-embed-fields">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="wysi-embed-title">title</label>
+                                <input type="text" id="wysi-embed-title" placeholder="7:27">
+                            </div>
+                            <div class="form-group">
+                                <label for="wysi-embed-color">color</label>
+                                <input type="color" id="wysi-embed-color" style="height:38px;padding:2px 4px">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="wysi-embed-desc">description</label>
+                            <textarea id="wysi-embed-desc" placeholder="it's 7:27! when you see it :3"></textarea>
+                        </div>
+                    </div>
+
+                    <div id="wysi-text-fields" style="display:none;">
+                        <div class="form-group">
+                            <label for="wysi-content">message</label>
+                            <textarea id="wysi-content" placeholder="it's 7:27! when you see it :3"></textarea>
+                        </div>
+                    </div>
+
+                    <div style="display:flex;gap:var(--spacing-sm);margin-top:var(--spacing-sm);">
+                        <button class="btn btn-primary" onclick="saveReminder('wysi')">save</button>
+                        <button class="btn" id="wysi-test-btn" onclick="testReminder('wysi')" disabled>test now</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Femboy Friday -->
+            <div class="section-card" id="femboy-card">
+                <span class="type-badge" style="color:var(--ctp-pink);">femboy friday</span>
+                <div class="section-header">
+                    <div>
+                        <span class="section-title">femboy friday</span>
+                        <p style="color:var(--ctp-subtext1);font-size:0.875rem;margin:4px 0 0;">fires when the timezone enters friday</p>
+                    </div>
+                    <div class="toggle-row">
+                        <input type="checkbox" id="femboy-enabled">
+                        <label for="femboy-enabled" style="color:var(--ctp-subtext1);">enabled</label>
+                    </div>
+                </div>
+
+                <div class="reminder-section" style="margin-top:var(--spacing-md);">
+                    <div class="form-group">
+                        <label for="femboy-channel">channel</label>
+                        <select id="femboy-channel">
+                            <option value="">select channel</option>
+                        </select>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="femboy-time">trigger time</label>
+                            <input type="time" id="femboy-time" value="00:00">
+                        </div>
+                        <div class="form-group">
+                            <label for="femboy-timezone">timezone</label>
+                            <select id="femboy-timezone"></select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="femboy-roles">ping roles</label>
+                        <div style="display:flex;gap:var(--spacing-sm);align-items:center;">
+                            <select id="femboy-role-select" style="flex:1;">
+                                <option value="">add role...</option>
+                            </select>
+                            <button class="btn btn-sm" onclick="addRole('femboy')">add</button>
+                        </div>
+                        <div class="roles-container" id="femboy-roles"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="femboy-msg-type">message type</label>
+                        <select id="femboy-msg-type" onchange="toggleMsgType('femboy')">
+                            <option value="embed">embed</option>
+                            <option value="text">plain text</option>
+                        </select>
+                    </div>
+
+                    <div id="femboy-embed-fields">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="femboy-embed-title">title</label>
+                                <input type="text" id="femboy-embed-title" placeholder="femboy friday">
+                            </div>
+                            <div class="form-group">
+                                <label for="femboy-embed-color">color</label>
+                                <input type="color" id="femboy-embed-color" value="#ff80d5" style="height:38px;padding:2px 4px">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="femboy-embed-desc">description</label>
+                            <textarea id="femboy-embed-desc" placeholder="happy femboy friday :3"></textarea>
+                        </div>
+                    </div>
+
+                    <div id="femboy-text-fields" style="display:none;">
+                        <div class="form-group">
+                            <label for="femboy-content">message</label>
+                            <textarea id="femboy-content" placeholder="happy femboy friday :3"></textarea>
+                        </div>
+                    </div>
+
+                    <div style="display:flex;gap:var(--spacing-sm);margin-top:var(--spacing-sm);">
+                        <button class="btn btn-primary" onclick="saveReminder('femboy')">save</button>
+                        <button class="btn" id="femboy-test-btn" onclick="testReminder('femboy')" disabled>test now</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Custom (coming soon) -->
+            <div class="section-card coming-soon-card">
+                <div class="section-header">
+                    <span class="section-title">custom reminders <span class="coming-soon-badge">coming soon</span></span>
+                </div>
+                <p style="color:var(--ctp-subtext0);font-size:0.875rem;margin-top:var(--spacing-sm);">
+                    cron-like scheduling, custom messages and embeds — not yet implemented
+                </p>
+            </div>
+        </main>
+    </div>
+
+    <script src="/static/app.js"></script>
+    <script>
+        const GUILD_ID = '{{GUILD_ID}}';
+
+        // state
+        const roleState = { wysi: [], femboy: [] };
+        const configIds = { wysi: null, femboy: null };
+
+        // map: reminder_type string → prefix used in DOM ids
+        const TYPE_MAP = { wysi: 'wysi', femboy_friday: 'femboy' };
+        const API_TYPE = { wysi: 'wysi', femboy: 'femboy_friday' };
+
+        // ---- timezone list ----
+        const TIMEZONES = [
+            'UTC','Africa/Cairo','Africa/Johannesburg','Africa/Lagos','America/Anchorage',
+            'America/Argentina/Buenos_Aires','America/Bogota','America/Chicago','America/Denver',
+            'America/Halifax','America/Los_Angeles','America/Mexico_City','America/New_York',
+            'America/Phoenix','America/Sao_Paulo','America/Toronto','America/Vancouver',
+            'Asia/Bangkok','Asia/Colombo','Asia/Dubai','Asia/Hong_Kong','Asia/Jakarta',
+            'Asia/Kabul','Asia/Karachi','Asia/Kolkata','Asia/Kuala_Lumpur','Asia/Manila',
+            'Asia/Seoul','Asia/Shanghai','Asia/Singapore','Asia/Taipei','Asia/Tehran',
+            'Asia/Tokyo','Atlantic/Reykjavik','Australia/Melbourne','Australia/Perth',
+            'Australia/Sydney','Europe/Amsterdam','Europe/Athens','Europe/Berlin',
+            'Europe/Brussels','Europe/Bucharest','Europe/Copenhagen','Europe/Dublin',
+            'Europe/Helsinki','Europe/Istanbul','Europe/Kyiv','Europe/Lisbon','Europe/London',
+            'Europe/Madrid','Europe/Moscow','Europe/Oslo','Europe/Paris','Europe/Prague',
+            'Europe/Rome','Europe/Stockholm','Europe/Vienna','Europe/Warsaw','Europe/Zurich',
+            'Pacific/Auckland','Pacific/Fiji','Pacific/Honolulu',
+        ];
+
+        function populateTimezones() {
+            ['wysi-timezone', 'femboy-timezone'].forEach(id => {
+                const sel = document.getElementById(id);
+                sel.innerHTML = TIMEZONES.map(tz =>
+                    `<option value="${tz}"${tz === 'UTC' ? ' selected' : ''}>${tz}</option>`
+                ).join('');
+            });
+        }
+
+        function toggleMsgType(prefix) {
+            const type = document.getElementById(`${prefix}-msg-type`).value;
+            document.getElementById(`${prefix}-embed-fields`).style.display = type === 'embed' ? 'block' : 'none';
+            document.getElementById(`${prefix}-text-fields`).style.display = type === 'text' ? 'block' : 'none';
+        }
+
+        // ---- roles ----
+        let allRoles = [];
+
+        async function loadRoles() {
+            const res = await apiFetch('GET', `/api/guild/${GUILD_ID}/roles`);
+            const data = await res.json();
+            allRoles = data.roles || [];
+            const opts = allRoles.map(r => `<option value="${escHtml(r.id)}">${escHtml(r.name)}</option>`).join('');
+            ['wysi-role-select', 'femboy-role-select'].forEach(id => {
+                document.getElementById(id).insertAdjacentHTML('beforeend', opts);
+            });
+        }
+
+        function addRole(prefix) {
+            const sel = document.getElementById(`${prefix}-role-select`);
+            const roleId = sel.value;
+            if (!roleId) return;
+            if (roleState[prefix].includes(roleId)) return;
+            roleState[prefix].push(roleId);
+            renderRoles(prefix);
+        }
+
+        function removeRole(prefix, roleId) {
+            roleState[prefix] = roleState[prefix].filter(r => r !== roleId);
+            renderRoles(prefix);
+        }
+
+        function renderRoles(prefix) {
+            const container = document.getElementById(`${prefix}-roles`);
+            container.innerHTML = roleState[prefix].map(id => {
+                const role = allRoles.find(r => r.id === id);
+                const name = role ? escHtml(role.name) : id;
+                return `<span class="role-chip" onclick="removeRole('${prefix}','${id}')">${name} <span class="remove-icon">✕</span></span>`;
+            }).join('');
+        }
+
+        // ---- load channels ----
+        async function loadChannels() {
+            const res = await apiFetch('GET', `/api/guild/${GUILD_ID}/channels`);
+            const data = await res.json();
+            const options = (data.channels || [])
+                .sort((a, b) => a.position - b.position)
+                .map(c => `<option value="${escHtml(c.id)}">#${escHtml(c.name)}</option>`)
+                .join('');
+            ['wysi-channel', 'femboy-channel'].forEach(id => {
+                document.getElementById(id).insertAdjacentHTML('beforeend', options);
+            });
+        }
+
+        // ---- load config ----
+        async function loadConfigs() {
+            const res = await apiFetch('GET', `/api/reminders/${GUILD_ID}`);
+            const data = await res.json();
+            const configs = data.configs || [];
+
+            for (const cfg of configs) {
+                const prefix = TYPE_MAP[cfg.reminder_type];
+                if (!prefix) continue;
+                configIds[prefix] = cfg.id;
+
+                document.getElementById(`${prefix}-enabled`).checked = cfg.enabled;
+
+                if (cfg.channel_id) document.getElementById(`${prefix}-channel`).value = cfg.channel_id;
+
+                if (prefix === 'wysi') {
+                    if (cfg.wysi_morning_time) document.getElementById('wysi-morning').value = cfg.wysi_morning_time;
+                    if (cfg.wysi_evening_time) document.getElementById('wysi-evening').value = cfg.wysi_evening_time;
+                    if (cfg.timezone) document.getElementById('wysi-timezone').value = cfg.timezone;
+                } else {
+                    if (cfg.femboy_friday_time) document.getElementById('femboy-time').value = cfg.femboy_friday_time;
+                    if (cfg.timezone) document.getElementById('femboy-timezone').value = cfg.timezone;
+                }
+
+                document.getElementById(`${prefix}-msg-type`).value = cfg.message_type || 'embed';
+                toggleMsgType(prefix);
+
+                if (cfg.embed_title) document.getElementById(`${prefix}-embed-title`).value = cfg.embed_title;
+                if (cfg.embed_description) document.getElementById(`${prefix}-embed-desc`).value = cfg.embed_description;
+                if (cfg.embed_color) {
+                    const el = document.getElementById(`${prefix}-embed-color`);
+                    el.value = '#' + (cfg.embed_color & 0xFFFFFF).toString(16).padStart(6, '0');
+                }
+                if (cfg.message_content) document.getElementById(`${prefix}-content`).value = cfg.message_content;
+
+                // ping roles
+                roleState[prefix] = cfg.ping_roles || [];
+                renderRoles(prefix);
+
+                // enable test button if we have a config id and channel
+                if (cfg.id) document.getElementById(`${prefix}-test-btn`).disabled = false;
+            }
+        }
+
+        // ---- save ----
+        async function saveReminder(prefix) {
+            const channelEl = document.getElementById(`${prefix}-channel`);
+            channelEl.classList.remove('input-error');
+
+            const enabled = document.getElementById(`${prefix}-enabled`).checked;
+            if (enabled && !channelEl.value) {
+                channelEl.classList.add('input-error');
+                toast('select a channel', 'error');
+                return;
+            }
+
+            const msgType = document.getElementById(`${prefix}-msg-type`).value;
+            const payload = {
+                reminder_type: API_TYPE[prefix],
+                enabled,
+                channel_id: channelEl.value || null,
+                message_type: msgType,
+                message_content: document.getElementById(`${prefix}-content`).value || null,
+                embed_title: document.getElementById(`${prefix}-embed-title`).value || null,
+                embed_description: document.getElementById(`${prefix}-embed-desc`).value || null,
+                embed_color: parseInt(document.getElementById(`${prefix}-embed-color`).value.replace('#', ''), 16) || null,
+                timezone: document.getElementById(`${prefix}-timezone`).value,
+                ping_roles: roleState[prefix],
+            };
+
+            if (prefix === 'wysi') {
+                payload.wysi_morning_time = document.getElementById('wysi-morning').value;
+                payload.wysi_evening_time = document.getElementById('wysi-evening').value;
+            } else {
+                payload.femboy_friday_time = document.getElementById('femboy-time').value;
+            }
+
+            const res = await apiFetch('POST', `/api/reminders/${GUILD_ID}`, payload);
+            if (res.ok) {
+                const data = await res.json();
+                configIds[prefix] = data.id;
+                document.getElementById(`${prefix}-test-btn`).disabled = false;
+                toast('reminders saved', 'success');
+            } else {
+                toast('save failed', 'error');
+            }
+        }
+
+        // ---- test ----
+        async function testReminder(prefix) {
+            const id = configIds[prefix];
+            if (!id) { toast('save first', 'error'); return; }
+            const res = await apiFetch('POST', `/api/reminders/${GUILD_ID}/${id}/test`);
+            toast(res.ok ? 'test reminder sent!' : 'send failed', res.ok ? 'success' : 'error');
+        }
+
+        function escHtml(s) {
+            if (s == null) return '';
+            return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        // boot
+        populateTimezones();
+        Promise.all([loadChannels(), loadRoles()]).then(loadConfigs);
+    </script>
+</body>
+
+</html>

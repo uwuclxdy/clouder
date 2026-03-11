@@ -57,6 +57,10 @@ pub async fn run(app_state: AppState) -> Result<()> {
             get(dashboard::mediaonly_page),
         )
         .route("/dashboard/{guild_id}/uwufy", get(dashboard::uwufy_page))
+        .route(
+            "/dashboard/{guild_id}/reminders",
+            get(dashboard::reminders_page),
+        )
         .route("/profile", get(dashboard::profile_page))
         // auth
         .route("/auth/login", get(auth::login))
@@ -111,6 +115,35 @@ pub async fn run(app_state: AppState) -> Result<()> {
         )
         .route("/api/profile/regenerate-key", post(api::api_regenerate_key))
         .route("/api/{user_id}", post(api::api_send_dm))
+        .route(
+            "/api/reminders/{guild_id}",
+            get(api::api_reminders_get).post(api::api_reminders_post),
+        )
+        .route(
+            "/api/reminders/{guild_id}/{config_id}/test",
+            post(api::api_reminders_test),
+        )
+        // user-specific reminder endpoints
+        .route(
+            "/api/user/dm_reminders",
+            get(api::api_user_dm_reminders_get).post(api::api_user_dm_reminders_post),
+        )
+        .route(
+            "/api/user/subscriptions",
+            get(api::api_user_subscriptions_get),
+        )
+        .route(
+            "/api/user/subscribe/{config_id}",
+            post(api::api_user_subscribe),
+        )
+        .route(
+            "/api/user/unsubscribe/{config_id}",
+            axum::routing::delete(api::api_user_unsubscribe),
+        )
+        .route(
+            "/api/user/subscription/{id}",
+            axum::routing::delete(api::api_user_subscription_delete),
+        )
         .with_state(state.clone());
 
     let listener = tokio::net::TcpListener::bind(&state.app_state.config.web.bind_addr).await?;

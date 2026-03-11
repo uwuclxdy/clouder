@@ -20,6 +20,16 @@ impl CachedGuild {
         .await?)
     }
 
+    pub async fn user_has_guild(pool: &SqlitePool, user_id: &str, guild_id: &str) -> Result<bool> {
+        Ok(sqlx::query_scalar::<_, bool>(
+            "SELECT EXISTS(SELECT 1 FROM user_guild_cache WHERE user_id = ? AND guild_id = ?)",
+        )
+        .bind(user_id)
+        .bind(guild_id)
+        .fetch_one(pool)
+        .await?)
+    }
+
     pub async fn replace_for_user(
         pool: &SqlitePool,
         user_id: &str,

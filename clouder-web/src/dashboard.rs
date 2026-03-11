@@ -14,6 +14,7 @@ static MEDIAONLY_HTML: &str = include_str!("../templates/mediaonly.html");
 static ABOUT_HTML: &str = include_str!("../templates/about.html");
 static UWUFY_HTML: &str = include_str!("../templates/uwufy.html");
 static PROFILE_HTML: &str = include_str!("../templates/profile.html");
+static REMINDERS_HTML: &str = include_str!("../templates/reminders.html");
 
 fn html_escape(s: &str) -> String {
     s.replace('&', "&amp;")
@@ -265,6 +266,25 @@ pub async fn profile_page(State(state): State<WebState>, jar: SignedCookieJar) -
             ("API_KEY", &dashboard_user.api_key),
             ("USER_ID", &user.user_id),
             ("API_BASE", api_base),
+        ],
+    ))
+    .into_response()
+}
+
+pub async fn reminders_page(
+    _state: State<WebState>,
+    jar: SignedCookieJar,
+    Path(guild_id): Path<String>,
+) -> Response {
+    let Some(user) = session::extract(&jar) else {
+        return Redirect::to("/login").into_response();
+    };
+    Html(render(
+        REMINDERS_HTML,
+        &[
+            ("USERNAME", &user.username),
+            ("AVATAR_URL", &user.avatar_url()),
+            ("GUILD_ID", &guild_id),
         ],
     ))
     .into_response()

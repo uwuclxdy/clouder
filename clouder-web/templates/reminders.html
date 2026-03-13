@@ -190,14 +190,110 @@
                 </div>
             </div>
 
-            <!-- Custom (coming soon) -->
-            <div class="section-card coming-soon-card">
+            <!-- Custom Reminders -->
+            <div class="section-card" id="custom-card">
+                <span class="type-badge">custom</span>
                 <div class="section-header">
-                    <span class="section-title">custom reminders <span class="coming-soon-badge">coming soon</span></span>
+                    <span class="section-title">custom reminders <span class="subtext" id="custom-count">0/10</span></span>
+                    <button class="btn btn-sm" onclick="showCustomForm(null)">add</button>
                 </div>
-                <p style="color:var(--ctp-subtext0);font-size:0.875rem;margin-top:var(--spacing-sm);">
-                    cron-like scheduling, custom messages and embeds — not yet implemented
-                </p>
+
+                <div id="custom-list" style="margin-top:var(--spacing-md);display:flex;flex-direction:column;gap:var(--spacing-sm);"></div>
+
+                <div id="custom-form" style="display:none;margin-top:var(--spacing-md);border-top:1px solid var(--ctp-surface1);padding-top:var(--spacing-md);">
+                    <input type="hidden" id="custom-edit-id" value="">
+                    <div class="reminder-section">
+                        <div class="form-group">
+                            <label for="custom-name">name</label>
+                            <input type="text" id="custom-name" placeholder="reminder name" maxlength="64">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="custom-channel">channel</label>
+                            <select id="custom-channel">
+                                <option value="">select channel</option>
+                            </select>
+                        </div>
+
+                        <div class="time-row">
+                            <div class="form-group">
+                                <label for="custom-time">schedule time</label>
+                                <input type="time" id="custom-time" value="09:00">
+                            </div>
+                            <div class="form-group">
+                                <label for="custom-timezone">timezone</label>
+                                <select id="custom-timezone"></select>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>schedule days <span class="subtext">unchecked = every day</span></label>
+                            <div style="display:flex;flex-wrap:wrap;gap:var(--spacing-sm);margin-top:4px;">
+                                <label class="toggle-row" style="gap:4px;"><input type="checkbox" class="custom-day" value="0"> sun</label>
+                                <label class="toggle-row" style="gap:4px;"><input type="checkbox" class="custom-day" value="1"> mon</label>
+                                <label class="toggle-row" style="gap:4px;"><input type="checkbox" class="custom-day" value="2"> tue</label>
+                                <label class="toggle-row" style="gap:4px;"><input type="checkbox" class="custom-day" value="3"> wed</label>
+                                <label class="toggle-row" style="gap:4px;"><input type="checkbox" class="custom-day" value="4"> thu</label>
+                                <label class="toggle-row" style="gap:4px;"><input type="checkbox" class="custom-day" value="5"> fri</label>
+                                <label class="toggle-row" style="gap:4px;"><input type="checkbox" class="custom-day" value="6"> sat</label>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="custom-roles">ping roles</label>
+                            <div style="display:flex;gap:var(--spacing-sm);align-items:center;">
+                                <select id="custom-role-select" style="flex:1;">
+                                    <option value="">add role...</option>
+                                </select>
+                                <button class="btn btn-sm" onclick="addRole(currentCustomRoleKey())">add</button>
+                            </div>
+                            <div class="roles-container" id="custom-roles"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="custom-msg-type">message type</label>
+                            <select id="custom-msg-type" onchange="toggleMsgType('custom')">
+                                <option value="embed">embed</option>
+                                <option value="text">plain text</option>
+                            </select>
+                        </div>
+
+                        <div id="custom-embed-fields">
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="custom-embed-title">title</label>
+                                    <input type="text" id="custom-embed-title" placeholder="embed title">
+                                </div>
+                                <div class="form-group">
+                                    <label for="custom-embed-color">color</label>
+                                    <input type="color" id="custom-embed-color" value="#ffffff" style="height:38px;padding:2px 4px">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="custom-embed-desc">description</label>
+                                <textarea id="custom-embed-desc" placeholder="embed description"></textarea>
+                            </div>
+                        </div>
+
+                        <div id="custom-text-fields" style="display:none;">
+                            <div class="form-group">
+                                <label for="custom-content">message</label>
+                                <textarea id="custom-content" placeholder="message content"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="toggle-row" style="margin-top:var(--spacing-sm);">
+                            <input type="checkbox" id="custom-enabled" checked>
+                            <label for="custom-enabled" style="color:var(--ctp-subtext1);">enabled</label>
+                        </div>
+
+                        <div style="display:flex;gap:var(--spacing-sm);margin-top:var(--spacing-sm);">
+                            <button class="btn btn-primary" onclick="saveCustomReminder()">save</button>
+                            <button class="btn" onclick="hideCustomForm()">cancel</button>
+                            <button class="btn" id="custom-test-btn" onclick="testCustomReminder()" style="display:none;">test now</button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </main>
     </div>
@@ -209,6 +305,8 @@
         // state
         const roleState = { wysi: [] };
         const configIds = { wysi: null };
+        let customReminders = [];
+        let editingCustomId = null;
 
         const TYPE_MAP = { wysi: 'wysi' };
         const API_TYPE = { wysi: 'wysi' };
@@ -232,7 +330,7 @@
         ];
 
         function populateTimezones() {
-            ['wysi-timezone'].forEach(id => {
+            ['wysi-timezone', 'custom-timezone'].forEach(id => {
                 const sel = document.getElementById(id);
                 sel.innerHTML = TIMEZONES.map(tz =>
                     `<option value="${tz}"${tz === 'UTC' ? ' selected' : ''}>${tz}</option>`
@@ -249,32 +347,41 @@
         // ---- roles ----
         let allRoles = [];
 
+        function currentCustomRoleKey() {
+            return editingCustomId ? `custom-${editingCustomId}` : 'custom-new';
+        }
+
         async function loadRoles() {
             const res = await apiFetch('GET', `/api/guild/${GUILD_ID}/roles`);
             const data = await res.json();
             allRoles = data.roles || [];
             const opts = allRoles.map(r => `<option value="${escHtml(r.id)}">${escHtml(r.name)}</option>`).join('');
-            ['wysi-role-select'].forEach(id => {
+            ['wysi-role-select', 'custom-role-select'].forEach(id => {
                 document.getElementById(id).insertAdjacentHTML('beforeend', opts);
             });
         }
 
         function addRole(prefix) {
-            const sel = document.getElementById(`${prefix}-role-select`);
+            const selId = prefix.startsWith('custom') ? 'custom-role-select' : `${prefix}-role-select`;
+            const sel = document.getElementById(selId);
             const roleId = sel.value;
             if (!roleId) return;
+            if (!roleState[prefix]) roleState[prefix] = [];
             if (roleState[prefix].includes(roleId)) return;
             roleState[prefix].push(roleId);
             renderRoles(prefix);
         }
 
         function removeRole(prefix, roleId) {
+            if (!roleState[prefix]) return;
             roleState[prefix] = roleState[prefix].filter(r => r !== roleId);
             renderRoles(prefix);
         }
 
         function renderRoles(prefix) {
-            const container = document.getElementById(`${prefix}-roles`);
+            const containerId = prefix.startsWith('custom') ? 'custom-roles' : `${prefix}-roles`;
+            const container = document.getElementById(containerId);
+            if (!roleState[prefix]) roleState[prefix] = [];
             container.innerHTML = roleState[prefix].map(id => {
                 const role = allRoles.find(r => r.id === id);
                 const name = role ? escHtml(role.name) : id;
@@ -290,7 +397,7 @@
                 .sort((a, b) => a.position - b.position)
                 .map(c => `<option value="${escHtml(c.id)}">#${escHtml(c.name)}</option>`)
                 .join('');
-            ['wysi-channel'].forEach(id => {
+            ['wysi-channel', 'custom-channel'].forEach(id => {
                 document.getElementById(id).insertAdjacentHTML('beforeend', options);
             });
         }
@@ -387,9 +494,194 @@
             return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
         }
 
+        // ---- custom reminders ----
+
+        function formatScheduleDays(days) {
+            if (!days || days.trim() === '') return 'daily';
+            const nums = days.split(',').map(Number).sort();
+            if (nums.length === 7) return 'daily';
+            const names = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+            // check for contiguous ranges
+            if (nums.length >= 3) {
+                const isContiguous = nums.every((n, i) => i === 0 || n === nums[i - 1] + 1);
+                if (isContiguous) {
+                    return `${names[nums[0]]}-${names[nums[nums.length - 1]]}`;
+                }
+            }
+            return nums.map(n => names[n]).join(', ');
+        }
+
+        async function loadCustomReminders() {
+            const res = await apiFetch('GET', `/api/custom-reminders/${GUILD_ID}`);
+            if (!res.ok) return;
+            const data = await res.json();
+            customReminders = data.reminders || [];
+            document.getElementById('custom-count').textContent = `${customReminders.length}/10`;
+            renderCustomList();
+        }
+
+        function renderCustomList() {
+            const list = document.getElementById('custom-list');
+            if (customReminders.length === 0) {
+                list.innerHTML = '<p style="color:var(--ctp-subtext0);font-size:0.875rem;">no custom reminders yet</p>';
+                return;
+            }
+            list.innerHTML = customReminders.map(r => {
+                const schedule = `${r.schedule_time} ${formatScheduleDays(r.schedule_days)}`;
+                const status = r.enabled
+                    ? '<span style="color:var(--ctp-green);font-size:0.75rem;">enabled</span>'
+                    : '<span style="color:var(--ctp-subtext0);font-size:0.75rem;">disabled</span>';
+                return `<div style="display:flex;align-items:center;justify-content:space-between;padding:var(--spacing-sm) var(--spacing-md);background:var(--ctp-surface0);border-radius:8px;">
+                    <div>
+                        <strong>${escHtml(r.name)}</strong>
+                        <span style="color:var(--ctp-subtext1);font-size:0.8rem;margin-left:var(--spacing-sm);">${escHtml(schedule)}</span>
+                        <span style="margin-left:var(--spacing-sm);">${status}</span>
+                    </div>
+                    <div style="display:flex;gap:var(--spacing-sm);">
+                        <button class="btn btn-sm" onclick="showCustomForm(${r.id})">edit</button>
+                        <button class="btn btn-sm" onclick="deleteCustomReminder(${r.id})" style="color:var(--ctp-red);">delete</button>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        function showCustomForm(reminderId) {
+            const form = document.getElementById('custom-form');
+            form.style.display = 'block';
+            editingCustomId = reminderId;
+            document.getElementById('custom-edit-id').value = reminderId || '';
+
+            if (reminderId) {
+                const r = customReminders.find(x => x.id === reminderId);
+                if (!r) return;
+                document.getElementById('custom-name').value = r.name || '';
+                document.getElementById('custom-channel').value = r.channel_id || '';
+                document.getElementById('custom-time').value = r.schedule_time || '09:00';
+                document.getElementById('custom-timezone').value = r.timezone || 'UTC';
+                document.getElementById('custom-enabled').checked = r.enabled;
+                document.getElementById('custom-msg-type').value = r.message_type || 'embed';
+                toggleMsgType('custom');
+                document.getElementById('custom-embed-title').value = r.embed_title || '';
+                document.getElementById('custom-embed-desc').value = r.embed_description || '';
+                if (r.embed_color) {
+                    document.getElementById('custom-embed-color').value = '#' + (r.embed_color & 0xFFFFFF).toString(16).padStart(6, '0');
+                } else {
+                    document.getElementById('custom-embed-color').value = '#ffffff';
+                }
+                document.getElementById('custom-content').value = r.message_content || '';
+
+                // schedule days
+                document.querySelectorAll('.custom-day').forEach(cb => {
+                    cb.checked = false;
+                });
+                if (r.schedule_days) {
+                    r.schedule_days.split(',').forEach(d => {
+                        const cb = document.querySelector(`.custom-day[value="${d.trim()}"]`);
+                        if (cb) cb.checked = true;
+                    });
+                }
+
+                // roles
+                const key = `custom-${reminderId}`;
+                roleState[key] = r.ping_roles || [];
+                renderRoles(key);
+
+                document.getElementById('custom-test-btn').style.display = '';
+            } else {
+                document.getElementById('custom-name').value = '';
+                document.getElementById('custom-channel').value = '';
+                document.getElementById('custom-time').value = '09:00';
+                document.getElementById('custom-timezone').value = 'UTC';
+                document.getElementById('custom-enabled').checked = true;
+                document.getElementById('custom-msg-type').value = 'embed';
+                toggleMsgType('custom');
+                document.getElementById('custom-embed-title').value = '';
+                document.getElementById('custom-embed-desc').value = '';
+                document.getElementById('custom-embed-color').value = '#ffffff';
+                document.getElementById('custom-content').value = '';
+                document.querySelectorAll('.custom-day').forEach(cb => { cb.checked = false; });
+
+                roleState['custom-new'] = [];
+                renderRoles('custom-new');
+
+                document.getElementById('custom-test-btn').style.display = 'none';
+            }
+        }
+
+        function hideCustomForm() {
+            document.getElementById('custom-form').style.display = 'none';
+            editingCustomId = null;
+        }
+
+        async function saveCustomReminder() {
+            const name = document.getElementById('custom-name').value.trim();
+            if (!name) { toast('name is required', 'error'); return; }
+
+            const channelEl = document.getElementById('custom-channel');
+            channelEl.classList.remove('input-error');
+            const enabled = document.getElementById('custom-enabled').checked;
+            if (enabled && !channelEl.value) {
+                channelEl.classList.add('input-error');
+                toast('select a channel', 'error');
+                return;
+            }
+
+            const selectedDays = Array.from(document.querySelectorAll('.custom-day:checked')).map(cb => cb.value);
+            const msgType = document.getElementById('custom-msg-type').value;
+            const roleKey = currentCustomRoleKey();
+
+            const payload = {
+                name,
+                enabled,
+                channel_id: channelEl.value || null,
+                schedule_time: document.getElementById('custom-time').value,
+                schedule_days: selectedDays.join(','),
+                timezone: document.getElementById('custom-timezone').value,
+                message_type: msgType,
+                message_content: document.getElementById('custom-content').value || null,
+                embed_title: document.getElementById('custom-embed-title').value || null,
+                embed_description: document.getElementById('custom-embed-desc').value || null,
+                embed_color: parseInt(document.getElementById('custom-embed-color').value.replace('#', ''), 16) || null,
+                ping_roles: roleState[roleKey] || [],
+            };
+
+            let res;
+            if (editingCustomId) {
+                res = await apiFetch('PUT', `/api/custom-reminders/${GUILD_ID}/${editingCustomId}`, payload);
+            } else {
+                res = await apiFetch('POST', `/api/custom-reminders/${GUILD_ID}`, payload);
+            }
+
+            if (res.ok) {
+                toast(editingCustomId ? 'reminder updated' : 'reminder created', 'success');
+                hideCustomForm();
+                await loadCustomReminders();
+            } else {
+                toast('save failed', 'error');
+            }
+        }
+
+        async function deleteCustomReminder(id) {
+            if (!confirm('delete this reminder?')) return;
+            const res = await apiFetch('DELETE', `/api/custom-reminders/${GUILD_ID}/${id}`);
+            if (res.ok) {
+                toast('reminder deleted', 'success');
+                if (editingCustomId === id) hideCustomForm();
+                await loadCustomReminders();
+            } else {
+                toast('delete failed', 'error');
+            }
+        }
+
+        async function testCustomReminder() {
+            if (!editingCustomId) { toast('save first', 'error'); return; }
+            const res = await apiFetch('POST', `/api/custom-reminders/${GUILD_ID}/${editingCustomId}/test`);
+            toast(res.ok ? 'test reminder sent!' : 'send failed', res.ok ? 'success' : 'error');
+        }
+
         // boot
         populateTimezones();
-        Promise.all([loadChannels(), loadRoles()]).then(loadConfigs);
+        Promise.all([loadChannels(), loadRoles()]).then(() => Promise.all([loadConfigs(), loadCustomReminders()]));
     </script>
 </body>
 

@@ -758,3 +758,188 @@ pub async fn api_user_subscription_delete(
         }
     }
 }
+
+// custom reminder endpoints
+
+pub async fn api_custom_reminders_list(
+    auth: Auth,
+    Path(guild_id): Path<String>,
+    State(state): State<AppState>,
+) -> Result<Json<Value>, StatusCode> {
+    require_guild_access(&state, &auth.0.user_id, &guild_id).await?;
+    let guild_id_u64 = guild_id.parse().map_err(|_| StatusCode::BAD_REQUEST)?;
+    match clouder_core::shared::get_custom_reminders(&state, guild_id_u64).await {
+        Ok(result) => Ok(Json(result)),
+        Err(e) => {
+            error!("failed to list custom reminders: {}", e);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
+}
+
+pub async fn api_custom_reminder_create(
+    auth: Auth,
+    Path(guild_id): Path<String>,
+    State(state): State<AppState>,
+    Json(payload): Json<Value>,
+) -> Result<Json<Value>, StatusCode> {
+    require_guild_access(&state, &auth.0.user_id, &guild_id).await?;
+    let guild_id_u64 = guild_id.parse().map_err(|_| StatusCode::BAD_REQUEST)?;
+    match clouder_core::shared::create_custom_reminder(&state, guild_id_u64, &payload).await {
+        Ok(result) => {
+            info!("custom reminder created for guild {}", guild_id);
+            Ok(Json(result))
+        }
+        Err(e) => {
+            error!("failed to create custom reminder: {}", e);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
+}
+
+pub async fn api_custom_reminder_update(
+    auth: Auth,
+    Path((guild_id, reminder_id)): Path<(String, String)>,
+    State(state): State<AppState>,
+    Json(payload): Json<Value>,
+) -> Result<Json<Value>, StatusCode> {
+    require_guild_access(&state, &auth.0.user_id, &guild_id).await?;
+    let guild_id_u64 = guild_id.parse().map_err(|_| StatusCode::BAD_REQUEST)?;
+    let reminder_id_i64: i64 = reminder_id.parse().map_err(|_| StatusCode::BAD_REQUEST)?;
+    match clouder_core::shared::update_custom_reminder(
+        &state,
+        guild_id_u64,
+        reminder_id_i64,
+        &payload,
+    )
+    .await
+    {
+        Ok(result) => {
+            info!(
+                "custom reminder {} updated for guild {}",
+                reminder_id, guild_id
+            );
+            Ok(Json(result))
+        }
+        Err(e) => {
+            error!("failed to update custom reminder: {}", e);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
+}
+
+pub async fn api_custom_reminder_delete(
+    auth: Auth,
+    Path((guild_id, reminder_id)): Path<(String, String)>,
+    State(state): State<AppState>,
+) -> Result<Json<Value>, StatusCode> {
+    require_guild_access(&state, &auth.0.user_id, &guild_id).await?;
+    let guild_id_u64 = guild_id.parse().map_err(|_| StatusCode::BAD_REQUEST)?;
+    let reminder_id_i64: i64 = reminder_id.parse().map_err(|_| StatusCode::BAD_REQUEST)?;
+    match clouder_core::shared::delete_custom_reminder(&state, guild_id_u64, reminder_id_i64).await
+    {
+        Ok(result) => {
+            info!(
+                "custom reminder {} deleted for guild {}",
+                reminder_id, guild_id
+            );
+            Ok(Json(result))
+        }
+        Err(e) => {
+            error!("failed to delete custom reminder: {}", e);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
+}
+
+pub async fn api_custom_reminder_test(
+    auth: Auth,
+    Path((guild_id, reminder_id)): Path<(String, String)>,
+    State(state): State<AppState>,
+) -> Result<Json<Value>, StatusCode> {
+    require_guild_access(&state, &auth.0.user_id, &guild_id).await?;
+    let reminder_id_i64: i64 = reminder_id.parse().map_err(|_| StatusCode::BAD_REQUEST)?;
+    match clouder_web_custom_reminder_test(&state, reminder_id_i64).await {
+        Ok(_) => {
+            info!(
+                "custom reminder {} test fired for guild {}",
+                reminder_id, guild_id
+            );
+            Ok(Json(json!({ "success": true, "message": "reminder sent" })))
+        }
+        Err(e) => {
+            error!("failed to fire test custom reminder: {}", e);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        }
+    }
+}
+
+async fn clouder_web_custom_reminder_test(
+    state: &AppState,
+    reminder_id: i64,
+) -> Result<(), String> {
+    use clouder_core::database::reminders::{
+        CustomReminder, CustomReminderLog, CustomReminderPingRole,
+    };
+    use serenity::all::{ChannelId, CreateEmbed, CreateEmbedFooter, CreateMessage};
+
+    let reminder: Option<CustomReminder> = CustomReminder::get_by_id(&state.db, reminder_id)
+        .await
+        .map_err(|e| format!("DB error: {}", e))?;
+
+    let reminder = reminder.ok_or("custom reminder not found")?;
+    let channel_id: u64 = reminder
+        .channel_id
+        .as_deref()
+        .ok_or("no channel configured")?
+        .parse()
+        .map_err(|_| "invalid channel id")?;
+
+    let ping_roles = CustomReminderPingRole::get_by_reminder(&state.db, reminder_id)
+        .await
+        .unwrap_or_default();
+    let role_mentions: String = ping_roles
+        .iter()
+        .map(|r| format!("<@&{}>", r.role_id))
+        .collect::<Vec<_>>()
+        .join(" ");
+
+    let mut msg = CreateMessage::new();
+    if !role_mentions.is_empty() {
+        msg = msg.content(&role_mentions);
+    }
+
+    let default_title = &reminder.name;
+    let default_desc = "(test reminder)".to_string();
+
+    if reminder.message_type == "embed" {
+        let embed = CreateEmbed::new()
+            .title(reminder.embed_title.as_deref().unwrap_or(default_title))
+            .description(
+                reminder
+                    .embed_description
+                    .as_deref()
+                    .unwrap_or(&default_desc),
+            )
+            .colour(reminder.embed_color.unwrap_or(0xFFFFFF) as u32)
+            .footer(CreateEmbedFooter::new("clouder • test"));
+        msg = msg.embed(embed);
+    } else {
+        let content = reminder.message_content.as_deref().unwrap_or(&default_desc);
+        let full = if role_mentions.is_empty() {
+            content.to_string()
+        } else {
+            format!("{} {}", role_mentions, content)
+        };
+        msg = CreateMessage::new().content(full);
+    }
+
+    state
+        .http
+        .send_message(ChannelId::new(channel_id), vec![], &msg)
+        .await
+        .map_err(|e| format!("failed to send: {}", e))?;
+
+    let _ = CustomReminderLog::create(&state.db, reminder_id, "success", None, true, 0, 0).await;
+    Ok(())
+}

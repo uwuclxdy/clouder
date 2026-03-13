@@ -1,12 +1,39 @@
 use anyhow::Result;
 use clouder_core::config::AppState;
-use clouder_core::database::reminders::{ReminderConfig, ReminderType, UserSettings};
+use clouder_core::database::reminders::{
+    CustomReminder, ReminderConfig, ReminderType, UserSettings,
+};
 use clouder_core::utils::get_embed_color;
 use poise::serenity_prelude as serenity;
 use serenity::CreateEmbed;
 
 type Error = Box<dyn std::error::Error + Send + Sync>;
 type Context<'a> = poise::Context<'a, AppState, Error>;
+
+fn format_schedule_days(days: &str) -> String {
+    if days.is_empty() || days == "0,1,2,3,4,5,6" {
+        return "daily".to_string();
+    }
+    if days == "1,2,3,4,5" {
+        return "mon-fri".to_string();
+    }
+    if days == "0,6" {
+        return "sat, sun".to_string();
+    }
+    days.split(',')
+        .filter_map(|d| match d.trim() {
+            "0" => Some("sun"),
+            "1" => Some("mon"),
+            "2" => Some("tue"),
+            "3" => Some("wed"),
+            "4" => Some("thu"),
+            "5" => Some("fri"),
+            "6" => Some("sat"),
+            _ => None,
+        })
+        .collect::<Vec<_>>()
+        .join(", ")
+}
 
 /// view active reminders for this server or your subscribed reminders in DMs
 #[poise::command(slash_command)]
@@ -19,8 +46,11 @@ pub async fn reminders(ctx: Context<'_>) -> Result<(), Error> {
         let configs = ReminderConfig::get_by_guild(&data.db, &guild_id.to_string())
             .await
             .unwrap_or_default();
+        let custom = CustomReminder::get_by_guild(&data.db, &guild_id.to_string())
+            .await
+            .unwrap_or_default();
 
-        if configs.is_empty() {
+        if configs.is_empty() && custom.is_empty() {
             let embed = CreateEmbed::new()
                 .title("reminders")
                 .description(
@@ -56,6 +86,20 @@ pub async fn reminders(ctx: Context<'_>) -> Result<(), Error> {
             lines.push(format!(
                 "{} **{}** — {} — {} ({})",
                 status, type_label, channel, schedule, tz
+            ));
+        }
+
+        for cr in &custom {
+            let status = if cr.enabled { "✓" } else { "✗" };
+            let channel = cr
+                .channel_id
+                .as_deref()
+                .map(|c| format!("<#{}>", c))
+                .unwrap_or_else(|| "no channel".to_string());
+            let day_summary = format_schedule_days(&cr.schedule_days);
+            lines.push(format!(
+                "{} **{}** — {} — {} {} ({})",
+                status, cr.name, channel, cr.schedule_time, day_summary, cr.timezone
             ));
         }
 

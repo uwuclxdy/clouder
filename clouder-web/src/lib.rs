@@ -123,6 +123,20 @@ pub async fn run(app_state: AppState) -> Result<()> {
             "/api/reminders/{guild_id}/{config_id}/test",
             post(api::api_reminders_test),
         )
+        // custom reminder endpoints
+        .route(
+            "/api/custom-reminders/{guild_id}",
+            get(api::api_custom_reminders_list).post(api::api_custom_reminder_create),
+        )
+        .route(
+            "/api/custom-reminders/{guild_id}/{reminder_id}",
+            axum::routing::put(api::api_custom_reminder_update)
+                .delete(api::api_custom_reminder_delete),
+        )
+        .route(
+            "/api/custom-reminders/{guild_id}/{reminder_id}/test",
+            post(api::api_custom_reminder_test),
+        )
         // user-specific reminder endpoints
         .route(
             "/api/user/dm_reminders",

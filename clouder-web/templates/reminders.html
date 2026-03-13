@@ -119,7 +119,8 @@
                 <div class="section-header">
                     <div>
                         <span class="section-title">7:27 reminder</span>
-                        <p style="color:var(--ctp-subtext1);font-size:0.875rem;margin:4px 0 0;">fires at 7:27 AM and 7:27 PM in the configured timezone</p>
+                        <p style="color:var(--ctp-subtext1);font-size:0.875rem;margin:4px 0 0;">fires at 7:27 AM and
+                            7:27 PM in the configured timezone</p>
                     </div>
                     <div class="toggle-row">
                         <input type="checkbox" id="wysi-enabled">
@@ -135,14 +136,17 @@
                         </select>
                     </div>
 
-                    <div class="time-row">
-                        <div class="form-group">
-                            <label for="wysi-morning">morning time</label>
-                            <input type="time" id="wysi-morning" value="07:27">
-                        </div>
-                        <div class="form-group">
-                            <label for="wysi-evening">evening time</label>
-                            <input type="time" id="wysi-evening" value="19:27">
+                    <div class="form-group">
+                        <label>fire times</label>
+                        <div style="display:flex;flex-wrap:wrap;gap:var(--spacing-md);margin-top:4px;">
+                            <label class="toggle-row" style="gap:4px;">
+                                <input type="checkbox" id="wysi-morning-enabled" checked>
+                                <span>7:27 AM (morning)</span>
+                            </label>
+                            <label class="toggle-row" style="gap:4px;">
+                                <input type="checkbox" id="wysi-evening-enabled" checked>
+                                <span>7:27 PM (evening)</span>
+                            </label>
                         </div>
                     </div>
 
@@ -205,13 +209,17 @@
             <div class="section-card" id="custom-card">
                 <span class="type-badge">custom</span>
                 <div class="section-header">
-                    <span class="section-title">custom reminders <span class="subtext" id="custom-count">0/10</span></span>
+                    <span class="section-title">custom reminders <span class="subtext"
+                            id="custom-count">0/10</span></span>
                     <button class="btn btn-sm" onclick="showCustomForm(null)">add</button>
                 </div>
 
-                <div id="custom-list" style="margin-top:var(--spacing-md);display:flex;flex-direction:column;gap:var(--spacing-sm);"></div>
+                <div id="custom-list"
+                    style="margin-top:var(--spacing-md);display:flex;flex-direction:column;gap:var(--spacing-sm);">
+                </div>
 
-                <div id="custom-form" style="display:none;margin-top:var(--spacing-md);border-top:1px solid var(--ctp-surface1);padding-top:var(--spacing-md);">
+                <div id="custom-form"
+                    style="display:none;margin-top:var(--spacing-md);border-top:1px solid var(--ctp-surface1);padding-top:var(--spacing-md);">
                     <input type="hidden" id="custom-edit-id" value="">
                     <div class="reminder-section">
                         <div class="form-group">
@@ -240,13 +248,20 @@
                         <div class="form-group">
                             <label>schedule days <span class="subtext">unchecked = every day</span></label>
                             <div style="display:flex;flex-wrap:wrap;gap:var(--spacing-sm);margin-top:4px;">
-                                <label class="toggle-row" style="gap:4px;"><input type="checkbox" class="custom-day" value="0"> sun</label>
-                                <label class="toggle-row" style="gap:4px;"><input type="checkbox" class="custom-day" value="1"> mon</label>
-                                <label class="toggle-row" style="gap:4px;"><input type="checkbox" class="custom-day" value="2"> tue</label>
-                                <label class="toggle-row" style="gap:4px;"><input type="checkbox" class="custom-day" value="3"> wed</label>
-                                <label class="toggle-row" style="gap:4px;"><input type="checkbox" class="custom-day" value="4"> thu</label>
-                                <label class="toggle-row" style="gap:4px;"><input type="checkbox" class="custom-day" value="5"> fri</label>
-                                <label class="toggle-row" style="gap:4px;"><input type="checkbox" class="custom-day" value="6"> sat</label>
+                                <label class="toggle-row" style="gap:4px;"><input type="checkbox" class="custom-day"
+                                        value="0"> sun</label>
+                                <label class="toggle-row" style="gap:4px;"><input type="checkbox" class="custom-day"
+                                        value="1"> mon</label>
+                                <label class="toggle-row" style="gap:4px;"><input type="checkbox" class="custom-day"
+                                        value="2"> tue</label>
+                                <label class="toggle-row" style="gap:4px;"><input type="checkbox" class="custom-day"
+                                        value="3"> wed</label>
+                                <label class="toggle-row" style="gap:4px;"><input type="checkbox" class="custom-day"
+                                        value="4"> thu</label>
+                                <label class="toggle-row" style="gap:4px;"><input type="checkbox" class="custom-day"
+                                        value="5"> fri</label>
+                                <label class="toggle-row" style="gap:4px;"><input type="checkbox" class="custom-day"
+                                        value="6"> sat</label>
                             </div>
                         </div>
 
@@ -301,7 +316,8 @@
                         <div style="display:flex;gap:var(--spacing-sm);margin-top:var(--spacing-sm);">
                             <button class="btn btn-primary" onclick="saveCustomReminder()">save</button>
                             <button class="btn" onclick="hideCustomForm()">cancel</button>
-                            <button class="btn" id="custom-test-btn" onclick="testCustomReminder()" style="display:none;">test now</button>
+                            <button class="btn" id="custom-test-btn" onclick="testCustomReminder()"
+                                style="display:none;">test now</button>
                         </div>
                     </div>
                 </div>
@@ -323,23 +339,23 @@
         const API_TYPE = { wysi: 'wysi' };
 
         const TIMEZONE_OPTIONS = [
-            {value:'UTC',label:'UTC'},
-            {value:'Etc/GMT+12',label:'GMT-12'},{value:'Etc/GMT+11',label:'GMT-11'},
-            {value:'Etc/GMT+10',label:'GMT-10'},{value:'Etc/GMT+9',label:'GMT-9'},
-            {value:'Etc/GMT+8',label:'GMT-8'},{value:'Etc/GMT+7',label:'GMT-7'},
-            {value:'Etc/GMT+6',label:'GMT-6'},{value:'Etc/GMT+5',label:'GMT-5'},
-            {value:'Etc/GMT+4',label:'GMT-4'},{value:'Etc/GMT+3',label:'GMT-3'},
-            {value:'Etc/GMT+2',label:'GMT-2'},{value:'Etc/GMT+1',label:'GMT-1'},
-            {value:'Etc/GMT-1',label:'GMT+1'},{value:'Etc/GMT-2',label:'GMT+2'},
-            {value:'Etc/GMT-3',label:'GMT+3'},{value:'Asia/Tehran',label:'GMT+3:30'},
-            {value:'Etc/GMT-4',label:'GMT+4'},{value:'Asia/Kabul',label:'GMT+4:30'},
-            {value:'Etc/GMT-5',label:'GMT+5'},{value:'Asia/Kolkata',label:'GMT+5:30'},
-            {value:'Asia/Kathmandu',label:'GMT+5:45'},{value:'Etc/GMT-6',label:'GMT+6'},
-            {value:'Asia/Yangon',label:'GMT+6:30'},{value:'Etc/GMT-7',label:'GMT+7'},
-            {value:'Etc/GMT-8',label:'GMT+8'},{value:'Etc/GMT-9',label:'GMT+9'},
-            {value:'Australia/Darwin',label:'GMT+9:30'},{value:'Etc/GMT-10',label:'GMT+10'},
-            {value:'Etc/GMT-11',label:'GMT+11'},{value:'Etc/GMT-12',label:'GMT+12'},
-            {value:'Etc/GMT-13',label:'GMT+13'},
+            { value: 'UTC', label: 'UTC' },
+            { value: 'Etc/GMT+12', label: 'GMT-12' }, { value: 'Etc/GMT+11', label: 'GMT-11' },
+            { value: 'Etc/GMT+10', label: 'GMT-10' }, { value: 'Etc/GMT+9', label: 'GMT-9' },
+            { value: 'Etc/GMT+8', label: 'GMT-8' }, { value: 'Etc/GMT+7', label: 'GMT-7' },
+            { value: 'Etc/GMT+6', label: 'GMT-6' }, { value: 'Etc/GMT+5', label: 'GMT-5' },
+            { value: 'Etc/GMT+4', label: 'GMT-4' }, { value: 'Etc/GMT+3', label: 'GMT-3' },
+            { value: 'Etc/GMT+2', label: 'GMT-2' }, { value: 'Etc/GMT+1', label: 'GMT-1' },
+            { value: 'Etc/GMT-1', label: 'GMT+1' }, { value: 'Etc/GMT-2', label: 'GMT+2' },
+            { value: 'Etc/GMT-3', label: 'GMT+3' }, { value: 'Asia/Tehran', label: 'GMT+3:30' },
+            { value: 'Etc/GMT-4', label: 'GMT+4' }, { value: 'Asia/Kabul', label: 'GMT+4:30' },
+            { value: 'Etc/GMT-5', label: 'GMT+5' }, { value: 'Asia/Kolkata', label: 'GMT+5:30' },
+            { value: 'Asia/Kathmandu', label: 'GMT+5:45' }, { value: 'Etc/GMT-6', label: 'GMT+6' },
+            { value: 'Asia/Yangon', label: 'GMT+6:30' }, { value: 'Etc/GMT-7', label: 'GMT+7' },
+            { value: 'Etc/GMT-8', label: 'GMT+8' }, { value: 'Etc/GMT-9', label: 'GMT+9' },
+            { value: 'Australia/Darwin', label: 'GMT+9:30' }, { value: 'Etc/GMT-10', label: 'GMT+10' },
+            { value: 'Etc/GMT-11', label: 'GMT+11' }, { value: 'Etc/GMT-12', label: 'GMT+12' },
+            { value: 'Etc/GMT-13', label: 'GMT+13' },
         ];
 
         function populateTimezones() {
@@ -430,9 +446,11 @@
 
                 if (cfg.channel_id) document.getElementById(`${prefix}-channel`).value = cfg.channel_id;
 
-                if (cfg.wysi_morning_time) document.getElementById('wysi-morning').value = cfg.wysi_morning_time;
-                if (cfg.wysi_evening_time) document.getElementById('wysi-evening').value = cfg.wysi_evening_time;
                 if (cfg.timezone) document.getElementById('wysi-timezone').value = cfg.timezone;
+
+                // load morning/evening toggles (default to true if not set)
+                document.getElementById('wysi-morning-enabled').checked = cfg.wysi_morning_enabled !== false;
+                document.getElementById('wysi-evening-enabled').checked = cfg.wysi_evening_enabled !== false;
 
                 document.getElementById(`${prefix}-msg-type`).value = cfg.message_type || 'embed';
                 toggleMsgType(prefix);
@@ -478,10 +496,9 @@
                 embed_color: parseInt(document.getElementById(`${prefix}-embed-color`).value.replace('#', ''), 16) || null,
                 timezone: document.getElementById(`${prefix}-timezone`).value,
                 ping_roles: roleState[prefix],
+                wysi_morning_enabled: document.getElementById('wysi-morning-enabled').checked,
+                wysi_evening_enabled: document.getElementById('wysi-evening-enabled').checked,
             };
-
-            payload.wysi_morning_time = document.getElementById('wysi-morning').value;
-            payload.wysi_evening_time = document.getElementById('wysi-evening').value;
 
             const res = await apiFetch('POST', `/api/reminders/${GUILD_ID}`, payload);
             if (res.ok) {

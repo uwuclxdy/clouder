@@ -338,32 +338,10 @@
         const TYPE_MAP = { wysi: 'wysi' };
         const API_TYPE = { wysi: 'wysi' };
 
-        const TIMEZONE_OPTIONS = [
-            { value: 'UTC', label: 'UTC' },
-            { value: 'Etc/GMT+12', label: 'GMT-12' }, { value: 'Etc/GMT+11', label: 'GMT-11' },
-            { value: 'Etc/GMT+10', label: 'GMT-10' }, { value: 'Etc/GMT+9', label: 'GMT-9' },
-            { value: 'Etc/GMT+8', label: 'GMT-8' }, { value: 'Etc/GMT+7', label: 'GMT-7' },
-            { value: 'Etc/GMT+6', label: 'GMT-6' }, { value: 'Etc/GMT+5', label: 'GMT-5' },
-            { value: 'Etc/GMT+4', label: 'GMT-4' }, { value: 'Etc/GMT+3', label: 'GMT-3' },
-            { value: 'Etc/GMT+2', label: 'GMT-2' }, { value: 'Etc/GMT+1', label: 'GMT-1' },
-            { value: 'Etc/GMT-1', label: 'GMT+1' }, { value: 'Etc/GMT-2', label: 'GMT+2' },
-            { value: 'Etc/GMT-3', label: 'GMT+3' }, { value: 'Asia/Tehran', label: 'GMT+3:30' },
-            { value: 'Etc/GMT-4', label: 'GMT+4' }, { value: 'Asia/Kabul', label: 'GMT+4:30' },
-            { value: 'Etc/GMT-5', label: 'GMT+5' }, { value: 'Asia/Kolkata', label: 'GMT+5:30' },
-            { value: 'Asia/Kathmandu', label: 'GMT+5:45' }, { value: 'Etc/GMT-6', label: 'GMT+6' },
-            { value: 'Asia/Yangon', label: 'GMT+6:30' }, { value: 'Etc/GMT-7', label: 'GMT+7' },
-            { value: 'Etc/GMT-8', label: 'GMT+8' }, { value: 'Etc/GMT-9', label: 'GMT+9' },
-            { value: 'Australia/Darwin', label: 'GMT+9:30' }, { value: 'Etc/GMT-10', label: 'GMT+10' },
-            { value: 'Etc/GMT-11', label: 'GMT+11' }, { value: 'Etc/GMT-12', label: 'GMT+12' },
-            { value: 'Etc/GMT-13', label: 'GMT+13' },
-        ];
-
+        // Use shared populateTimezoneSelect from app.js
         function populateTimezones() {
             ['wysi-timezone', 'custom-timezone'].forEach(id => {
-                const sel = document.getElementById(id);
-                sel.innerHTML = TIMEZONE_OPTIONS.map(tz =>
-                    `<option value="${tz.value}"${tz.value === 'UTC' ? ' selected' : ''}>${tz.label}</option>`
-                ).join('');
+                populateTimezoneSelect(document.getElementById(id));
             });
         }
 

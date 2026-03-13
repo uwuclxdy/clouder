@@ -220,9 +220,7 @@
                 <form id="config-form" onsubmit="saveConfig(event)" class="config-form">
                     <div class="field-group">
                         <label class="field-label" for="cfg-timezone">timezone</label>
-                        <input type="text" id="cfg-timezone" name="timezone" class="input" list="tz-list"
-                            placeholder="UTC" maxlength="64" />
-                        <datalist id="tz-list"></datalist>
+                        <select id="cfg-timezone" name="timezone" class="input"></select>
                     </div>
                     <div class="field-group">
                         <label class="field-label" for="cfg-prefix">command prefix</label>
@@ -404,7 +402,7 @@
         }
 
         // Use shared functions from app.js
-        populateTimezoneDatalist(document.getElementById("tz-list"));
+        populateTimezoneSelect(document.getElementById("cfg-timezone"));
         loadAbout();
     </script>
 </body>

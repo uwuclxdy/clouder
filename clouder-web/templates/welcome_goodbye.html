@@ -28,16 +28,18 @@
 <body>
     <header class="topbar">
         <div class="container topbar-inner">
-            <a href="/servers" class="logo" style="text-decoration:none;">clouder</a>
+            <a href="/servers" class="logo">clouder</a>
             <div class="user-info">
                 <img src="{{AVATAR_URL}}" alt="" class="avatar">
                 <a href="/profile" class="username">{{USERNAME}}</a>
-                <a href="/auth/logout" class="btn btn-sm">sign out</a>
+                <a href="/auth/logout" class="btn btn-sm btn-logout">sign out</a>
             </div>
         </div>
     </header>
     <div class="dashboard-layout container">
         <nav class="sidebar">
+            <a href="/servers" class="sidebar-back">&larr; servers</a>
+            <div class="sidebar-server-name">{{GUILD_NAME}}</div>
             <a href="/dashboard/{{GUILD_ID}}/about" class="sidebar-link">about</a>
             <a href="/dashboard/{{GUILD_ID}}/selfroles" class="sidebar-link">self-roles</a>
             <a href="/dashboard/{{GUILD_ID}}/welcome-goodbye" class="sidebar-link active">welcome/goodbye</a>
@@ -98,7 +100,7 @@
                             </div>
                             <div class="form-group">
                                 <label for="welcome-embed-color">color</label>
-                                <input type="color" id="welcome-embed-color" style="height:38px;padding:2px 4px">
+                                <input type="color" id="welcome-embed-color" class="color-input">
                             </div>
                         </div>
                         <div class="form-group">
@@ -186,7 +188,7 @@
                             </div>
                             <div class="form-group">
                                 <label for="goodbye-embed-color">color</label>
-                                <input type="color" id="goodbye-embed-color" style="height:38px;padding:2px 4px;">
+                                <input type="color" id="goodbye-embed-color" class="color-input">
                             </div>
                         </div>
                         <div class="form-group">

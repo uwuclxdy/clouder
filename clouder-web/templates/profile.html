@@ -66,11 +66,11 @@
 <body>
 	<header class="topbar">
 		<div class="container topbar-inner">
-			<a href="/servers" class="logo" style="text-decoration:none;">clouder</a>
+			<a href="/servers" class="logo">clouder</a>
 			<div class="user-info">
 				<img src="{{AVATAR_URL}}" alt="" class="avatar">
 				<a href="/profile" class="username">{{USERNAME}}</a>
-				<a href="/auth/logout" class="btn btn-sm">sign out</a>
+				<a href="/auth/logout" class="btn btn-sm btn-logout">sign out</a>
 			</div>
 		</div>
 	</header>
@@ -128,7 +128,7 @@
 			<div class="section-header">
 				<span class="section-title">subscriptions</span>
 			</div>
-			<ul id="subscriptions-list"></ul>
+			<ul id="subscriptions-list" class="subscriptions-list"></ul>
 		</div>
 	</main>
 
@@ -189,7 +189,11 @@
                 list.innerHTML = '';
                 for (const s of data.subscriptions || []) {
                     const li = document.createElement('li');
-                    li.textContent = `${s.reminder_type} in guild ${s.guild_id}`;
+                    li.className = 'subscription-item';
+                    const info = document.createElement('span');
+                    info.className = 'subscription-info';
+                    info.textContent = `${s.reminder_type} in guild ${s.guild_id}`;
+                    li.appendChild(info);
                     const btn = document.createElement('button');
                     btn.textContent = 'unsubscribe';
                     btn.className = 'btn btn-sm';
@@ -204,14 +208,33 @@
             } catch {}
         }
 
+        const TIMEZONE_OPTIONS = [
+            {value:'UTC',label:'UTC'},
+            {value:'Etc/GMT+12',label:'GMT-12'},{value:'Etc/GMT+11',label:'GMT-11'},
+            {value:'Etc/GMT+10',label:'GMT-10'},{value:'Etc/GMT+9',label:'GMT-9'},
+            {value:'Etc/GMT+8',label:'GMT-8'},{value:'Etc/GMT+7',label:'GMT-7'},
+            {value:'Etc/GMT+6',label:'GMT-6'},{value:'Etc/GMT+5',label:'GMT-5'},
+            {value:'Etc/GMT+4',label:'GMT-4'},{value:'Etc/GMT+3',label:'GMT-3'},
+            {value:'Etc/GMT+2',label:'GMT-2'},{value:'Etc/GMT+1',label:'GMT-1'},
+            {value:'Etc/GMT-1',label:'GMT+1'},{value:'Etc/GMT-2',label:'GMT+2'},
+            {value:'Etc/GMT-3',label:'GMT+3'},{value:'Asia/Tehran',label:'GMT+3:30'},
+            {value:'Etc/GMT-4',label:'GMT+4'},{value:'Asia/Kabul',label:'GMT+4:30'},
+            {value:'Etc/GMT-5',label:'GMT+5'},{value:'Asia/Kolkata',label:'GMT+5:30'},
+            {value:'Asia/Kathmandu',label:'GMT+5:45'},{value:'Etc/GMT-6',label:'GMT+6'},
+            {value:'Asia/Yangon',label:'GMT+6:30'},{value:'Etc/GMT-7',label:'GMT+7'},
+            {value:'Etc/GMT-8',label:'GMT+8'},{value:'Etc/GMT-9',label:'GMT+9'},
+            {value:'Australia/Darwin',label:'GMT+9:30'},{value:'Etc/GMT-10',label:'GMT+10'},
+            {value:'Etc/GMT-11',label:'GMT+11'},{value:'Etc/GMT-12',label:'GMT+12'},
+            {value:'Etc/GMT-13',label:'GMT+13'},
+        ];
+
         function populateTimezones() {
             const sel = document.getElementById('user-timezone');
             if (!sel) return;
-            const zones = Intl.supportedValuesOf('timeZone');
-            for (const z of zones) {
+            for (const tz of TIMEZONE_OPTIONS) {
                 const opt = document.createElement('option');
-                opt.value = z;
-                opt.textContent = z;
+                opt.value = tz.value;
+                opt.textContent = tz.label;
                 sel.appendChild(opt);
             }
         }

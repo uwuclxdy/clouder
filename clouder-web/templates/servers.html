@@ -15,7 +15,7 @@
 			<div class="user-info">
 				<img src="{{AVATAR_URL}}" alt="" class="avatar">
 				<a href="/profile" class="username">{{USERNAME}}</a>
-				<a href="/auth/logout" class="btn btn-sm">sign out</a>
+				<a href="/auth/logout" class="btn btn-sm btn-logout">sign out</a>
 			</div>
 		</div>
 	</header>
@@ -59,8 +59,8 @@
 					? '<img src="https://cdn.discordapp.com/icons/' + g.id + '/' + g.icon + '.png?size=64" alt="" class="server-icon">'
 					: '<div class="server-icon-placeholder">' + esc(g.name[0] || '?').toUpperCase() + '</div>';
 				return '<div class="card server-card" role="button" tabindex="0"' +
-					' onclick="location.href=\'/dashboard/' + g.id + '/selfroles\'"' +
-					' onkeydown="if(event.key===\'Enter\')location.href=\'/dashboard/' + g.id + '/selfroles\'">' +
+					' onclick="location.href=\'/dashboard/' + g.id + '/about\'"' +
+					' onkeydown="if(event.key===\'Enter\')location.href=\'/dashboard/' + g.id + '/about\'">' +
 					icon +
 					'<div class="server-info">' +
 					'<span class="server-name">' + esc(g.name) + '</span>' +

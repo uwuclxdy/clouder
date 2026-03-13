@@ -6,6 +6,7 @@ use axum_extra::extract::cookie::SignedCookieJar;
 use clouder_core::database::guild_cache::CachedGuild;
 use serde::Deserialize;
 
+// Full page templates
 static LOGIN_HTML: &str = include_str!("../templates/login.html");
 static SERVERS_HTML: &str = include_str!("../templates/servers.html");
 static SELFROLES_HTML: &str = include_str!("../templates/selfroles.html");

@@ -20,6 +20,18 @@ impl CachedGuild {
         .await?)
     }
 
+    pub async fn get_name(pool: &SqlitePool, user_id: &str, guild_id: &str) -> Option<String> {
+        sqlx::query_scalar::<_, String>(
+            "SELECT name FROM user_guild_cache WHERE user_id = ? AND guild_id = ?",
+        )
+        .bind(user_id)
+        .bind(guild_id)
+        .fetch_optional(pool)
+        .await
+        .ok()
+        .flatten()
+    }
+
     pub async fn user_has_guild(pool: &SqlitePool, user_id: &str, guild_id: &str) -> Result<bool> {
         Ok(sqlx::query_scalar::<_, bool>(
             "SELECT EXISTS(SELECT 1 FROM user_guild_cache WHERE user_id = ? AND guild_id = ?)",

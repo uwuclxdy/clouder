@@ -10,18 +10,20 @@
     <body>
         <header class="topbar">
             <div class="container topbar-inner">
-                <a href="/servers" class="logo" style="text-decoration: none"
+                <a href="/servers" class="logo"
                     >clouder</a
                 >
                 <div class="user-info">
                     <img src="{{AVATAR_URL}}" alt="" class="avatar" />
                     <a href="/profile" class="username">{{USERNAME}}</a>
-                    <a href="/auth/logout" class="btn btn-sm">sign out</a>
+                    <a href="/auth/logout" class="btn btn-sm btn-logout">sign out</a>
                 </div>
             </div>
         </header>
         <div class="dashboard-layout container">
             <nav class="sidebar">
+                <a href="/servers" class="sidebar-back">&larr; servers</a>
+                <div class="sidebar-server-name">{{GUILD_NAME}}</div>
                 <a href="/dashboard/{{GUILD_ID}}/about" class="sidebar-link"
                     >about</a
                 >

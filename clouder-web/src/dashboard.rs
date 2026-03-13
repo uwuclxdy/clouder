@@ -16,6 +16,12 @@ static UWUFY_HTML: &str = include_str!("../templates/uwufy.html");
 static PROFILE_HTML: &str = include_str!("../templates/profile.html");
 static REMINDERS_HTML: &str = include_str!("../templates/reminders.html");
 
+async fn guild_name_or_id(state: &WebState, user_id: &str, guild_id: &str) -> String {
+    CachedGuild::get_name(&state.app_state.db, user_id, guild_id)
+        .await
+        .unwrap_or_else(|| guild_id.to_string())
+}
+
 fn html_escape(s: &str) -> String {
     s.replace('&', "&amp;")
         .replace('<', "&lt;")
@@ -126,7 +132,7 @@ fn render_guild_cards(guilds: &[CachedGuild]) -> String {
                 }
             };
             format!(
-                r#"<div class="card server-card" role="button" tabindex="0" onclick="location.href='/dashboard/{}/selfroles'" onkeydown="if(event.key==='Enter')location.href='/dashboard/{}/selfroles'">
+                r#"<div class="card server-card" role="button" tabindex="0" onclick="location.href='/dashboard/{}/about'" onkeydown="if(event.key==='Enter')location.href='/dashboard/{}/about'">
                     {}
                     <div class="server-info">
                         <span class="server-name">{}</span>
@@ -142,23 +148,25 @@ fn render_guild_cards(guilds: &[CachedGuild]) -> String {
 }
 
 pub async fn dashboard_redirect(Path(guild_id): Path<String>) -> Redirect {
-    Redirect::to(&format!("/dashboard/{}/selfroles", guild_id))
+    Redirect::to(&format!("/dashboard/{}/about", guild_id))
 }
 
 pub async fn selfroles_page(
-    _state: State<WebState>,
+    State(state): State<WebState>,
     jar: SignedCookieJar,
     Path(guild_id): Path<String>,
 ) -> Response {
     let Some(user) = session::extract(&jar) else {
         return Redirect::to("/login").into_response();
     };
+    let guild_name = guild_name_or_id(&state, &user.user_id, &guild_id).await;
     Html(render(
         SELFROLES_HTML,
         &[
             ("USERNAME", &user.username),
             ("AVATAR_URL", &user.avatar_url()),
             ("GUILD_ID", &guild_id),
+            ("GUILD_NAME", &guild_name),
         ],
     ))
     .into_response()
@@ -173,12 +181,14 @@ pub async fn welcome_goodbye_page(
         return Redirect::to("/login").into_response();
     };
     let default_color = format!("#{:06X}", state.app_state.config.web.embed.default_color);
+    let guild_name = guild_name_or_id(&state, &user.user_id, &guild_id).await;
     Html(render(
         WELCOME_HTML,
         &[
             ("USERNAME", &user.username),
             ("AVATAR_URL", &user.avatar_url()),
             ("GUILD_ID", &guild_id),
+            ("GUILD_NAME", &guild_name),
             ("DEFAULT_COLOR", &default_color),
         ],
     ))
@@ -186,57 +196,63 @@ pub async fn welcome_goodbye_page(
 }
 
 pub async fn mediaonly_page(
-    _state: State<WebState>,
+    State(state): State<WebState>,
     jar: SignedCookieJar,
     Path(guild_id): Path<String>,
 ) -> Response {
     let Some(user) = session::extract(&jar) else {
         return Redirect::to("/login").into_response();
     };
+    let guild_name = guild_name_or_id(&state, &user.user_id, &guild_id).await;
     Html(render(
         MEDIAONLY_HTML,
         &[
             ("USERNAME", &user.username),
             ("AVATAR_URL", &user.avatar_url()),
             ("GUILD_ID", &guild_id),
+            ("GUILD_NAME", &guild_name),
         ],
     ))
     .into_response()
 }
 
 pub async fn about_page(
-    _state: State<WebState>,
+    State(state): State<WebState>,
     jar: SignedCookieJar,
     Path(guild_id): Path<String>,
 ) -> Response {
     let Some(user) = session::extract(&jar) else {
         return Redirect::to("/login").into_response();
     };
+    let guild_name = guild_name_or_id(&state, &user.user_id, &guild_id).await;
     Html(render(
         ABOUT_HTML,
         &[
             ("USERNAME", &user.username),
             ("AVATAR_URL", &user.avatar_url()),
             ("GUILD_ID", &guild_id),
+            ("GUILD_NAME", &guild_name),
         ],
     ))
     .into_response()
 }
 
 pub async fn uwufy_page(
-    _state: State<WebState>,
+    State(state): State<WebState>,
     jar: SignedCookieJar,
     Path(guild_id): Path<String>,
 ) -> Response {
     let Some(user) = session::extract(&jar) else {
         return Redirect::to("/login").into_response();
     };
+    let guild_name = guild_name_or_id(&state, &user.user_id, &guild_id).await;
     Html(render(
         UWUFY_HTML,
         &[
             ("USERNAME", &user.username),
             ("AVATAR_URL", &user.avatar_url()),
             ("GUILD_ID", &guild_id),
+            ("GUILD_NAME", &guild_name),
         ],
     ))
     .into_response()
@@ -272,19 +288,21 @@ pub async fn profile_page(State(state): State<WebState>, jar: SignedCookieJar) -
 }
 
 pub async fn reminders_page(
-    _state: State<WebState>,
+    State(state): State<WebState>,
     jar: SignedCookieJar,
     Path(guild_id): Path<String>,
 ) -> Response {
     let Some(user) = session::extract(&jar) else {
         return Redirect::to("/login").into_response();
     };
+    let guild_name = guild_name_or_id(&state, &user.user_id, &guild_id).await;
     Html(render(
         REMINDERS_HTML,
         &[
             ("USERNAME", &user.username),
             ("AVATAR_URL", &user.avatar_url()),
             ("GUILD_ID", &guild_id),
+            ("GUILD_NAME", &guild_name),
         ],
     ))
     .into_response()

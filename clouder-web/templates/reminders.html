@@ -14,6 +14,7 @@
         }
 
         .type-badge {
+            font-family: var(--font-mono);
             font-size: 0.7rem;
             font-weight: 600;
             letter-spacing: 0.08em;
@@ -21,7 +22,6 @@
             padding: 2px 8px;
             background: var(--ctp-surface1);
             color: var(--ctp-mauve);
-            border-radius: 4px;
             display: inline-block;
             margin-bottom: var(--spacing-sm);
         }
@@ -43,10 +43,10 @@
             display: flex;
             align-items: center;
             gap: 4px;
+            font-family: var(--font-mono);
             font-size: 0.8rem;
             padding: 3px 8px;
             background: var(--ctp-surface1);
-            border-radius: 4px;
             cursor: pointer;
         }
 
@@ -66,13 +66,22 @@
         }
 
         .coming-soon-badge {
+            font-family: var(--font-mono);
             font-size: 0.7rem;
             padding: 2px 8px;
             background: var(--ctp-surface1);
             color: var(--ctp-subtext0);
-            border-radius: 4px;
             display: inline-block;
             margin-left: var(--spacing-sm);
+        }
+
+        .custom-reminder-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: var(--spacing-sm) var(--spacing-md);
+            background: var(--ctp-crust);
+            border: 1px solid var(--ctp-surface0);
         }
     </style>
 </head>
@@ -80,17 +89,19 @@
 <body>
     <header class="topbar">
         <div class="container topbar-inner">
-            <a href="/servers" class="logo" style="text-decoration:none;">clouder</a>
+            <a href="/servers" class="logo">clouder</a>
             <div class="user-info">
                 <img src="{{AVATAR_URL}}" alt="" class="avatar">
                 <a href="/profile" class="username">{{USERNAME}}</a>
-                <a href="/auth/logout" class="btn btn-sm">sign out</a>
+                <a href="/auth/logout" class="btn btn-sm btn-logout">sign out</a>
             </div>
         </div>
     </header>
 
     <div class="dashboard-layout container">
         <nav class="sidebar">
+            <a href="/servers" class="sidebar-back">&larr; servers</a>
+            <div class="sidebar-server-name">{{GUILD_NAME}}</div>
             <a href="/dashboard/{{GUILD_ID}}/about" class="sidebar-link">about</a>
             <a href="/dashboard/{{GUILD_ID}}/selfroles" class="sidebar-link">self-roles</a>
             <a href="/dashboard/{{GUILD_ID}}/welcome-goodbye" class="sidebar-link">welcome/goodbye</a>
@@ -167,7 +178,7 @@
                             </div>
                             <div class="form-group">
                                 <label for="wysi-embed-color">color</label>
-                                <input type="color" id="wysi-embed-color" style="height:38px;padding:2px 4px">
+                                <input type="color" id="wysi-embed-color" class="color-input">
                             </div>
                         </div>
                         <div class="form-group">
@@ -266,7 +277,7 @@
                                 </div>
                                 <div class="form-group">
                                     <label for="custom-embed-color">color</label>
-                                    <input type="color" id="custom-embed-color" value="#ffffff" style="height:38px;padding:2px 4px">
+                                    <input type="color" id="custom-embed-color" value="#ffffff" class="color-input">
                                 </div>
                             </div>
                             <div class="form-group">
@@ -311,29 +322,31 @@
         const TYPE_MAP = { wysi: 'wysi' };
         const API_TYPE = { wysi: 'wysi' };
 
-        // ---- timezone list ----
-        const TIMEZONES = [
-            'UTC','Africa/Cairo','Africa/Johannesburg','Africa/Lagos','America/Anchorage',
-            'America/Argentina/Buenos_Aires','America/Bogota','America/Chicago','America/Denver',
-            'America/Halifax','America/Los_Angeles','America/Mexico_City','America/New_York',
-            'America/Phoenix','America/Sao_Paulo','America/Toronto','America/Vancouver',
-            'Asia/Bangkok','Asia/Colombo','Asia/Dubai','Asia/Hong_Kong','Asia/Jakarta',
-            'Asia/Kabul','Asia/Karachi','Asia/Kolkata','Asia/Kuala_Lumpur','Asia/Manila',
-            'Asia/Seoul','Asia/Shanghai','Asia/Singapore','Asia/Taipei','Asia/Tehran',
-            'Asia/Tokyo','Atlantic/Reykjavik','Australia/Melbourne','Australia/Perth',
-            'Australia/Sydney','Europe/Amsterdam','Europe/Athens','Europe/Berlin',
-            'Europe/Brussels','Europe/Bucharest','Europe/Copenhagen','Europe/Dublin',
-            'Europe/Helsinki','Europe/Istanbul','Europe/Kyiv','Europe/Lisbon','Europe/London',
-            'Europe/Madrid','Europe/Moscow','Europe/Oslo','Europe/Paris','Europe/Prague',
-            'Europe/Rome','Europe/Stockholm','Europe/Vienna','Europe/Warsaw','Europe/Zurich',
-            'Pacific/Auckland','Pacific/Fiji','Pacific/Honolulu',
+        const TIMEZONE_OPTIONS = [
+            {value:'UTC',label:'UTC'},
+            {value:'Etc/GMT+12',label:'GMT-12'},{value:'Etc/GMT+11',label:'GMT-11'},
+            {value:'Etc/GMT+10',label:'GMT-10'},{value:'Etc/GMT+9',label:'GMT-9'},
+            {value:'Etc/GMT+8',label:'GMT-8'},{value:'Etc/GMT+7',label:'GMT-7'},
+            {value:'Etc/GMT+6',label:'GMT-6'},{value:'Etc/GMT+5',label:'GMT-5'},
+            {value:'Etc/GMT+4',label:'GMT-4'},{value:'Etc/GMT+3',label:'GMT-3'},
+            {value:'Etc/GMT+2',label:'GMT-2'},{value:'Etc/GMT+1',label:'GMT-1'},
+            {value:'Etc/GMT-1',label:'GMT+1'},{value:'Etc/GMT-2',label:'GMT+2'},
+            {value:'Etc/GMT-3',label:'GMT+3'},{value:'Asia/Tehran',label:'GMT+3:30'},
+            {value:'Etc/GMT-4',label:'GMT+4'},{value:'Asia/Kabul',label:'GMT+4:30'},
+            {value:'Etc/GMT-5',label:'GMT+5'},{value:'Asia/Kolkata',label:'GMT+5:30'},
+            {value:'Asia/Kathmandu',label:'GMT+5:45'},{value:'Etc/GMT-6',label:'GMT+6'},
+            {value:'Asia/Yangon',label:'GMT+6:30'},{value:'Etc/GMT-7',label:'GMT+7'},
+            {value:'Etc/GMT-8',label:'GMT+8'},{value:'Etc/GMT-9',label:'GMT+9'},
+            {value:'Australia/Darwin',label:'GMT+9:30'},{value:'Etc/GMT-10',label:'GMT+10'},
+            {value:'Etc/GMT-11',label:'GMT+11'},{value:'Etc/GMT-12',label:'GMT+12'},
+            {value:'Etc/GMT-13',label:'GMT+13'},
         ];
 
         function populateTimezones() {
             ['wysi-timezone', 'custom-timezone'].forEach(id => {
                 const sel = document.getElementById(id);
-                sel.innerHTML = TIMEZONES.map(tz =>
-                    `<option value="${tz}"${tz === 'UTC' ? ' selected' : ''}>${tz}</option>`
+                sel.innerHTML = TIMEZONE_OPTIONS.map(tz =>
+                    `<option value="${tz.value}"${tz.value === 'UTC' ? ' selected' : ''}>${tz.label}</option>`
                 ).join('');
             });
         }
@@ -531,7 +544,7 @@
                 const status = r.enabled
                     ? '<span style="color:var(--ctp-green);font-size:0.75rem;">enabled</span>'
                     : '<span style="color:var(--ctp-subtext0);font-size:0.75rem;">disabled</span>';
-                return `<div style="display:flex;align-items:center;justify-content:space-between;padding:var(--spacing-sm) var(--spacing-md);background:var(--ctp-surface0);border-radius:8px;">
+                return `<div class="custom-reminder-item">
                     <div>
                         <strong>${escHtml(r.name)}</strong>
                         <span style="color:var(--ctp-subtext1);font-size:0.8rem;margin-left:var(--spacing-sm);">${escHtml(schedule)}</span>

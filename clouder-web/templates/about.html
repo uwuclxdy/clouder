@@ -162,18 +162,20 @@
     <body>
         <header class="topbar">
             <div class="container topbar-inner">
-                <a href="/servers" class="logo" style="text-decoration: none"
+                <a href="/servers" class="logo"
                     >clouder</a
                 >
                 <div class="user-info">
                     <img src="{{AVATAR_URL}}" alt="" class="avatar" />
                     <a href="/profile" class="username">{{USERNAME}}</a>
-                    <a href="/auth/logout" class="btn btn-sm">sign out</a>
+                    <a href="/auth/logout" class="btn btn-sm btn-logout">sign out</a>
                 </div>
             </div>
         </header>
         <div class="dashboard-layout container">
             <nav class="sidebar">
+                <a href="/servers" class="sidebar-back">&larr; servers</a>
+                <div class="sidebar-server-name">{{GUILD_NAME}}</div>
                 <a
                     href="/dashboard/{{GUILD_ID}}/about"
                     class="sidebar-link active"
@@ -240,11 +242,7 @@
                     <form
                         id="config-form"
                         onsubmit="saveConfig(event)"
-                        style="
-                            display: flex;
-                            flex-direction: column;
-                            gap: var(--spacing-sm);
-                        "
+                        class="config-form"
                     >
                         <div class="field-group">
                             <label class="field-label" for="cfg-timezone"
@@ -282,64 +280,37 @@
                                     >// leave blank to use global default</span
                                 ></label
                             >
-                            <div
-                                style="
-                                    display: flex;
-                                    align-items: center;
-                                    gap: var(--spacing-xs);
-                                "
-                            >
+                            <div class="color-picker-row">
                                 <input
                                     type="color"
                                     id="cfg-color"
                                     name="embed_color"
-                                    class="input"
-                                    style="
-                                        width: 44px;
-                                        height: 36px;
-                                        padding: 2px;
-                                        cursor: pointer;
-                                    "
+                                    class="input color-input"
                                 />
                                 <button
                                     type="button"
                                     class="btn btn-sm"
                                     onclick="clearColor()"
-                                    style="font-size: 0.75rem"
                                 >
                                     clear
                                 </button>
                                 <span
                                     id="cfg-color-label"
                                     class="subtext"
-                                    style="
-                                        font-family: var(--font-mono);
-                                        font-size: 0.8rem;
-                                    "
                                 ></span>
                             </div>
                         </div>
-                        <div
-                            style="
-                                display: flex;
-                                align-items: center;
-                                gap: var(--spacing-sm);
-                                margin-top: var(--spacing-xs);
-                            "
-                        >
+                        <div class="config-form-actions">
                             <button
                                 type="submit"
-                                class="btn"
+                                class="btn btn-primary"
                                 id="config-save-btn"
                             >
                                 save
                             </button>
                             <span
                                 id="config-status"
-                                style="
-                                    font-size: 0.85rem;
-                                    color: var(--ctp-subtext0);
-                                "
+                                class="config-status"
                             ></span>
                         </div>
                     </form>
@@ -377,14 +348,31 @@
                 return Number(n).toLocaleString();
             }
 
+            const TIMEZONE_OPTIONS = [
+                {value:'UTC',label:'UTC'},
+                {value:'Etc/GMT+12',label:'GMT-12'},{value:'Etc/GMT+11',label:'GMT-11'},
+                {value:'Etc/GMT+10',label:'GMT-10'},{value:'Etc/GMT+9',label:'GMT-9'},
+                {value:'Etc/GMT+8',label:'GMT-8'},{value:'Etc/GMT+7',label:'GMT-7'},
+                {value:'Etc/GMT+6',label:'GMT-6'},{value:'Etc/GMT+5',label:'GMT-5'},
+                {value:'Etc/GMT+4',label:'GMT-4'},{value:'Etc/GMT+3',label:'GMT-3'},
+                {value:'Etc/GMT+2',label:'GMT-2'},{value:'Etc/GMT+1',label:'GMT-1'},
+                {value:'Etc/GMT-1',label:'GMT+1'},{value:'Etc/GMT-2',label:'GMT+2'},
+                {value:'Etc/GMT-3',label:'GMT+3'},{value:'Asia/Tehran',label:'GMT+3:30'},
+                {value:'Etc/GMT-4',label:'GMT+4'},{value:'Asia/Kabul',label:'GMT+4:30'},
+                {value:'Etc/GMT-5',label:'GMT+5'},{value:'Asia/Kolkata',label:'GMT+5:30'},
+                {value:'Asia/Kathmandu',label:'GMT+5:45'},{value:'Etc/GMT-6',label:'GMT+6'},
+                {value:'Asia/Yangon',label:'GMT+6:30'},{value:'Etc/GMT-7',label:'GMT+7'},
+                {value:'Etc/GMT-8',label:'GMT+8'},{value:'Etc/GMT-9',label:'GMT+9'},
+                {value:'Australia/Darwin',label:'GMT+9:30'},{value:'Etc/GMT-10',label:'GMT+10'},
+                {value:'Etc/GMT-11',label:'GMT+11'},{value:'Etc/GMT-12',label:'GMT+12'},
+                {value:'Etc/GMT-13',label:'GMT+13'},
+            ];
+
             function populateTimezones() {
                 const list = document.getElementById("tz-list");
-                try {
-                    const zones = Intl.supportedValuesOf("timeZone");
-                    list.innerHTML = zones
-                        .map((z) => `<option value="${escHtmlLocal(z)}">`)
-                        .join("");
-                } catch (_) {}
+                list.innerHTML = TIMEZONE_OPTIONS
+                    .map((tz) => `<option value="${escHtmlLocal(tz.value)}">${escHtmlLocal(tz.label)}</option>`)
+                    .join("");
             }
 
             function clearColor() {

@@ -38,6 +38,64 @@ async function apiFetch(method, url, body) {
   return res;
 }
 
+// HTML escape utility - used across all templates
+function escHtml(s) {
+  if (s == null) return '';
+  return String(s)
+    .replace(/&/g, '&')
+    .replace(/</g, '<')
+    .replace(/>/g, '>')
+    .replace(/"/g, '"');
+}
+
+// Timezone options - shared between about, profile, and reminders pages
+const TIMEZONE_OPTIONS = [
+  { value: 'UTC', label: 'UTC' },
+  { value: 'Etc/GMT+12', label: 'GMT-12' }, { value: 'Etc/GMT+11', label: 'GMT-11' },
+  { value: 'Etc/GMT+10', label: 'GMT-10' }, { value: 'Etc/GMT+9', label: 'GMT-9' },
+  { value: 'Etc/GMT+8', label: 'GMT-8' }, { value: 'Etc/GMT+7', label: 'GMT-7' },
+  { value: 'Etc/GMT+6', label: 'GMT-6' }, { value: 'Etc/GMT+5', label: 'GMT-5' },
+  { value: 'Etc/GMT+4', label: 'GMT-4' }, { value: 'Etc/GMT+3', label: 'GMT-3' },
+  { value: 'Etc/GMT+2', label: 'GMT-2' }, { value: 'Etc/GMT+1', label: 'GMT-1' },
+  { value: 'Etc/GMT-1', label: 'GMT+1' }, { value: 'Etc/GMT-2', label: 'GMT+2' },
+  { value: 'Etc/GMT-3', label: 'GMT+3' }, { value: 'Asia/Tehran', label: 'GMT+3:30' },
+  { value: 'Etc/GMT-4', label: 'GMT+4' }, { value: 'Asia/Kabul', label: 'GMT+4:30' },
+  { value: 'Etc/GMT-5', label: 'GMT+5' }, { value: 'Asia/Kolkata', label: 'GMT+5:30' },
+  { value: 'Asia/Kathmandu', label: 'GMT+5:45' }, { value: 'Etc/GMT-6', label: 'GMT+6' },
+  { value: 'Asia/Yangon', label: 'GMT+6:30' }, { value: 'Etc/GMT-7', label: 'GMT+7' },
+  { value: 'Etc/GMT-8', label: 'GMT+8' }, { value: 'Etc/GMT-9', label: 'GMT+9' },
+  { value: 'Australia/Darwin', label: 'GMT+9:30' }, { value: 'Etc/GMT-10', label: 'GMT+10' },
+  { value: 'Etc/GMT-11', label: 'GMT+11' }, { value: 'Etc/GMT-12', label: 'GMT+12' },
+  { value: 'Etc/GMT-13', label: 'GMT+13' },
+];
+
+// Populate timezone select element with options
+function populateTimezoneSelect(selectEl, selectedValue = 'UTC') {
+  if (!selectEl) return;
+  selectEl.innerHTML = TIMEZONE_OPTIONS.map(tz =>
+    `<option value="${escHtml(tz.value)}"${tz.value === selectedValue ? ' selected' : ''}>${escHtml(tz.label)}</option>`
+  ).join('');
+}
+
+// Populate timezone datalist element
+function populateTimezoneDatalist(datalistEl) {
+  if (!datalistEl) return;
+  datalistEl.innerHTML = TIMEZONE_OPTIONS.map(tz =>
+    `<option value="${escHtml(tz.value)}">${escHtml(tz.label)}</option>`
+  ).join('');
+}
+
+// Color conversion utility - hex to integer
+function colorToInt(hex) {
+  return parseInt(hex.replace('#', ''), 16);
+}
+
+// Format number with locale
+function fmtNumber(n) {
+  if (n == null) return '?';
+  return Number(n).toLocaleString();
+}
+
 // tab switching
 document.querySelectorAll('.tab').forEach(tab => {
   tab.addEventListener('click', () => {

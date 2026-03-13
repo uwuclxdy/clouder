@@ -209,6 +209,78 @@ pub async fn create_test_db() -> SqlitePool {
     .await
     .unwrap();
 
+    sqlx::query(
+        r#"
+        CREATE TABLE custom_reminders (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            guild_id TEXT NOT NULL,
+            name TEXT NOT NULL,
+            enabled BOOLEAN NOT NULL DEFAULT FALSE,
+            channel_id TEXT,
+            schedule_time TEXT NOT NULL DEFAULT '12:00',
+            schedule_days TEXT NOT NULL DEFAULT '',
+            timezone TEXT NOT NULL DEFAULT 'UTC',
+            message_type TEXT NOT NULL DEFAULT 'embed',
+            message_content TEXT,
+            embed_title TEXT,
+            embed_description TEXT,
+            embed_color INTEGER,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+    "#,
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    sqlx::query(
+        r#"
+        CREATE TABLE custom_reminder_ping_roles (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            reminder_id INTEGER NOT NULL,
+            role_id TEXT NOT NULL
+        );
+    "#,
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    sqlx::query(
+        r#"
+        CREATE TABLE custom_reminder_subscriptions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT NOT NULL,
+            reminder_id INTEGER NOT NULL,
+            subscribed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE (user_id, reminder_id)
+        );
+    "#,
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    sqlx::query(
+        r#"
+        CREATE TABLE custom_reminder_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            reminder_id INTEGER NOT NULL,
+            execution_time DATETIME NOT NULL,
+            status TEXT NOT NULL,
+            error_message TEXT,
+            channel_sent BOOLEAN DEFAULT FALSE,
+            dm_count INTEGER DEFAULT 0,
+            dm_failed_count INTEGER DEFAULT 0,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+    "#,
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
+
     pool
 }
 

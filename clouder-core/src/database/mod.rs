@@ -45,6 +45,7 @@ async fn run_migrations(pool: &SqlitePool) -> Result<()> {
         include_str!("../../migrations/006_selfrole_labels.sql"),
         include_str!("../../migrations/007_dashboard_users.sql"),
         include_str!("../../migrations/008_fix_reminder_unique.sql"),
+        include_str!("../../migrations/009_custom_reminders.sql"),
     ];
 
     for migration_content in migrations {

@@ -1400,9 +1400,13 @@ pub async fn send_dm_to_user(http: &Http, user_id: u64, content: &str) -> Result
 
 // Reminder functions
 
+const MAX_CUSTOM_REMINDERS_PER_GUILD: i64 = 10;
+
 /// Get all reminder configs for a guild, with their ping roles
 pub async fn get_reminders_config(app_state: &AppState, guild_id: u64) -> Result<Value, String> {
-    use crate::database::reminders::{ReminderConfig, ReminderPingRole};
+    use crate::database::reminders::{
+        CustomReminder, CustomReminderPingRole, ReminderConfig, ReminderPingRole,
+    };
 
     let guild_id_str = guild_id.to_string();
     let configs = ReminderConfig::get_by_guild(&app_state.db, &guild_id_str)
@@ -1432,7 +1436,26 @@ pub async fn get_reminders_config(app_state: &AppState, guild_id: u64) -> Result
         }));
     }
 
-    Ok(json!({ "success": true, "configs": result }))
+    let custom = CustomReminder::get_by_guild(&app_state.db, &guild_id_str)
+        .await
+        .unwrap_or_default();
+    let mut custom_result = Vec::new();
+    for cr in custom {
+        let roles = CustomReminderPingRole::get_by_reminder(&app_state.db, cr.id)
+            .await
+            .unwrap_or_default();
+        let role_ids: Vec<String> = roles.into_iter().map(|r| r.role_id).collect();
+        custom_result.push(json!({
+            "id": cr.id, "name": cr.name, "enabled": cr.enabled,
+            "channel_id": cr.channel_id, "schedule_time": cr.schedule_time,
+            "schedule_days": cr.schedule_days, "timezone": cr.timezone,
+            "message_type": cr.message_type, "message_content": cr.message_content,
+            "embed_title": cr.embed_title, "embed_description": cr.embed_description,
+            "embed_color": cr.embed_color, "ping_roles": role_ids,
+        }));
+    }
+
+    Ok(json!({ "success": true, "configs": result, "custom_reminders": custom_result }))
 }
 
 /// Upsert a reminder config for a guild
@@ -1596,7 +1619,9 @@ pub async fn get_user_reminder_settings(
 
 /// List a user's active reminder subscriptions with minimal details
 pub async fn list_user_subscriptions(app_state: &AppState, user_id: &str) -> Result<Value, String> {
-    use crate::database::reminders::{ReminderConfig, ReminderSubscription};
+    use crate::database::reminders::{
+        CustomReminder, CustomReminderSubscription, ReminderConfig, ReminderSubscription,
+    };
 
     let subs = ReminderSubscription::get_by_user(&app_state.db, user_id)
         .await
@@ -1613,7 +1638,24 @@ pub async fn list_user_subscriptions(app_state: &AppState, user_id: &str) -> Res
             }));
         }
     }
-    Ok(json!({ "success": true, "subscriptions": arr }))
+
+    let custom_subs = CustomReminderSubscription::get_by_user(&app_state.db, user_id)
+        .await
+        .map_err(|e| format!("DB error: {}", e))?;
+
+    let mut custom_arr = Vec::new();
+    for sub in custom_subs {
+        if let Ok(Some(cr)) = CustomReminder::get_by_id(&app_state.db, sub.reminder_id).await {
+            custom_arr.push(json!({
+                "subscription_id": sub.id,
+                "reminder_id": cr.id,
+                "guild_id": cr.guild_id,
+                "name": cr.name,
+            }));
+        }
+    }
+
+    Ok(json!({ "success": true, "subscriptions": arr, "custom_subscriptions": custom_arr }))
 }
 
 /// Subscribe a user to a reminder config
@@ -1651,5 +1693,316 @@ pub async fn remove_subscription_by_id(
     ReminderSubscription::delete_by_id(&app_state.db, subscription_id)
         .await
         .map_err(|e| format!("DB error: {}", e))?;
+    Ok(json!({ "success": true }))
+}
+
+// Custom reminder functions
+
+pub async fn get_custom_reminders(app_state: &AppState, guild_id: u64) -> Result<Value, String> {
+    use crate::database::reminders::{CustomReminder, CustomReminderPingRole};
+
+    let guild_id_str = guild_id.to_string();
+    let reminders = CustomReminder::get_by_guild(&app_state.db, &guild_id_str)
+        .await
+        .map_err(|e| format!("DB error: {}", e))?;
+
+    let mut result = Vec::new();
+    for cr in reminders {
+        let roles = CustomReminderPingRole::get_by_reminder(&app_state.db, cr.id)
+            .await
+            .unwrap_or_default();
+        let role_ids: Vec<String> = roles.into_iter().map(|r| r.role_id).collect();
+        result.push(json!({
+            "id": cr.id, "name": cr.name, "enabled": cr.enabled,
+            "channel_id": cr.channel_id, "schedule_time": cr.schedule_time,
+            "schedule_days": cr.schedule_days, "timezone": cr.timezone,
+            "message_type": cr.message_type, "message_content": cr.message_content,
+            "embed_title": cr.embed_title, "embed_description": cr.embed_description,
+            "embed_color": cr.embed_color, "ping_roles": role_ids,
+        }));
+    }
+
+    Ok(json!({ "success": true, "custom_reminders": result }))
+}
+
+pub async fn create_custom_reminder(
+    app_state: &AppState,
+    guild_id: u64,
+    payload: &Value,
+) -> Result<Value, String> {
+    use crate::database::reminders::{CustomReminder, CustomReminderPingRole};
+
+    let guild_id_str = guild_id.to_string();
+
+    let count = CustomReminder::count_by_guild(&app_state.db, &guild_id_str)
+        .await
+        .map_err(|e| format!("DB error: {}", e))?;
+    if count >= MAX_CUSTOM_REMINDERS_PER_GUILD {
+        return Err(format!(
+            "maximum of {} custom reminders per guild reached",
+            MAX_CUSTOM_REMINDERS_PER_GUILD
+        ));
+    }
+
+    let name = payload
+        .get("name")
+        .and_then(|v| v.as_str())
+        .filter(|s| !s.is_empty())
+        .ok_or("name is required")?;
+    let channel_id = payload
+        .get("channel_id")
+        .and_then(|v| v.as_str())
+        .filter(|s| !s.is_empty());
+    let schedule_time = payload
+        .get("schedule_time")
+        .and_then(|v| v.as_str())
+        .filter(|s| !s.is_empty())
+        .ok_or("schedule_time is required")?;
+    let schedule_days = payload
+        .get("schedule_days")
+        .and_then(|v| v.as_str())
+        .unwrap_or("0,1,2,3,4,5,6");
+    let timezone = payload
+        .get("timezone")
+        .and_then(|v| v.as_str())
+        .unwrap_or("UTC");
+    let message_type = payload
+        .get("message_type")
+        .and_then(|v| v.as_str())
+        .unwrap_or("embed");
+    let message_content = payload
+        .get("message_content")
+        .and_then(|v| v.as_str())
+        .filter(|s| !s.is_empty());
+    let embed_title = payload
+        .get("embed_title")
+        .and_then(|v| v.as_str())
+        .filter(|s| !s.is_empty());
+    let embed_description = payload
+        .get("embed_description")
+        .and_then(|v| v.as_str())
+        .filter(|s| !s.is_empty());
+    let embed_color = payload.get("embed_color").and_then(|v| v.as_i64());
+
+    // validate schedule_time (HH:MM)
+    let time_parts: Vec<&str> = schedule_time.split(':').collect();
+    if time_parts.len() != 2
+        || time_parts[0].parse::<u32>().is_err()
+        || time_parts[1].parse::<u32>().is_err()
+    {
+        return Err("invalid schedule_time format, expected HH:MM".to_string());
+    }
+
+    // validate schedule_days (comma-separated 0-6)
+    for part in schedule_days.split(',') {
+        let day: u32 = part
+            .trim()
+            .parse()
+            .map_err(|_| format!("invalid day in schedule_days: {}", part))?;
+        if day > 6 {
+            return Err(format!("schedule day out of range 0-6: {}", day));
+        }
+    }
+
+    // validate timezone
+    if timezone.parse::<chrono_tz::Tz>().is_err() {
+        return Err(format!("invalid timezone: {}", timezone));
+    }
+
+    // ensure guild_config exists (foreign key requirement)
+    use crate::database::reminders::GuildConfig;
+    if GuildConfig::get(&app_state.db, &guild_id_str)
+        .await
+        .map_err(|e| e.to_string())?
+        .is_none()
+    {
+        GuildConfig::upsert(&app_state.db, &guild_id_str, "!", None, timezone)
+            .await
+            .map_err(|e| format!("Failed to create guild config: {}", e))?;
+    }
+
+    let config_id = CustomReminder::create(
+        &app_state.db,
+        &guild_id_str,
+        name,
+        channel_id,
+        schedule_time,
+        schedule_days,
+        timezone,
+        message_type,
+        message_content,
+        embed_title,
+        embed_description,
+        embed_color,
+    )
+    .await
+    .map_err(|e| format!("DB error: {}", e))?;
+
+    if let Some(roles) = payload.get("ping_roles").and_then(|v| v.as_array()) {
+        let role_ids: Vec<String> = roles
+            .iter()
+            .filter_map(|v| v.as_str().map(str::to_string))
+            .collect();
+        CustomReminderPingRole::set_roles(&app_state.db, config_id, &role_ids)
+            .await
+            .map_err(|e| format!("DB error: {}", e))?;
+    }
+
+    if let Some(enabled) = payload.get("enabled").and_then(|v| v.as_bool()) {
+        CustomReminder::set_enabled(&app_state.db, config_id, enabled)
+            .await
+            .map_err(|e| format!("DB error: {}", e))?;
+    }
+
+    Ok(json!({ "success": true, "id": config_id }))
+}
+
+pub async fn update_custom_reminder(
+    app_state: &AppState,
+    guild_id: u64,
+    reminder_id: i64,
+    payload: &Value,
+) -> Result<Value, String> {
+    use crate::database::reminders::{CustomReminder, CustomReminderPingRole};
+
+    let guild_id_str = guild_id.to_string();
+    let existing = CustomReminder::get_by_id(&app_state.db, reminder_id)
+        .await
+        .map_err(|e| format!("DB error: {}", e))?
+        .ok_or("custom reminder not found")?;
+
+    if existing.guild_id != guild_id_str {
+        return Err("custom reminder not found".to_string());
+    }
+
+    let name = payload
+        .get("name")
+        .and_then(|v| v.as_str())
+        .filter(|s| !s.is_empty())
+        .unwrap_or(&existing.name);
+    let channel_id = payload
+        .get("channel_id")
+        .and_then(|v| v.as_str())
+        .filter(|s| !s.is_empty())
+        .or(existing.channel_id.as_deref());
+    let schedule_time = payload
+        .get("schedule_time")
+        .and_then(|v| v.as_str())
+        .filter(|s| !s.is_empty())
+        .unwrap_or(&existing.schedule_time);
+    let schedule_days = payload
+        .get("schedule_days")
+        .and_then(|v| v.as_str())
+        .unwrap_or(&existing.schedule_days);
+    let timezone = payload
+        .get("timezone")
+        .and_then(|v| v.as_str())
+        .unwrap_or(&existing.timezone);
+    let message_type = payload
+        .get("message_type")
+        .and_then(|v| v.as_str())
+        .unwrap_or(&existing.message_type);
+    let message_content = payload
+        .get("message_content")
+        .and_then(|v| v.as_str())
+        .filter(|s| !s.is_empty())
+        .or(existing.message_content.as_deref());
+    let embed_title = payload
+        .get("embed_title")
+        .and_then(|v| v.as_str())
+        .filter(|s| !s.is_empty())
+        .or(existing.embed_title.as_deref());
+    let embed_description = payload
+        .get("embed_description")
+        .and_then(|v| v.as_str())
+        .filter(|s| !s.is_empty())
+        .or(existing.embed_description.as_deref());
+    let embed_color = payload
+        .get("embed_color")
+        .and_then(|v| v.as_i64())
+        .or(existing.embed_color);
+
+    // validate schedule_time (HH:MM)
+    let time_parts: Vec<&str> = schedule_time.split(':').collect();
+    if time_parts.len() != 2
+        || time_parts[0].parse::<u32>().is_err()
+        || time_parts[1].parse::<u32>().is_err()
+    {
+        return Err("invalid schedule_time format, expected HH:MM".to_string());
+    }
+
+    // validate schedule_days (comma-separated 0-6)
+    for part in schedule_days.split(',') {
+        let day: u32 = part
+            .trim()
+            .parse()
+            .map_err(|_| format!("invalid day in schedule_days: {}", part))?;
+        if day > 6 {
+            return Err(format!("schedule day out of range 0-6: {}", day));
+        }
+    }
+
+    // validate timezone
+    if timezone.parse::<chrono_tz::Tz>().is_err() {
+        return Err(format!("invalid timezone: {}", timezone));
+    }
+
+    CustomReminder::update(
+        &app_state.db,
+        reminder_id,
+        name,
+        channel_id,
+        schedule_time,
+        schedule_days,
+        timezone,
+        message_type,
+        message_content,
+        embed_title,
+        embed_description,
+        embed_color,
+    )
+    .await
+    .map_err(|e| format!("DB error: {}", e))?;
+
+    if let Some(roles) = payload.get("ping_roles").and_then(|v| v.as_array()) {
+        let role_ids: Vec<String> = roles
+            .iter()
+            .filter_map(|v| v.as_str().map(str::to_string))
+            .collect();
+        CustomReminderPingRole::set_roles(&app_state.db, reminder_id, &role_ids)
+            .await
+            .map_err(|e| format!("DB error: {}", e))?;
+    }
+
+    if let Some(enabled) = payload.get("enabled").and_then(|v| v.as_bool()) {
+        CustomReminder::set_enabled(&app_state.db, reminder_id, enabled)
+            .await
+            .map_err(|e| format!("DB error: {}", e))?;
+    }
+
+    Ok(json!({ "success": true }))
+}
+
+pub async fn delete_custom_reminder(
+    app_state: &AppState,
+    guild_id: u64,
+    reminder_id: i64,
+) -> Result<Value, String> {
+    use crate::database::reminders::CustomReminder;
+
+    let guild_id_str = guild_id.to_string();
+    let existing = CustomReminder::get_by_id(&app_state.db, reminder_id)
+        .await
+        .map_err(|e| format!("DB error: {}", e))?
+        .ok_or("custom reminder not found")?;
+
+    if existing.guild_id != guild_id_str {
+        return Err("custom reminder not found".to_string());
+    }
+
+    CustomReminder::delete(&app_state.db, reminder_id)
+        .await
+        .map_err(|e| format!("DB error: {}", e))?;
+
     Ok(json!({ "success": true }))
 }

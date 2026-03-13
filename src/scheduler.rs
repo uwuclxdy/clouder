@@ -1,8 +1,9 @@
-use chrono::{Duration, NaiveTime, Utc};
+use chrono::{Datelike, Duration, NaiveTime, Utc};
 use chrono_tz::Tz;
 use clouder_core::{
     config::AppState,
     database::reminders::{
+        CustomReminder, CustomReminderLog, CustomReminderPingRole, CustomReminderSubscription,
         ReminderConfig, ReminderLog, ReminderSubscription, ReminderType, UserSettings,
     },
 };
@@ -137,6 +138,106 @@ async fn run_due_reminders(state: &AppState) -> anyhow::Result<()> {
         };
 
         let _ = ReminderLog::create(
+            &state.db,
+            id,
+            status,
+            err_msg,
+            channel_sent,
+            dm_count as i64,
+            dm_failed as i64,
+        )
+        .await;
+    }
+
+    // fetch enabled custom reminders
+    let custom_rows = sqlx::query_as::<_, (i64, String, String, String, String)>(
+        "SELECT id, guild_id, schedule_time, schedule_days, timezone
+         FROM custom_reminders
+         WHERE enabled = 1 AND channel_id IS NOT NULL",
+    )
+    .fetch_all(state.db.as_ref())
+    .await?;
+
+    for (id, guild_id, schedule_time, schedule_days, tz_str) in custom_rows {
+        let tz: Tz = match tz_str.parse() {
+            Ok(t) => t,
+            Err(_) => {
+                warn!("invalid timezone '{}' for custom reminder {}", tz_str, id);
+                continue;
+            }
+        };
+
+        let now_local = now_utc.with_timezone(&tz);
+        let weekday = now_local.weekday().num_days_from_sunday();
+
+        if !schedule_days_match(&schedule_days, weekday) {
+            continue;
+        }
+
+        let Some(target) = parse_hhmm(&schedule_time) else {
+            continue;
+        };
+
+        if !is_within_minute(now_local.time(), target) {
+            continue;
+        }
+
+        if already_fired_custom(state, id, 55).await {
+            continue;
+        }
+
+        let reminder = match CustomReminder::get_by_id(&state.db, id)
+            .await
+            .ok()
+            .flatten()
+        {
+            Some(r) => r,
+            None => continue,
+        };
+
+        let channel_id: u64 = match reminder.channel_id.as_deref().and_then(|s| s.parse().ok()) {
+            Some(c) => c,
+            None => continue,
+        };
+
+        let ping_roles = CustomReminderPingRole::get_by_reminder(&state.db, id)
+            .await
+            .unwrap_or_default();
+
+        let role_mentions: String = ping_roles
+            .iter()
+            .map(|r| format!("<@&{}>", r.role_id))
+            .collect::<Vec<_>>()
+            .join(" ");
+
+        let msg = build_custom_reminder_message(&reminder, &role_mentions);
+
+        let mut channel_sent = false;
+        let send_result = state
+            .http
+            .send_message(ChannelId::new(channel_id), vec![], &msg)
+            .await;
+
+        match send_result {
+            Ok(_) => {
+                channel_sent = true;
+                info!("custom reminder {} fired in guild {}", id, guild_id);
+            }
+            Err(e) => {
+                error!("custom reminder {} send failed: {}", id, e);
+            }
+        }
+
+        let (dm_count, dm_failed) = send_custom_dms(state, &reminder).await;
+
+        let status = if channel_sent { "success" } else { "error" };
+        let err_msg = if !channel_sent {
+            Some("failed to send to channel")
+        } else {
+            None
+        };
+
+        let _ = CustomReminderLog::create(
             &state.db,
             id,
             status,
@@ -340,4 +441,118 @@ async fn already_fired_recently(state: &AppState, config_id: i64, within_secs: i
     .await;
 
     matches!(result, Ok((n,)) if n > 0)
+}
+
+pub fn schedule_days_match(schedule_days: &str, weekday: u32) -> bool {
+    if schedule_days.is_empty() {
+        return true;
+    }
+    schedule_days
+        .split(',')
+        .filter_map(|s| s.trim().parse::<u32>().ok())
+        .any(|d| d == weekday)
+}
+
+async fn already_fired_custom(state: &AppState, reminder_id: i64, within_secs: i64) -> bool {
+    let result = sqlx::query_as::<_, (i64,)>(
+        "SELECT COUNT(*) FROM custom_reminder_logs WHERE reminder_id = ? AND created_at >= datetime('now', ?)",
+    )
+    .bind(reminder_id)
+    .bind(format!("-{} seconds", within_secs))
+    .fetch_one(state.db.as_ref())
+    .await;
+
+    matches!(result, Ok((n,)) if n > 0)
+}
+
+fn build_custom_reminder_message(reminder: &CustomReminder, role_mentions: &str) -> CreateMessage {
+    let mut msg = CreateMessage::new();
+
+    if !role_mentions.is_empty() {
+        msg = msg.content(role_mentions);
+    }
+
+    if reminder.message_type == "embed" {
+        use serenity::all::{CreateEmbed, CreateEmbedFooter};
+
+        let title = reminder.embed_title.as_deref().unwrap_or("reminder");
+        let desc = reminder.embed_description.as_deref().unwrap_or("");
+        let color = reminder.embed_color.unwrap_or(0xFFFFFF) as u32;
+
+        let embed = CreateEmbed::new()
+            .title(title)
+            .description(desc)
+            .colour(color)
+            .footer(CreateEmbedFooter::new("clouder"));
+
+        msg = msg.embed(embed);
+    } else {
+        let content = reminder.message_content.as_deref().unwrap_or("");
+
+        let full = if role_mentions.is_empty() {
+            content.to_string()
+        } else {
+            format!("{} {}", role_mentions, content)
+        };
+
+        msg = CreateMessage::new().content(full);
+    }
+
+    msg
+}
+
+async fn send_custom_dms(state: &AppState, reminder: &CustomReminder) -> (usize, usize) {
+    let subs = match CustomReminderSubscription::get_by_reminder(&state.db, reminder.id).await {
+        Ok(s) => s,
+        Err(_) => return (0, 0),
+    };
+
+    let mut sent = 0;
+    let mut failed = 0;
+
+    for sub in &subs {
+        let settings = UserSettings::get(&state.db, &sub.user_id)
+            .await
+            .unwrap_or(None);
+        if settings.as_ref().is_some_and(|s| !s.dm_reminders_enabled) {
+            continue;
+        }
+
+        let msg = build_custom_reminder_message(reminder, "");
+
+        let user_id_u64: u64 = match sub.user_id.parse() {
+            Ok(u) => u,
+            Err(_) => {
+                failed += 1;
+                continue;
+            }
+        };
+
+        let send = async {
+            let channel = state
+                .http
+                .create_private_channel(&json!({ "recipient_id": user_id_u64 }))
+                .await?;
+            state.http.send_message(channel.id, vec![], &msg).await?;
+            Ok::<_, serenity::Error>(())
+        };
+
+        match send.await {
+            Ok(_) => sent += 1,
+            Err(e) => {
+                warn!("dm failed for user {}: {}", sub.user_id, e);
+                failed += 1;
+                if e.to_string().contains("Cannot send messages to this user") {
+                    let _ = CustomReminderSubscription::unsubscribe(
+                        &state.db,
+                        &sub.user_id,
+                        reminder.id,
+                    )
+                    .await;
+                }
+            }
+        }
+    }
+
+    (sent, failed)
 }

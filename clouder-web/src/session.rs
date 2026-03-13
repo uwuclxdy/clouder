@@ -41,7 +41,9 @@ pub fn store(jar: SignedCookieJar, user: &SessionUser, secure: bool) -> SignedCo
 }
 
 pub fn clear(jar: SignedCookieJar) -> SignedCookieJar {
-    jar.remove(Cookie::from(COOKIE_NAME))
+    let mut cookie = Cookie::from(COOKIE_NAME);
+    cookie.set_path("/");
+    jar.remove(cookie)
 }
 
 /// Extractor for API routes — returns 401 if session cookie is missing or invalid.

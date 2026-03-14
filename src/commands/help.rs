@@ -2,7 +2,12 @@ use anyhow::Result;
 use clouder_core::config::AppState;
 use clouder_core::utils::get_embed_color;
 use poise::serenity_prelude as serenity;
-use serenity::{CreateEmbed, CreateEmbedFooter};
+use serenity::all::{
+    ButtonStyle, CreateActionRow, CreateButton, CreateEmbed, CreateEmbedFooter,
+    CreateInteractionResponse, CreateInteractionResponseMessage, EditMessage,
+};
+use serenity::collector::ComponentInteractionCollector;
+use std::time::Duration;
 
 type Error = Box<dyn std::error::Error + Send + Sync>;
 type Context<'a> = poise::Context<'a, AppState, Error>;
@@ -191,7 +196,11 @@ pub fn create_help_embed(commands: &[CommandInfo], color: serenity::Color) -> Cr
                 .collect::<Vec<_>>()
                 .join("\n");
 
-            embed = embed.field(format!("> ***{}***", category.as_str()), command_list, false);
+            embed = embed.field(
+                format!("> ***{}***", category.as_str()),
+                command_list,
+                false,
+            );
         }
     }
 
@@ -200,6 +209,8 @@ pub fn create_help_embed(commands: &[CommandInfo], color: serenity::Color) -> Cr
 
     embed
 }
+
+const COMMANDS_PER_PAGE: usize = 5;
 
 async fn show_category_help(
     ctx: Context<'_>,
@@ -213,10 +224,12 @@ async fn show_category_help(
         "api" | "integration" => CommandCategory::ApiIntegration,
         "utility" | "util" => CommandCategory::Utility,
         _ => {
-            ctx.send(poise::CreateReply::default()
-                .content("invalid category! available: `core`, `info`, `management`, `api`, `utility`")
-                .ephemeral(true))
-                .await?;
+            ctx.send(
+                poise::CreateReply::default()
+                    .content("invalid category! available: `core`, `info`, `management`, `api`, `utility`")
+                    .ephemeral(true),
+            )
+            .await?;
             return Ok(());
         }
     };
@@ -236,33 +249,128 @@ async fn show_category_help(
         return Ok(());
     }
 
+    let total_pages = category_commands.len().div_ceil(COMMANDS_PER_PAGE);
     let color = get_embed_color(ctx.data(), ctx.guild_id().map(|g| g.get())).await;
-    let mut embed = CreateEmbed::new()
-        .title(format!("{} - details", category.as_str()))
-        .color(color);
 
-    for cmd in &category_commands {
-        let mut field_value = format!("**desc:** {}\n", cmd.description);
-
-        if let Some(usage) = &cmd.usage {
-            field_value.push_str(&format!("**usage:** `{}`\n", usage));
-        }
-
-        if let Some(permissions) = &cmd.permissions {
-            field_value.push_str(&format!("**permissions:** {}\n", permissions));
-        }
-
-        embed = embed.field(&cmd.name, field_value, false);
+    if total_pages <= 1 {
+        let embed = build_page_embed(&category_commands, &category, 0, 1, color);
+        ctx.send(poise::CreateReply::default().embed(embed)).await?;
+        return Ok(());
     }
 
-    embed = embed.footer(CreateEmbedFooter::new(format!(
-        "{} commands in {} category • use /help for all categories",
-        category_commands.len(),
-        category_name
-    )));
+    let prev_id = format!("help_prev_{}", ctx.id());
+    let next_id = format!("help_next_{}", ctx.id());
+    let mut page = 0usize;
 
-    ctx.send(poise::CreateReply::default().embed(embed)).await?;
+    let mut msg = ctx
+        .send(
+            poise::CreateReply::default()
+                .embed(build_page_embed(
+                    &category_commands,
+                    &category,
+                    page,
+                    total_pages,
+                    color,
+                ))
+                .components(nav_buttons(&prev_id, &next_id, page, total_pages)),
+        )
+        .await?
+        .into_message()
+        .await?;
+
+    loop {
+        let interaction = ComponentInteractionCollector::new(ctx.serenity_context())
+            .message_id(msg.id)
+            .author_id(ctx.author().id)
+            .timeout(Duration::from_secs(60))
+            .await;
+
+        let Some(interaction) = interaction else {
+            msg.edit(ctx.http(), EditMessage::new().components(vec![]))
+                .await
+                .ok();
+            break;
+        };
+
+        if interaction.data.custom_id == prev_id {
+            page = page.saturating_sub(1);
+        } else if interaction.data.custom_id == next_id {
+            page = (page + 1).min(total_pages - 1);
+        }
+
+        interaction
+            .create_response(
+                ctx.http(),
+                CreateInteractionResponse::UpdateMessage(
+                    CreateInteractionResponseMessage::new()
+                        .embed(build_page_embed(
+                            &category_commands,
+                            &category,
+                            page,
+                            total_pages,
+                            color,
+                        ))
+                        .components(nav_buttons(&prev_id, &next_id, page, total_pages)),
+                ),
+            )
+            .await?;
+    }
+
     Ok(())
+}
+
+fn build_page_embed(
+    commands: &[&CommandInfo],
+    category: &CommandCategory,
+    page: usize,
+    total_pages: usize,
+    color: serenity::Color,
+) -> CreateEmbed {
+    let start = page * COMMANDS_PER_PAGE;
+    let page_commands = &commands[start..(start + COMMANDS_PER_PAGE).min(commands.len())];
+
+    let title = if total_pages > 1 {
+        format!("{} — page {}/{}", category.as_str(), page + 1, total_pages)
+    } else {
+        format!("{} — details", category.as_str())
+    };
+
+    let mut embed = CreateEmbed::new().title(title).color(color);
+
+    for cmd in page_commands {
+        let mut field = format!("**desc:** {}\n", cmd.description);
+        if let Some(usage) = &cmd.usage {
+            field.push_str(&format!("**usage:** `{}`\n", usage));
+        }
+        if let Some(perms) = &cmd.permissions {
+            field.push_str(&format!("**permissions:** {}\n", perms));
+        }
+        embed = embed.field(&cmd.name, field, false);
+    }
+
+    embed.footer(CreateEmbedFooter::new(format!(
+        "{} commands in {} • use /help for all categories",
+        commands.len(),
+        category.as_str()
+    )))
+}
+
+fn nav_buttons(
+    prev_id: &str,
+    next_id: &str,
+    page: usize,
+    total_pages: usize,
+) -> Vec<CreateActionRow> {
+    vec![CreateActionRow::Buttons(vec![
+        CreateButton::new(prev_id)
+            .label("◀")
+            .style(ButtonStyle::Secondary)
+            .disabled(page == 0),
+        CreateButton::new(next_id)
+            .label("▶")
+            .style(ButtonStyle::Secondary)
+            .disabled(page + 1 >= total_pages),
+    ])]
 }
 
 async fn category_autocomplete(_ctx: Context<'_>, partial: &str) -> impl Iterator<Item = String> {

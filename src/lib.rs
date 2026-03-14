@@ -14,6 +14,7 @@ mod logging;
 pub mod scheduler;
 
 pub use crate::commands::about::about;
+pub use crate::commands::channel::channel;
 pub use crate::commands::help::help;
 pub use crate::commands::mediaonly::mediaonly;
 pub use crate::commands::purge::purge;
@@ -72,6 +73,7 @@ async fn async_main() -> Result<()> {
             commands: vec![
                 selfroles(),
                 about(),
+                channel(),
                 help(),
                 purge(),
                 mediaonly(),

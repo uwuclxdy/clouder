@@ -147,7 +147,8 @@
 
                     <div class="form-group">
                         <label for="wysi-timezone">timezone</label>
-                        <select id="wysi-timezone"></select>
+                        <select id="wysi-timezone" onchange="updateTzClock('wysi')"></select>
+                        <p id="wysi-tz-clock" style="color:var(--ctp-subtext1);font-size:0.8rem;margin:4px 0 0;font-family:var(--font-mono);"></p>
                     </div>
 
                     <div class="form-group">
@@ -236,7 +237,8 @@
                             </div>
                             <div class="form-group">
                                 <label for="custom-timezone">timezone</label>
-                                <select id="custom-timezone"></select>
+                                <select id="custom-timezone" onchange="updateTzClock('custom')"></select>
+                                <p id="custom-tz-clock" style="color:var(--ctp-subtext1);font-size:0.8rem;margin:4px 0 0;font-family:var(--font-mono);"></p>
                             </div>
                         </div>
 
@@ -419,7 +421,10 @@
 
                 if (cfg.channel_id) document.getElementById(`${prefix}-channel`).value = cfg.channel_id;
 
-                if (cfg.timezone) document.getElementById('wysi-timezone').value = cfg.timezone;
+                if (cfg.timezone) {
+                    document.getElementById('wysi-timezone').value = cfg.timezone;
+                    updateTzClock('wysi');
+                }
 
                 // load morning/evening toggles (default to true if not set)
                 document.getElementById('wysi-morning-enabled').checked = cfg.wysi_morning_enabled !== false;
@@ -561,6 +566,7 @@
                 document.getElementById('custom-channel').value = r.channel_id || '';
                 document.getElementById('custom-time').value = r.schedule_time || '09:00';
                 document.getElementById('custom-timezone').value = r.timezone || 'UTC';
+                updateTzClock('custom');
                 document.getElementById('custom-enabled').checked = r.enabled;
                 document.getElementById('custom-msg-type').value = r.message_type || 'embed';
                 toggleMsgType('custom');
@@ -595,6 +601,7 @@
                 document.getElementById('custom-channel').value = '';
                 document.getElementById('custom-time').value = '09:00';
                 document.getElementById('custom-timezone').value = 'UTC';
+                updateTzClock('custom');
                 document.getElementById('custom-enabled').checked = true;
                 document.getElementById('custom-msg-type').value = 'embed';
                 toggleMsgType('custom');
@@ -682,9 +689,28 @@
             toast(res.ok ? 'test reminder sent!' : 'send failed', res.ok ? 'success' : 'error');
         }
 
+        // timezone clocks
+        function updateTzClock(prefix) {
+            const sel = document.getElementById(`${prefix}-timezone`);
+            const el = document.getElementById(`${prefix}-tz-clock`);
+            if (!sel || !el) return;
+            const tz = sel.value;
+            if (!tz) { el.textContent = ''; return; }
+            try {
+                const time = new Intl.DateTimeFormat('en-GB', { timeZone: tz, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).format(new Date());
+                el.textContent = `time in ${tz}: ${time}`;
+            } catch {
+                el.textContent = '';
+            }
+        }
+
+        setInterval(() => { updateTzClock('wysi'); updateTzClock('custom'); }, 1000);
+
         // boot
         populateTimezones();
         Promise.all([loadChannels(), loadRoles()]).then(() => Promise.all([loadConfigs(), loadCustomReminders()]));
+        updateTzClock('wysi');
+        updateTzClock('custom');
     </script>
 </body>
 

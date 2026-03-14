@@ -1,4 +1,5 @@
 pub mod about;
+pub mod channel;
 pub mod help;
 pub mod mediaonly;
 pub mod purge;

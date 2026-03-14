@@ -102,6 +102,27 @@ pub fn get_all_commands() -> Vec<CommandInfo> {
             permissions: Some("manage channels".to_string()),
         },
         CommandInfo {
+            name: "/channel delete".to_string(),
+            description: "delete a channel".to_string(),
+            usage: Some("/channel delete [channel]".to_string()),
+            category: CommandCategory::Management,
+            permissions: Some("manage channels".to_string()),
+        },
+        CommandInfo {
+            name: "/channel clone".to_string(),
+            description: "clone a channel with all its settings".to_string(),
+            usage: Some("/channel clone [channel]".to_string()),
+            category: CommandCategory::Management,
+            permissions: Some("manage channels".to_string()),
+        },
+        CommandInfo {
+            name: "/channel nuke".to_string(),
+            description: "delete and recreate a channel, wiping all history".to_string(),
+            usage: Some("/channel nuke [channel]".to_string()),
+            category: CommandCategory::Management,
+            permissions: Some("manage channels".to_string()),
+        },
+        CommandInfo {
             name: "/random".to_string(),
             description: "freaky link generator".to_string(),
             usage: Some("/random".to_string()),

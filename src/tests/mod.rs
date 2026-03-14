@@ -1,4 +1,5 @@
 pub mod about_tests;
+mod channel_tests;
 pub mod commands_tests;
 pub mod config_tests;
 pub mod database_tests;

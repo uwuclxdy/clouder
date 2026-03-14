@@ -5,10 +5,30 @@ use axum::{
 };
 use clouder_core::config::AppState;
 use serde_json::{Value, json};
+use serenity::all::Permissions;
 use tracing::{error, info};
 
 use crate::session::Auth;
 
+async fn require_guild_perm(
+    state: &AppState,
+    user_id: &str,
+    guild_id: &str,
+    required: Permissions,
+) -> Result<(), StatusCode> {
+    use clouder_core::database::guild_cache::CachedGuild;
+    let perms = CachedGuild::get_user_permissions(&state.db, user_id, guild_id)
+        .await
+        .unwrap_or(None)
+        .ok_or(StatusCode::FORBIDDEN)?;
+    let perms_flags = Permissions::from_bits_truncate(perms as u64);
+    if !clouder_core::utils::has_permission(perms_flags, required) {
+        return Err(StatusCode::FORBIDDEN);
+    }
+    Ok(())
+}
+
+/// Verifies the user has any cached access to the guild (read-only endpoints).
 async fn require_guild_access(
     state: &AppState,
     user_id: &str,
@@ -88,7 +108,13 @@ pub async fn api_selfroles_list(
     Path(guild_id): Path<String>,
     State(state): State<AppState>,
 ) -> Result<Json<Value>, StatusCode> {
-    require_guild_access(&state, &auth.0.user_id, &guild_id).await?;
+    require_guild_perm(
+        &state,
+        &auth.0.user_id,
+        &guild_id,
+        Permissions::MANAGE_ROLES,
+    )
+    .await?;
     let guild_id_u64 = guild_id.parse().map_err(|_| StatusCode::BAD_REQUEST)?;
     match clouder_core::shared::list_selfroles(&state, guild_id_u64).await {
         Ok(result) => Ok(Json(result)),
@@ -105,7 +131,13 @@ pub async fn api_selfroles_create(
     State(state): State<AppState>,
     Json(payload): Json<serde_json::Value>,
 ) -> Result<Json<Value>, StatusCode> {
-    require_guild_access(&state, &auth.0.user_id, &guild_id).await?;
+    require_guild_perm(
+        &state,
+        &auth.0.user_id,
+        &guild_id,
+        Permissions::MANAGE_ROLES,
+    )
+    .await?;
     let guild_id_u64 = guild_id.parse().map_err(|_| StatusCode::BAD_REQUEST)?;
     let user_id_u64: u64 = auth.0.user_id.parse().unwrap_or(0);
     match clouder_core::shared::create_selfrole(&state, guild_id_u64, user_id_u64, &payload).await {
@@ -126,7 +158,13 @@ pub async fn api_selfroles_update(
     State(state): State<AppState>,
     Json(payload): Json<serde_json::Value>,
 ) -> Result<Json<Value>, StatusCode> {
-    require_guild_access(&state, &auth.0.user_id, &guild_id).await?;
+    require_guild_perm(
+        &state,
+        &auth.0.user_id,
+        &guild_id,
+        Permissions::MANAGE_ROLES,
+    )
+    .await?;
     let guild_id_u64 = guild_id.parse().map_err(|_| StatusCode::BAD_REQUEST)?;
     let config_id_i64 = config_id.parse().map_err(|_| StatusCode::BAD_REQUEST)?;
     let user_id_u64: u64 = auth.0.user_id.parse().unwrap_or(0);
@@ -155,7 +193,13 @@ pub async fn api_selfroles_delete(
     Path((guild_id, config_id)): Path<(String, String)>,
     State(state): State<AppState>,
 ) -> Result<Json<Value>, StatusCode> {
-    require_guild_access(&state, &auth.0.user_id, &guild_id).await?;
+    require_guild_perm(
+        &state,
+        &auth.0.user_id,
+        &guild_id,
+        Permissions::MANAGE_ROLES,
+    )
+    .await?;
     let guild_id_u64 = guild_id.parse().map_err(|_| StatusCode::BAD_REQUEST)?;
     let config_id_i64 = config_id.parse().map_err(|_| StatusCode::BAD_REQUEST)?;
     match clouder_core::shared::delete_selfrole(&state, guild_id_u64, config_id_i64).await {
@@ -175,7 +219,13 @@ pub async fn api_welcome_goodbye_get(
     Path(guild_id): Path<String>,
     State(state): State<AppState>,
 ) -> Result<Json<Value>, StatusCode> {
-    require_guild_access(&state, &auth.0.user_id, &guild_id).await?;
+    require_guild_perm(
+        &state,
+        &auth.0.user_id,
+        &guild_id,
+        Permissions::MANAGE_GUILD,
+    )
+    .await?;
     let guild_id_u64 = guild_id.parse().map_err(|_| StatusCode::BAD_REQUEST)?;
     match clouder_core::shared::get_welcome_goodbye_config(&state, guild_id_u64).await {
         Ok(result) => Ok(Json(result)),
@@ -192,7 +242,13 @@ pub async fn api_welcome_goodbye_post(
     State(state): State<AppState>,
     Json(payload): Json<Value>,
 ) -> Result<Json<Value>, StatusCode> {
-    require_guild_access(&state, &auth.0.user_id, &guild_id).await?;
+    require_guild_perm(
+        &state,
+        &auth.0.user_id,
+        &guild_id,
+        Permissions::MANAGE_GUILD,
+    )
+    .await?;
     let guild_id_u64 = guild_id.parse().map_err(|_| StatusCode::BAD_REQUEST)?;
     match clouder_core::shared::update_welcome_goodbye_config(&state, guild_id_u64, &payload).await
     {
@@ -212,7 +268,13 @@ pub async fn api_welcome_goodbye_test(
     Path((guild_id, message_type)): Path<(String, String)>,
     State(state): State<AppState>,
 ) -> Result<Json<Value>, StatusCode> {
-    require_guild_access(&state, &auth.0.user_id, &guild_id).await?;
+    require_guild_perm(
+        &state,
+        &auth.0.user_id,
+        &guild_id,
+        Permissions::MANAGE_GUILD,
+    )
+    .await?;
     let guild_id_u64 = guild_id.parse().map_err(|_| StatusCode::BAD_REQUEST)?;
     match clouder_core::shared::send_test_welcome_message(
         &state,
@@ -240,7 +302,13 @@ pub async fn api_mediaonly_get(
     Path(guild_id): Path<String>,
     State(state): State<AppState>,
 ) -> Result<Json<Value>, StatusCode> {
-    require_guild_access(&state, &auth.0.user_id, &guild_id).await?;
+    require_guild_perm(
+        &state,
+        &auth.0.user_id,
+        &guild_id,
+        Permissions::MANAGE_CHANNELS,
+    )
+    .await?;
     let guild_id_u64 = guild_id.parse().map_err(|_| StatusCode::BAD_REQUEST)?;
     match clouder_core::shared::list_mediaonly_configs(&state, guild_id_u64).await {
         Ok(result) => Ok(Json(result)),
@@ -257,7 +325,13 @@ pub async fn api_mediaonly_post(
     State(state): State<AppState>,
     Json(payload): Json<Value>,
 ) -> Result<Json<Value>, StatusCode> {
-    require_guild_access(&state, &auth.0.user_id, &guild_id).await?;
+    require_guild_perm(
+        &state,
+        &auth.0.user_id,
+        &guild_id,
+        Permissions::MANAGE_CHANNELS,
+    )
+    .await?;
     let guild_id_u64 = guild_id.parse().map_err(|_| StatusCode::BAD_REQUEST)?;
     let channel_id = payload
         .get("channel_id")
@@ -291,7 +365,13 @@ pub async fn api_mediaonly_put(
     State(state): State<AppState>,
     Json(payload): Json<Value>,
 ) -> Result<Json<Value>, StatusCode> {
-    require_guild_access(&state, &auth.0.user_id, &guild_id).await?;
+    require_guild_perm(
+        &state,
+        &auth.0.user_id,
+        &guild_id,
+        Permissions::MANAGE_CHANNELS,
+    )
+    .await?;
     let guild_id_u64 = guild_id.parse().map_err(|_| StatusCode::BAD_REQUEST)?;
     match clouder_core::shared::create_or_update_mediaonly_config(
         &state,
@@ -320,7 +400,13 @@ pub async fn api_mediaonly_delete(
     Path((guild_id, channel_id)): Path<(String, String)>,
     State(state): State<AppState>,
 ) -> Result<Json<Value>, StatusCode> {
-    require_guild_access(&state, &auth.0.user_id, &guild_id).await?;
+    require_guild_perm(
+        &state,
+        &auth.0.user_id,
+        &guild_id,
+        Permissions::MANAGE_CHANNELS,
+    )
+    .await?;
     let guild_id_u64 = guild_id.parse().map_err(|_| StatusCode::BAD_REQUEST)?;
     match clouder_core::shared::delete_mediaonly_config(&state, guild_id_u64, &channel_id).await {
         Ok(result) => {
@@ -342,7 +428,13 @@ pub async fn api_about_get(
     Path(guild_id): Path<String>,
     State(state): State<AppState>,
 ) -> Result<Json<Value>, StatusCode> {
-    require_guild_access(&state, &auth.0.user_id, &guild_id).await?;
+    require_guild_perm(
+        &state,
+        &auth.0.user_id,
+        &guild_id,
+        Permissions::MANAGE_GUILD,
+    )
+    .await?;
     let guild_id_u64 = guild_id.parse().map_err(|_| StatusCode::BAD_REQUEST)?;
     match clouder_core::shared::get_guild_about(&state, guild_id_u64).await {
         Ok(result) => Ok(Json(result)),
@@ -358,7 +450,13 @@ pub async fn api_guild_config_get(
     Path(guild_id): Path<String>,
     State(state): State<AppState>,
 ) -> Result<Json<Value>, StatusCode> {
-    require_guild_access(&state, &auth.0.user_id, &guild_id).await?;
+    require_guild_perm(
+        &state,
+        &auth.0.user_id,
+        &guild_id,
+        Permissions::MANAGE_GUILD,
+    )
+    .await?;
     let guild_id_u64 = guild_id.parse().map_err(|_| StatusCode::BAD_REQUEST)?;
     match clouder_core::shared::get_guild_config(&state, guild_id_u64).await {
         Ok(result) => Ok(Json(result)),
@@ -375,7 +473,13 @@ pub async fn api_guild_config_post(
     State(state): State<AppState>,
     Json(payload): Json<Value>,
 ) -> Result<Json<Value>, StatusCode> {
-    require_guild_access(&state, &auth.0.user_id, &guild_id).await?;
+    require_guild_perm(
+        &state,
+        &auth.0.user_id,
+        &guild_id,
+        Permissions::MANAGE_GUILD,
+    )
+    .await?;
     let guild_id_u64 = guild_id.parse().map_err(|_| StatusCode::BAD_REQUEST)?;
 
     if let Some(tz) = payload.get("timezone").and_then(|v| v.as_str())
@@ -412,7 +516,13 @@ pub async fn api_uwufy_get(
     Path(guild_id): Path<String>,
     State(state): State<AppState>,
 ) -> Result<Json<Value>, StatusCode> {
-    require_guild_access(&state, &auth.0.user_id, &guild_id).await?;
+    require_guild_perm(
+        &state,
+        &auth.0.user_id,
+        &guild_id,
+        Permissions::MANAGE_GUILD,
+    )
+    .await?;
     let guild_id_u64 = guild_id.parse().map_err(|_| StatusCode::BAD_REQUEST)?;
     match clouder_core::shared::list_uwufy_members(&state, guild_id_u64).await {
         Ok(result) => Ok(Json(result)),
@@ -429,7 +539,13 @@ pub async fn api_uwufy_toggle(
     State(state): State<AppState>,
     Json(payload): Json<Value>,
 ) -> Result<Json<Value>, StatusCode> {
-    require_guild_access(&state, &auth.0.user_id, &guild_id).await?;
+    require_guild_perm(
+        &state,
+        &auth.0.user_id,
+        &guild_id,
+        Permissions::MANAGE_GUILD,
+    )
+    .await?;
     let guild_id_u64 = guild_id.parse().map_err(|_| StatusCode::BAD_REQUEST)?;
     let enabled = payload.get("enabled").and_then(|v| v.as_bool());
     match clouder_core::shared::toggle_uwufy_member(&state, guild_id_u64, &user_id, enabled).await {
@@ -449,7 +565,13 @@ pub async fn api_uwufy_disable_all(
     Path(guild_id): Path<String>,
     State(state): State<AppState>,
 ) -> Result<Json<Value>, StatusCode> {
-    require_guild_access(&state, &auth.0.user_id, &guild_id).await?;
+    require_guild_perm(
+        &state,
+        &auth.0.user_id,
+        &guild_id,
+        Permissions::MANAGE_GUILD,
+    )
+    .await?;
     let guild_id_u64 = guild_id.parse().map_err(|_| StatusCode::BAD_REQUEST)?;
     match clouder_core::shared::disable_all_uwufy(&state, guild_id_u64).await {
         Ok(result) => {
@@ -523,7 +645,13 @@ pub async fn api_reminders_get(
     Path(guild_id): Path<String>,
     State(state): State<AppState>,
 ) -> Result<Json<Value>, StatusCode> {
-    require_guild_access(&state, &auth.0.user_id, &guild_id).await?;
+    require_guild_perm(
+        &state,
+        &auth.0.user_id,
+        &guild_id,
+        Permissions::MANAGE_GUILD,
+    )
+    .await?;
     let guild_id_u64 = guild_id.parse().map_err(|_| StatusCode::BAD_REQUEST)?;
     match clouder_core::shared::get_reminders_config(&state, guild_id_u64).await {
         Ok(result) => Ok(Json(result)),
@@ -540,7 +668,13 @@ pub async fn api_reminders_post(
     State(state): State<AppState>,
     Json(payload): Json<Value>,
 ) -> Result<Json<Value>, StatusCode> {
-    require_guild_access(&state, &auth.0.user_id, &guild_id).await?;
+    require_guild_perm(
+        &state,
+        &auth.0.user_id,
+        &guild_id,
+        Permissions::MANAGE_GUILD,
+    )
+    .await?;
     let guild_id_u64 = guild_id.parse().map_err(|_| StatusCode::BAD_REQUEST)?;
     match clouder_core::shared::upsert_reminder_config(&state, guild_id_u64, &payload).await {
         Ok(result) => {
@@ -559,7 +693,13 @@ pub async fn api_reminders_test(
     Path((guild_id, config_id)): Path<(String, String)>,
     State(state): State<AppState>,
 ) -> Result<Json<Value>, StatusCode> {
-    require_guild_access(&state, &auth.0.user_id, &guild_id).await?;
+    require_guild_perm(
+        &state,
+        &auth.0.user_id,
+        &guild_id,
+        Permissions::MANAGE_GUILD,
+    )
+    .await?;
     let config_id_i64: i64 = config_id.parse().map_err(|_| StatusCode::BAD_REQUEST)?;
     match clouder_web_reminder_test(&state, config_id_i64).await {
         Ok(_) => {
@@ -766,7 +906,13 @@ pub async fn api_custom_reminders_list(
     Path(guild_id): Path<String>,
     State(state): State<AppState>,
 ) -> Result<Json<Value>, StatusCode> {
-    require_guild_access(&state, &auth.0.user_id, &guild_id).await?;
+    require_guild_perm(
+        &state,
+        &auth.0.user_id,
+        &guild_id,
+        Permissions::MANAGE_GUILD,
+    )
+    .await?;
     let guild_id_u64 = guild_id.parse().map_err(|_| StatusCode::BAD_REQUEST)?;
     match clouder_core::shared::get_custom_reminders(&state, guild_id_u64).await {
         Ok(result) => Ok(Json(result)),
@@ -783,7 +929,13 @@ pub async fn api_custom_reminder_create(
     State(state): State<AppState>,
     Json(payload): Json<Value>,
 ) -> Result<Json<Value>, StatusCode> {
-    require_guild_access(&state, &auth.0.user_id, &guild_id).await?;
+    require_guild_perm(
+        &state,
+        &auth.0.user_id,
+        &guild_id,
+        Permissions::MANAGE_GUILD,
+    )
+    .await?;
     let guild_id_u64 = guild_id.parse().map_err(|_| StatusCode::BAD_REQUEST)?;
     match clouder_core::shared::create_custom_reminder(&state, guild_id_u64, &payload).await {
         Ok(result) => {
@@ -803,7 +955,13 @@ pub async fn api_custom_reminder_update(
     State(state): State<AppState>,
     Json(payload): Json<Value>,
 ) -> Result<Json<Value>, StatusCode> {
-    require_guild_access(&state, &auth.0.user_id, &guild_id).await?;
+    require_guild_perm(
+        &state,
+        &auth.0.user_id,
+        &guild_id,
+        Permissions::MANAGE_GUILD,
+    )
+    .await?;
     let guild_id_u64 = guild_id.parse().map_err(|_| StatusCode::BAD_REQUEST)?;
     let reminder_id_i64: i64 = reminder_id.parse().map_err(|_| StatusCode::BAD_REQUEST)?;
     match clouder_core::shared::update_custom_reminder(
@@ -833,7 +991,13 @@ pub async fn api_custom_reminder_delete(
     Path((guild_id, reminder_id)): Path<(String, String)>,
     State(state): State<AppState>,
 ) -> Result<Json<Value>, StatusCode> {
-    require_guild_access(&state, &auth.0.user_id, &guild_id).await?;
+    require_guild_perm(
+        &state,
+        &auth.0.user_id,
+        &guild_id,
+        Permissions::MANAGE_GUILD,
+    )
+    .await?;
     let guild_id_u64 = guild_id.parse().map_err(|_| StatusCode::BAD_REQUEST)?;
     let reminder_id_i64: i64 = reminder_id.parse().map_err(|_| StatusCode::BAD_REQUEST)?;
     match clouder_core::shared::delete_custom_reminder(&state, guild_id_u64, reminder_id_i64).await
@@ -857,7 +1021,13 @@ pub async fn api_custom_reminder_test(
     Path((guild_id, reminder_id)): Path<(String, String)>,
     State(state): State<AppState>,
 ) -> Result<Json<Value>, StatusCode> {
-    require_guild_access(&state, &auth.0.user_id, &guild_id).await?;
+    require_guild_perm(
+        &state,
+        &auth.0.user_id,
+        &guild_id,
+        Permissions::MANAGE_GUILD,
+    )
+    .await?;
     let reminder_id_i64: i64 = reminder_id.parse().map_err(|_| StatusCode::BAD_REQUEST)?;
     match clouder_web_custom_reminder_test(&state, reminder_id_i64).await {
         Ok(_) => {

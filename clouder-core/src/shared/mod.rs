@@ -1172,7 +1172,11 @@ pub async fn refresh_guild_cache(
             let id = g["id"].as_str()?;
             let perms: u64 = g["permissions"].as_str()?.parse().ok()?;
             let perms_flags = Permissions::from_bits_truncate(perms);
-            if !crate::utils::has_permission(perms_flags, Permissions::MANAGE_GUILD) {
+            // include guilds where the user has any management-level permission
+            let has_access = crate::utils::has_permission(perms_flags, Permissions::MANAGE_GUILD)
+                || crate::utils::has_permission(perms_flags, Permissions::MANAGE_ROLES)
+                || crate::utils::has_permission(perms_flags, Permissions::MANAGE_CHANNELS);
+            if !has_access {
                 return None;
             }
             if !bot_guild_ids.contains(id) {
@@ -1182,6 +1186,7 @@ pub async fn refresh_guild_cache(
                 id: id.to_string(),
                 name: g["name"].as_str()?.to_string(),
                 icon: g["icon"].as_str().map(String::from),
+                permissions: perms,
             })
         })
         .collect();
@@ -1198,9 +1203,16 @@ pub async fn refresh_guild_cache(
         mutual_guilds.iter().map(|g| g.id.as_str()).collect();
     let updated = cached_ids != new_ids;
 
-    let tuples: Vec<(String, String, Option<String>)> = mutual_guilds
+    let tuples: Vec<(String, String, Option<String>, i64)> = mutual_guilds
         .iter()
-        .map(|g| (g.id.clone(), g.name.clone(), g.icon.clone()))
+        .map(|g| {
+            (
+                g.id.clone(),
+                g.name.clone(),
+                g.icon.clone(),
+                g.permissions as i64,
+            )
+        })
         .collect();
 
     if let Err(e) = CachedGuild::replace_for_user(&state.db, user_id, &tuples).await {

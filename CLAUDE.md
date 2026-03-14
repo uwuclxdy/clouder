@@ -30,7 +30,7 @@ Both `web` and `llm` features are on by default.
 
 ## Build and check
 
-Run `./cargo.sh` after changes -- it runs fmt, fix, clippy fix, then clippy (all in release mode). Fix any warnings it reports.
+Run `../cargo.sh` after changes -- it runs fmt, fix, clippy fix, then clippy (all in release mode). Fix any warnings it reports.
 
 ## Rules
 

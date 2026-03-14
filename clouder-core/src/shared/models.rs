@@ -39,6 +39,7 @@ pub struct GuildCacheEntry {
     pub id: String,
     pub name: String,
     pub icon: Option<String>,
+    pub permissions: u64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

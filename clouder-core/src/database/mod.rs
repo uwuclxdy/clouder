@@ -46,7 +46,6 @@ async fn run_migrations(pool: &SqlitePool) -> Result<()> {
         include_str!("../../migrations/007_dashboard_users.sql"),
         include_str!("../../migrations/008_fix_reminder_unique.sql"),
         include_str!("../../migrations/009_custom_reminders.sql"),
-        include_str!("../../migrations/010_guild_cache_permissions.sql"),
     ];
 
     for migration_content in migrations {

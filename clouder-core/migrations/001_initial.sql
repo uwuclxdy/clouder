@@ -34,6 +34,7 @@ CREATE TABLE IF NOT EXISTS user_guild_cache (
 	name TEXT NOT NULL,
 	icon TEXT,
 	updated_at INTEGER NOT NULL DEFAULT (unixepoch()),
+	permissions INTEGER NOT NULL DEFAULT 0,
 	PRIMARY KEY (user_id, guild_id)
 );
 

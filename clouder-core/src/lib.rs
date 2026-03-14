@@ -5,6 +5,7 @@
 
 pub mod config;
 pub mod database;
+pub mod external;
 pub mod shared;
 pub mod utils;
 

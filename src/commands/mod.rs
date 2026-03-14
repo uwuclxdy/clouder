@@ -1,6 +1,7 @@
 pub mod about;
 pub mod channel;
 pub mod help;
+pub mod huggingface;
 pub mod mediaonly;
 pub mod purge;
 pub mod random;

@@ -141,6 +141,20 @@ pub fn get_all_commands() -> Vec<CommandInfo> {
             category: CommandCategory::Core,
             permissions: Some("manage server".to_string()),
         },
+        CommandInfo {
+            name: "/hf trending".to_string(),
+            description: "browse top trending models on huggingface".to_string(),
+            usage: Some("/hf trending".to_string()),
+            category: CommandCategory::ApiIntegration,
+            permissions: None,
+        },
+        CommandInfo {
+            name: "/hf latest".to_string(),
+            description: "browse recently updated models on huggingface".to_string(),
+            usage: Some("/hf latest".to_string()),
+            category: CommandCategory::ApiIntegration,
+            permissions: None,
+        },
     ]
 }
 

@@ -68,7 +68,7 @@ pub fn get_all_commands() -> Vec<CommandInfo> {
         },
         CommandInfo {
             name: "/about bot".to_string(),
-            description: "show info about me and my server :3".to_string(),
+            description: "some info about me :3".to_string(),
             usage: Some("/about bot".to_string()),
             category: CommandCategory::Info,
             permissions: None,
@@ -191,7 +191,7 @@ pub fn create_help_embed(commands: &[CommandInfo], color: serenity::Color) -> Cr
                 .collect::<Vec<_>>()
                 .join("\n");
 
-            embed = embed.field(category.as_str(), command_list, false);
+            embed = embed.field(format!("> ***{}***", category.as_str()), command_list, false);
         }
     }
 

@@ -5,7 +5,7 @@ use serenity::all::Http;
 use sqlx::SqlitePool;
 use std::env;
 use std::sync::Arc;
-use tracing::{debug, error, info, warn};
+use tracing::{error, info, warn};
 
 // default color for embeds when none is configured; exposed publicly so tests and
 // web handlers can reference it instead of sprinkling the magic hex value.
@@ -86,89 +86,46 @@ pub struct LlmConfig {
     pub no_cooldown_users: Vec<u64>,
 }
 
+fn require_env(key: &str) -> Result<String, anyhow::Error> {
+    env::var(key).map_err(|e| {
+        error!("{} is not set", key);
+        anyhow::anyhow!("{}: {}", key, e)
+    })
+}
+
+fn optional_env(key: &str, default: &str) -> String {
+    env::var(key).unwrap_or_else(|_| {
+        info!("{} not set, using {}", key, default);
+        default.to_string()
+    })
+}
+
 impl Config {
     pub fn from_env() -> Result<Self, anyhow::Error> {
         if let Err(e) = dotenv() {
             warn!("could not load .env file: {}", e);
         }
 
-        let discord_token = match env::var("DISCORD_TOKEN") {
-            Ok(token) => token,
-            Err(err) => {
-                error!("DISCORD_TOKEN is not set");
-                return Err(anyhow::anyhow!("DISCORD_TOKEN: {}", err));
-            }
-        };
+        let discord_token = require_env("DISCORD_TOKEN")?;
         // application ID == client ID for discord bots
-        let oauth_client_id = match env::var("DISCORD_CLIENT_ID") {
-            Ok(id) => id,
-            Err(err) => {
-                error!("DISCORD_CLIENT_ID is not set");
-                return Err(anyhow::anyhow!("DISCORD_CLIENT_ID: {}", err));
-            }
-        };
-        let application_id = match oauth_client_id.parse::<u64>() {
-            Ok(id) => id,
-            Err(e) => {
-                error!(
-                    "invalid DISCORD_CLIENT_ID format '{}': {}",
-                    oauth_client_id, e
-                );
-                return Err(anyhow::anyhow!("invalid DISCORD_CLIENT_ID format"));
-            }
-        };
+        let oauth_client_id = require_env("DISCORD_CLIENT_ID")?;
+        let application_id = oauth_client_id.parse::<u64>().map_err(|e| {
+            error!(
+                "invalid DISCORD_CLIENT_ID format '{}': {}",
+                oauth_client_id, e
+            );
+            anyhow::anyhow!("invalid DISCORD_CLIENT_ID format")
+        })?;
+        let oauth_client_secret = require_env("DISCORD_CLIENT_SECRET")?;
+        let bot_owner_str = require_env("BOT_OWNER")?;
+        let bot_owner = bot_owner_str.parse::<u64>().map_err(|e| {
+            error!("invalid BOT_OWNER format '{}': {}", bot_owner_str, e);
+            anyhow::anyhow!("invalid BOT_OWNER format")
+        })?;
 
-        let oauth_client_secret = match env::var("DISCORD_CLIENT_SECRET") {
-            Ok(secret) => secret,
-            Err(err) => {
-                error!("DISCORD_CLIENT_SECRET is not set");
-                return Err(anyhow::anyhow!("DISCORD_CLIENT_SECRET: {}", err));
-            }
-        };
-
-        let bot_owner = match env::var("BOT_OWNER") {
-            Ok(owner_str) => match owner_str.parse::<u64>() {
-                Ok(owner) => owner,
-                Err(e) => {
-                    error!("invalid BOT_OWNER format '{}': {}", owner_str, e);
-                    return Err(anyhow::anyhow!("invalid BOT_OWNER format"));
-                }
-            },
-            Err(err) => {
-                error!("BOT_OWNER is not set");
-                return Err(anyhow::anyhow!("BOT_OWNER: {}", err));
-            }
-        };
-        let api_base = match env::var("API_BASE") {
-            Ok(url) => {
-                debug!("API_BASE: {}", url);
-                url
-            }
-            Err(_) => {
-                info!("API_BASE not set, using {}", DEFAULT_API_BASE);
-                DEFAULT_API_BASE.to_string()
-            }
-        };
-        let bind_addr = match env::var("WEB_BIND_ADDR") {
-            Ok(addr) => {
-                debug!("WEB_BIND_ADDR: {}", addr);
-                addr
-            }
-            Err(_) => {
-                info!("WEB_BIND_ADDR not set, using {}", DEFAULT_BIND_ADDR);
-                DEFAULT_BIND_ADDR.to_string()
-            }
-        };
-        let database_url = match env::var("DATABASE_URL") {
-            Ok(url) => {
-                debug!("DATABASE_URL: {}", url);
-                url
-            }
-            Err(_) => {
-                info!("DATABASE_URL not set, using {}", DEFAULT_DATABASE_URL);
-                DEFAULT_DATABASE_URL.to_string()
-            }
-        };
+        let api_base = optional_env("API_BASE", DEFAULT_API_BASE);
+        let bind_addr = optional_env("WEB_BIND_ADDR", DEFAULT_BIND_ADDR);
+        let database_url = optional_env("DATABASE_URL", DEFAULT_DATABASE_URL);
 
         let embed_default_color = match env::var("EMBED_DEFAULT_COLOR") {
             Ok(color_str) => {

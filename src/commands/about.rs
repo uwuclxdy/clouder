@@ -4,6 +4,7 @@ use clouder_core::utils::{discord_timestamp, format_duration, get_embed_color};
 use lazy_static::lazy_static;
 use poise::serenity_prelude as serenity;
 use serenity::CreateEmbed;
+use sqlx::SqlitePool;
 use std::time::SystemTime;
 use sysinfo::System;
 
@@ -13,6 +14,52 @@ lazy_static! {
 
 type Error = Box<dyn std::error::Error + Send + Sync>;
 type Context<'a> = poise::Context<'a, AppState, Error>;
+
+struct BotDbStats {
+    selfrole_configs: i64,
+    selfrole_roles: i64,
+    active_cooldowns: i64,
+    guilds: i64,
+    recent_configs: i64,
+    expired_cooldowns: i64,
+}
+
+async fn fetch_bot_db_stats(db: &SqlitePool) -> BotDbStats {
+    BotDbStats {
+        selfrole_configs: sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM selfrole_configs")
+            .fetch_one(db)
+            .await
+            .unwrap_or(0),
+        selfrole_roles: sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM selfrole_roles")
+            .fetch_one(db)
+            .await
+            .unwrap_or(0),
+        active_cooldowns: sqlx::query_scalar::<_, i64>(
+            "SELECT COUNT(*) FROM selfrole_cooldowns WHERE expires_at > datetime('now')",
+        )
+        .fetch_one(db)
+        .await
+        .unwrap_or(0),
+        guilds: sqlx::query_scalar::<_, i64>(
+            "SELECT COUNT(DISTINCT guild_id) FROM selfrole_configs",
+        )
+        .fetch_one(db)
+        .await
+        .unwrap_or(0),
+        recent_configs: sqlx::query_scalar::<_, i64>(
+            "SELECT COUNT(*) FROM selfrole_configs WHERE created_at > datetime('now', '-7 days')",
+        )
+        .fetch_one(db)
+        .await
+        .unwrap_or(0),
+        expired_cooldowns: sqlx::query_scalar::<_, i64>(
+            "SELECT COUNT(*) FROM selfrole_cooldowns WHERE expires_at <= datetime('now')",
+        )
+        .fetch_one(db)
+        .await
+        .unwrap_or(0),
+    }
+}
 
 #[poise::command(slash_command, subcommands("bot", "server", "user", "role", "channel"))]
 pub async fn about(_ctx: Context<'_>) -> Result<(), Error> {
@@ -58,45 +105,7 @@ pub async fn bot(ctx: Context<'_>) -> Result<(), Error> {
 
     let bot_user = ctx.http().get_current_user().await?;
 
-    let db = &ctx.data().db;
-
-    let selfrole_configs = sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM selfrole_configs")
-        .fetch_one(db.as_ref())
-        .await
-        .unwrap_or(0);
-
-    let selfrole_roles = sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM selfrole_roles")
-        .fetch_one(db.as_ref())
-        .await
-        .unwrap_or(0);
-
-    let active_cooldowns = sqlx::query_scalar::<_, i64>(
-        "SELECT COUNT(*) FROM selfrole_cooldowns WHERE expires_at > datetime('now')",
-    )
-    .fetch_one(db.as_ref())
-    .await
-    .unwrap_or(0);
-
-    let db_guilds =
-        sqlx::query_scalar::<_, i64>("SELECT COUNT(DISTINCT guild_id) FROM selfrole_configs")
-            .fetch_one(db.as_ref())
-            .await
-            .unwrap_or(0);
-
-    let recent_configs = sqlx::query_scalar::<_, i64>(
-        "SELECT COUNT(*) FROM selfrole_configs WHERE created_at > datetime('now', '-7 days')",
-    )
-    .fetch_one(db.as_ref())
-    .await
-    .unwrap_or(0);
-
-    let expired_cooldowns = sqlx::query_scalar::<_, i64>(
-        "SELECT COUNT(*) FROM selfrole_cooldowns WHERE expires_at <= datetime('now')",
-    )
-    .fetch_one(db.as_ref())
-    .await
-    .unwrap_or(0);
-
+    let db_stats_raw = fetch_bot_db_stats(&ctx.data().db).await;
     let db_stats = format!(
         "configs: **`{}`**
         roles: **`{}`**
@@ -104,12 +113,12 @@ pub async fn bot(ctx: Context<'_>) -> Result<(), Error> {
         servers: **`{}`**
         recent (7d): **`{}`**
         expired: **`{}`**",
-        selfrole_configs,
-        selfrole_roles,
-        active_cooldowns,
-        db_guilds,
-        recent_configs,
-        expired_cooldowns
+        db_stats_raw.selfrole_configs,
+        db_stats_raw.selfrole_roles,
+        db_stats_raw.active_cooldowns,
+        db_stats_raw.guilds,
+        db_stats_raw.recent_configs,
+        db_stats_raw.expired_cooldowns
     );
 
     let os_info = format!(
@@ -815,7 +824,7 @@ pub async fn user(
         if let Some(avatar) = &member.avatar {
             let server_avatar_url = format!(
                 "https://cdn.discordapp.com/guilds/{}/users/{}/avatars/{}.png?size=1024",
-                ctx.guild_id().unwrap(),
+                ctx.guild_id().expect("guild_only command"),
                 target_user.id,
                 avatar
             );

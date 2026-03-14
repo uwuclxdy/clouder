@@ -18,7 +18,7 @@ pub async fn uwufy(
     ctx: Context<'_>,
     #[description = "user to toggle uwufy for"] user: serenity::User,
 ) -> Result<(), Error> {
-    let guild_id = ctx.guild_id().unwrap().to_string();
+    let guild_id = ctx.guild_id().expect("guild_only command").to_string();
     let user_id = user.id.to_string();
 
     let enabled = UwufyToggle::toggle(&ctx.data().db, &guild_id, &user_id).await?;

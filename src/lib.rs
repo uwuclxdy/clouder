@@ -16,6 +16,7 @@ pub mod scheduler;
 pub use crate::commands::about::about;
 pub use crate::commands::channel::channel;
 pub use crate::commands::help::help;
+pub use crate::commands::huggingface::hf;
 pub use crate::commands::mediaonly::mediaonly;
 pub use crate::commands::purge::purge;
 pub use crate::commands::random::random;
@@ -80,6 +81,7 @@ async fn async_main() -> Result<()> {
                 random(),
                 uwufy(),
                 reminders(),
+                hf(),
             ],
             event_handler: |ctx, event, framework, data| {
                 Box::pin(event_handler(ctx, event, framework, data))

@@ -5,6 +5,7 @@ pub mod config_tests;
 pub mod database_tests;
 pub mod events_tests;
 mod help_tests;
+mod huggingface_tests;
 mod mediaonly_tests;
 mod purge_tests;
 mod reminders_tests;

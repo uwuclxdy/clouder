@@ -23,11 +23,11 @@ pub async fn mediaonly(
         bool,
     >,
 ) -> Result<(), Error> {
-    let guild_id = ctx.guild_id().unwrap().to_string();
+    let guild_id = ctx.guild_id().expect("guild_only command").to_string();
     let target_channel = if let Some(ref channel) = channel {
         channel
     } else {
-        &ctx.guild_channel().await.unwrap()
+        &ctx.guild_channel().await.expect("guild_only command")
     };
     let channel_id = target_channel.id.to_string();
 

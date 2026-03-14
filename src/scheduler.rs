@@ -55,9 +55,9 @@ async fn run_due_reminders(state: &AppState) -> anyhow::Result<()> {
         let should_fire = match rtype {
             ReminderType::Wysi => {
                 let morning_time = parse_hhmm(morning.as_deref().unwrap_or("07:27"))
-                    .unwrap_or(NaiveTime::from_hms_opt(7, 27, 0).unwrap());
+                    .unwrap_or(NaiveTime::from_hms_opt(7, 27, 0).expect("valid time constant"));
                 let evening_time = parse_hhmm(evening.as_deref().unwrap_or("19:27"))
-                    .unwrap_or(NaiveTime::from_hms_opt(19, 27, 0).unwrap());
+                    .unwrap_or(NaiveTime::from_hms_opt(19, 27, 0).expect("valid time constant"));
 
                 let current = now_local.time();
                 // fire if within the current minute window

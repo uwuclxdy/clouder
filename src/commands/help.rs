@@ -35,6 +35,26 @@ impl CommandCategory {
             CommandCategory::Utility => "utility",
         }
     }
+
+    fn short_str(&self) -> &str {
+        match self {
+            CommandCategory::Core => "core",
+            CommandCategory::Info => "info",
+            CommandCategory::ApiIntegration => "api",
+            CommandCategory::Management => "management",
+            CommandCategory::Utility => "utility",
+        }
+    }
+
+    pub fn all() -> &'static [Self] {
+        &[
+            Self::Core,
+            Self::Info,
+            Self::Management,
+            Self::ApiIntegration,
+            Self::Utility,
+        ]
+    }
 }
 
 pub fn get_all_commands() -> Vec<CommandInfo> {
@@ -136,14 +156,8 @@ pub fn create_help_embed(commands: &[CommandInfo], color: serenity::Color) -> Cr
         .description("`/help [category]` for more details")
         .color(color);
 
-    for category in [
-        CommandCategory::Core,
-        CommandCategory::Info,
-        CommandCategory::Management,
-        CommandCategory::ApiIntegration,
-        CommandCategory::Utility,
-    ] {
-        if let Some(category_commands) = categories.get(&category) {
+    for category in CommandCategory::all() {
+        if let Some(category_commands) = categories.get(category) {
             let command_list = category_commands
                 .iter()
                 .map(|cmd| {
@@ -231,11 +245,11 @@ async fn show_category_help(
 }
 
 async fn category_autocomplete(_ctx: Context<'_>, partial: &str) -> impl Iterator<Item = String> {
-    let categories = vec!["core", "info", "management", "api", "utility"];
-
-    categories
-        .into_iter()
-        .filter(move |category| category.starts_with(&partial.to_lowercase()))
+    let partial = partial.to_lowercase();
+    CommandCategory::all()
+        .iter()
+        .map(|c| c.short_str())
+        .filter(move |name| name.starts_with(&partial))
         .map(|s| s.to_string())
 }
 

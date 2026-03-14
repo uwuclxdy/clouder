@@ -3,6 +3,8 @@ use clouder_core::config::AppState;
 use std::time::Duration;
 use tracing::{debug, error, warn};
 
+const DISCORD_MAX_MESSAGE_LEN: usize = 2000;
+
 #[cfg(feature = "llm")]
 use clouder_llm::{ChatMessage, LlmClient};
 
@@ -103,7 +105,7 @@ async fn build_conversation_context(
             lines[..lines.len() - 1].join("\n"),
             lines
                 .last()
-                .unwrap()
+                .expect("lines non-empty: guarded by entries.len() > 1")
                 .replace("User: ", "")
                 .replace("Assistant: ", "")
         ))
@@ -204,7 +206,7 @@ async fn handle_llm_request(
     drop(typing);
 
     // Split response if it's too long (Discord limit is 2000 characters)
-    let chunks = split_message(&response, 2000);
+    let chunks = split_message(&response, DISCORD_MAX_MESSAGE_LEN);
 
     for (i, chunk) in chunks.iter().enumerate() {
         let is_last_chunk = i == chunks.len() - 1;
@@ -540,7 +542,7 @@ pub async fn handle_ai_retry_interaction(
     };
 
     // Split response if it's too long
-    let chunks = split_message(&response, 2000);
+    let chunks = split_message(&response, DISCORD_MAX_MESSAGE_LEN);
     let content = if chunks.len() == 1 {
         chunks[0].clone()
     } else {

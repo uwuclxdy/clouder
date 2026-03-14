@@ -21,26 +21,52 @@ pub async fn selfrole_message_delete(
     }
 }
 
+async fn reply_ephemeral(
+    interaction: &serenity::ComponentInteraction,
+    ctx: &serenity::Context,
+    content: &str,
+) {
+    if let Err(e) = interaction
+        .create_response(
+            &ctx.http,
+            CreateInteractionResponse::Message(
+                CreateInteractionResponseMessage::new()
+                    .content(content)
+                    .ephemeral(true),
+            ),
+        )
+        .await
+    {
+        error!("respond: {}", e);
+    }
+}
+
+fn parse_selfrole_custom_id(custom_id: &str) -> Option<(i64, &str)> {
+    let parts: Vec<&str> = custom_id.split('_').collect();
+    if parts.len() != 3 {
+        error!("invalid selfrole id: {}", custom_id);
+        return None;
+    }
+    let config_id = match parts[1].parse::<i64>() {
+        Ok(id) => id,
+        Err(_) => {
+            error!("invalid config_id: {}", parts[1]);
+            return None;
+        }
+    };
+    Some((config_id, parts[2]))
+}
+
 pub async fn handle_selfrole_interaction(
     ctx: &serenity::Context,
     interaction: &serenity::ComponentInteraction,
     data: &AppState,
 ) {
-    let parts: Vec<&str> = interaction.data.custom_id.split('_').collect();
-    if parts.len() != 3 {
-        error!("invalid selfrole id: {}", interaction.data.custom_id);
-        return;
-    }
-
-    let _config_id: i64 = match parts[1].parse() {
-        Ok(id) => id,
-        Err(_) => {
-            error!("invalid config_id: {}", parts[1]);
-            return;
-        }
+    let (_, role_id) = match parse_selfrole_custom_id(&interaction.data.custom_id) {
+        Some(parsed) => parsed,
+        None => return,
     };
 
-    let role_id = parts[2];
     let user_id = interaction.user.id.to_string();
     let guild_id = match interaction.guild_id {
         Some(id) => id.to_string(),
@@ -52,37 +78,23 @@ pub async fn handle_selfrole_interaction(
 
     match SelfRoleCooldown::check_cooldown(&data.db, &user_id, role_id, &guild_id).await {
         Ok(true) => {
-            if let Err(e) = interaction
-                .create_response(
-                    &ctx.http,
-                    CreateInteractionResponse::Message(
-                        CreateInteractionResponseMessage::new()
-                            .content("You're doing that too quickly! Try again in a few seconds.")
-                            .ephemeral(true),
-                    ),
-                )
-                .await
-            {
-                error!("respond cooldown: {}", e);
-            }
+            reply_ephemeral(
+                interaction,
+                ctx,
+                "You're doing that too quickly! Try again in a few seconds.",
+            )
+            .await;
             return;
         }
         Ok(false) => {}
         Err(e) => {
             error!("check cooldown: {}", e);
-            if let Err(e) = interaction
-                .create_response(
-                    &ctx.http,
-                    CreateInteractionResponse::Message(
-                        CreateInteractionResponseMessage::new()
-                            .content("an error occurred while processing your request. please try again.")
-                            .ephemeral(true),
-                    ),
-                )
-                .await
-            {
-                error!("respond error: {}", e);
-            }
+            reply_ephemeral(
+                interaction,
+                ctx,
+                "an error occurred while processing your request. please try again.",
+            )
+            .await;
             return;
         }
     }
@@ -96,19 +108,12 @@ pub async fn handle_selfrole_interaction(
         Ok(Some(config)) => config,
         Ok(None) => {
             error!("no selfrole config for message: {}", interaction.message.id);
-            if let Err(e) = interaction
-                .create_response(
-                    &ctx.http,
-                    CreateInteractionResponse::Message(
-                        CreateInteractionResponseMessage::new()
-                            .content("this self-role message is no longer valid.")
-                            .ephemeral(true),
-                    ),
-                )
-                .await
-            {
-                error!("respond invalid config: {}", e);
-            }
+            reply_ephemeral(
+                interaction,
+                ctx,
+                "this self-role message is no longer valid.",
+            )
+            .await;
             return;
         }
         Err(e) => {
@@ -141,19 +146,7 @@ pub async fn handle_selfrole_interaction(
         Ok(member) => member,
         Err(e) => {
             error!("get member {}: {}", interaction.user.id, e);
-            if let Err(e) = interaction
-                .create_response(
-                    &ctx.http,
-                    CreateInteractionResponse::Message(
-                        CreateInteractionResponseMessage::new()
-                            .content("failed to retrieve your member info.")
-                            .ephemeral(true),
-                    ),
-                )
-                .await
-            {
-                error!("respond member err: {}", e);
-            }
+            reply_ephemeral(interaction, ctx, "failed to retrieve your member info.").await;
             return;
         }
     };
@@ -167,19 +160,12 @@ pub async fn handle_selfrole_interaction(
             Ok(roles) => roles,
             Err(e) => {
                 error!("get config roles: {}", e);
-                if let Err(e) = interaction
-                    .create_response(
-                        &ctx.http,
-                        CreateInteractionResponse::Message(
-                            CreateInteractionResponseMessage::new()
-                                .content("an error occurred while processing your request.")
-                                .ephemeral(true),
-                        ),
-                    )
-                    .await
-                {
-                    error!("respond error: {}", e);
-                }
+                reply_ephemeral(
+                    interaction,
+                    ctx,
+                    "an error occurred while processing your request.",
+                )
+                .await;
                 return;
             }
         };
@@ -272,17 +258,5 @@ pub async fn handle_selfrole_interaction(
         }
     }
 
-    if let Err(e) = interaction
-        .create_response(
-            &ctx.http,
-            CreateInteractionResponse::Message(
-                CreateInteractionResponseMessage::new()
-                    .content(message)
-                    .ephemeral(true),
-            ),
-        )
-        .await
-    {
-        error!("respond selfrole: {}", e);
-    }
+    reply_ephemeral(interaction, ctx, &message).await;
 }

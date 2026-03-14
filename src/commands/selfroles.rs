@@ -8,7 +8,7 @@ type Context<'a> = poise::Context<'a, AppState, Error>;
 #[poise::command(slash_command, required_permissions = "MANAGE_ROLES", guild_only)]
 pub async fn selfroles(ctx: Context<'_>) -> Result<(), Error> {
     let dashboard_url = &ctx.data().config.web.api_base;
-    let guild_id = ctx.guild_id().unwrap().to_string();
+    let guild_id = ctx.guild_id().expect("guild_only command").to_string();
 
     let embed = serenity::CreateEmbed::new()
         .title("self-roles config")

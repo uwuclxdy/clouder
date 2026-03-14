@@ -42,6 +42,7 @@
             let data;
             try {
                 const resp = await fetch('/api/guilds/refresh', { method: 'POST' });
+                if (resp.status === 401) { location.href = '/auth/logout'; return; }
                 if (!resp.ok) return;
                 data = await resp.json();
             } catch (_) {

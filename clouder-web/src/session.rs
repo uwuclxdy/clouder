@@ -1,4 +1,5 @@
 use axum_extra::extract::cookie::{Cookie, Key, SameSite, SignedCookieJar};
+use cookie::time::Duration;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -37,6 +38,7 @@ pub fn store(jar: SignedCookieJar, user: &SessionUser, secure: bool) -> SignedCo
     cookie.set_http_only(true);
     cookie.set_same_site(SameSite::Lax);
     cookie.set_secure(secure);
+    cookie.set_max_age(Duration::days(6));
     jar.add(cookie)
 }
 

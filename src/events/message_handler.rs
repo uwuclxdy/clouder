@@ -1,7 +1,7 @@
-use crate::logging::warn;
 use clouder_core::config::AppState;
 use clouder_core::database::uwufy::UwufyToggle;
 use poise::serenity_prelude as serenity;
+use tracing::warn;
 
 pub async fn handle_uwufy_message(
     ctx: &serenity::Context,

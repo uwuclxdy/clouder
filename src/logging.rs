@@ -21,18 +21,6 @@ pub fn init() {
         .init();
 }
 
-/// Log a debug-level message.
-pub use tracing::debug;
-
-/// Log an info-level message.
-pub use tracing::info;
-
-/// Log a warn-level message.
-pub use tracing::warn;
-
-/// Log an error-level message.
-pub use tracing::error;
-
 #[cfg(test)]
 mod tests {
     use super::*;

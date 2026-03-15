@@ -1,4 +1,3 @@
-use crate::logging::error;
 use anyhow::Result;
 use clouder_core::config::AppState;
 use clouder_core::utils::get_embed_color;
@@ -9,6 +8,7 @@ use serenity::all::{
 };
 use serenity::collector::ComponentInteractionCollector;
 use std::time::Duration;
+use tracing::error;
 
 type Error = Box<dyn std::error::Error + Send + Sync>;
 type Context<'a> = poise::Context<'a, AppState, Error>;

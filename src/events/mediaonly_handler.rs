@@ -1,10 +1,10 @@
-use crate::logging::{error, warn};
 use clouder_core::config::AppState;
 use clouder_core::database::mediaonly::MediaOnlyConfig;
 use clouder_core::utils::content_detection::has_allowed_content;
 use clouder_core::utils::get_embed_color;
 use poise::serenity_prelude as serenity;
 use std::time::Duration;
+use tracing::{error, warn};
 
 pub async fn handle_media_only_message(
     ctx: &serenity::Context,

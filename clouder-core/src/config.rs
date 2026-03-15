@@ -1,5 +1,4 @@
 use anyhow::Result;
-use dotenvy::dotenv;
 use serde::{Deserialize, Serialize};
 use serenity::all::Http;
 use sqlx::SqlitePool;
@@ -102,10 +101,6 @@ fn optional_env(key: &str, default: &str) -> String {
 
 impl Config {
     pub fn from_env() -> Result<Self, anyhow::Error> {
-        if let Err(e) = dotenv() {
-            warn!("could not load .env file: {}", e);
-        }
-
         let discord_token = require_env("DISCORD_TOKEN")?;
         // application ID == client ID for discord bots
         let oauth_client_id = require_env("DISCORD_CLIENT_ID")?;

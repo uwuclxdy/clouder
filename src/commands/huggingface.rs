@@ -9,6 +9,7 @@ use serenity::all::{
 };
 use serenity::collector::ComponentInteractionCollector;
 use std::time::Duration;
+use tracing::warn;
 
 type Error = Box<dyn std::error::Error + Send + Sync>;
 type Context<'a> = poise::Context<'a, AppState, Error>;
@@ -50,7 +51,7 @@ async fn paginate(
             return Ok(());
         }
         Err(e) => {
-            tracing::warn!("hf fetch failed: {}", e);
+            warn!("hf fetch failed: {}", e);
             ctx.send(
                 poise::CreateReply::default()
                     .content("failed to fetch models, try again later")

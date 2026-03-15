@@ -1,9 +1,9 @@
-use crate::logging::{error, info, warn};
 use crate::serenity;
 use chrono::{Duration, Utc};
 use clouder_core::config::AppState;
 use clouder_core::database::selfroles::{SelfRoleConfig, SelfRoleCooldown};
 use serenity::all::{CreateInteractionResponse, CreateInteractionResponseMessage, Mentionable};
+use tracing::{error, info, warn};
 
 pub async fn selfrole_message_delete(
     _ctx: &serenity::Context,

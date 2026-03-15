@@ -7,6 +7,7 @@ use clouder_core::database::guild_cache::CachedGuild;
 use clouder_core::utils::has_permission;
 use serde::Deserialize;
 use serenity::all::Permissions;
+use tracing::error;
 
 // Full page templates
 static LOGIN_HTML: &str = include_str!("../templates/login.html");
@@ -355,7 +356,7 @@ pub async fn profile_page(State(state): State<WebState>, jar: SignedCookieJar) -
         match clouder_core::DashboardUser::upsert(&state.app_state.db, &user.user_id).await {
             Ok(u) => u,
             Err(e) => {
-                tracing::error!("failed to upsert dashboard user: {}", e);
+                error!("failed to upsert dashboard user: {}", e);
                 return Redirect::to("/servers").into_response();
             }
         };

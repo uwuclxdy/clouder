@@ -1,4 +1,3 @@
-use crate::logging::{error, warn};
 use clouder_core::config::AppState;
 use clouder_core::database::welcome_goodbye::{WelcomeGoodbyeConfig, get_member_placeholders};
 use clouder_core::utils::welcome_goodbye::{EmbedConfig, build_embed, replace_placeholders};
@@ -14,6 +13,7 @@ use serenity::{
 };
 use sqlx::SqlitePool;
 use std::sync::Arc;
+use tracing::{error, warn};
 
 pub struct Database;
 impl TypeMapKey for Database {

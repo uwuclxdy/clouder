@@ -2,9 +2,9 @@ use crate::events::bot_mentioned::{handle_ai_retry_interaction, on_mention};
 use crate::events::mediaonly_handler::handle_media_only_message;
 use crate::events::message_handler::handle_uwufy_message;
 use crate::events::selfroles::{handle_selfrole_interaction, selfrole_message_delete};
-use crate::logging::info;
 use crate::{Data, Error, serenity};
 use clouder_core::config::AppState;
+use tracing::info;
 
 mod bot_mentioned;
 mod mediaonly_handler;

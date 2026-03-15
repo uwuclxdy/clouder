@@ -24,7 +24,7 @@ pub use crate::commands::reminders::reminders;
 pub use crate::commands::selfroles::selfroles;
 pub use crate::commands::uwufy::uwufy;
 pub use crate::events::event_handler;
-pub use crate::logging::{debug, error, info};
+use tracing::{debug, error, info};
 
 use anyhow::Result;
 use poise::serenity_prelude as serenity;

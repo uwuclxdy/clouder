@@ -1,5 +1,6 @@
 pub mod about;
 pub mod channel;
+pub mod github;
 pub mod help;
 pub mod huggingface;
 pub mod mediaonly;

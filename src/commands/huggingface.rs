@@ -1,7 +1,7 @@
 use anyhow::Result;
 use clouder_core::config::AppState;
 use clouder_core::external::huggingface::{HfModel, fetch_latest, fetch_trending};
-use clouder_core::utils::get_embed_color;
+use clouder_core::utils::{format_count, get_embed_color};
 use poise::serenity_prelude as serenity;
 use serenity::all::{
     ButtonStyle, CreateActionRow, CreateButton, CreateEmbed, CreateEmbedAuthor, CreateEmbedFooter,
@@ -169,16 +169,6 @@ fn truncate(s: &str, max_chars: usize) -> String {
             .map(|(i, _)| i)
             .unwrap_or(s.len());
         format!("{}…", &s[..end])
-    }
-}
-
-fn format_count(n: u64) -> String {
-    if n >= 1_000_000 {
-        format!("{:.1}M", n as f64 / 1_000_000.0)
-    } else if n >= 1_000 {
-        format!("{:.1}k", n as f64 / 1_000.0)
-    } else {
-        n.to_string()
     }
 }
 

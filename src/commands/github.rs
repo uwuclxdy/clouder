@@ -1,7 +1,7 @@
 use anyhow::Result;
 use clouder_core::config::AppState;
 use clouder_core::external::github::{GhRepo, GhUser, fetch_repo, fetch_user};
-use clouder_core::utils::get_embed_color;
+use clouder_core::utils::{format_count, get_embed_color};
 use poise::serenity_prelude as serenity;
 use serenity::all::{CreateEmbed, CreateEmbedFooter};
 use tracing::warn;
@@ -65,8 +65,8 @@ fn user_embed(u: &GhUser, color: serenity::Color) -> CreateEmbed {
         .thumbnail(&u.avatar_url)
         .color(color)
         .field("repos", u.public_repos.to_string(), true)
-        .field("followers", format_count(u.followers), true)
-        .field("following", format_count(u.following), true);
+        .field("followers", format_count(u.followers as u64), true)
+        .field("following", format_count(u.following as u64), true);
 
     if let Some(bio) = &u.bio
         && !bio.is_empty()
@@ -94,8 +94,8 @@ fn repo_embed(r: &GhRepo, color: serenity::Color) -> CreateEmbed {
         .url(&r.html_url)
         .thumbnail(&r.owner.avatar_url)
         .color(color)
-        .field("stars", format_count(r.stargazers_count), true)
-        .field("forks", format_count(r.forks_count), true)
+        .field("stars", format_count(r.stargazers_count as u64), true)
+        .field("forks", format_count(r.forks_count as u64), true)
         .field("issues", r.open_issues_count.to_string(), true);
 
     if let Some(desc) = &r.description
@@ -117,14 +117,4 @@ fn repo_embed(r: &GhRepo, color: serenity::Color) -> CreateEmbed {
     }
 
     embed.footer(CreateEmbedFooter::new("github • cached 5 min"))
-}
-
-fn format_count(n: u32) -> String {
-    if n >= 1_000_000 {
-        format!("{:.1}M", n as f64 / 1_000_000.0)
-    } else if n >= 1_000 {
-        format!("{:.1}k", n as f64 / 1_000.0)
-    } else {
-        n.to_string()
-    }
 }

@@ -32,6 +32,29 @@ mod tests {
     }
 
     #[test]
+    fn test_format_count() {
+        // Test below thousands
+        assert_eq!(format_count(0), "0");
+        assert_eq!(format_count(1), "1");
+        assert_eq!(format_count(99), "99");
+        assert_eq!(format_count(999), "999");
+
+        // Test thousands boundary
+        assert_eq!(format_count(1_000), "1.0k");
+        assert_eq!(format_count(1_500), "1.5k");
+        assert_eq!(format_count(5_000), "5.0k");
+        assert_eq!(format_count(10_000), "10.0k");
+        assert_eq!(format_count(999_999), "1000.0k");
+
+        // Test millions boundary
+        assert_eq!(format_count(1_000_000), "1.0M");
+        assert_eq!(format_count(1_500_000), "1.5M");
+        assert_eq!(format_count(2_500_000), "2.5M");
+        assert_eq!(format_count(10_000_000), "10.0M");
+        assert_eq!(format_count(100_000_000), "100.0M");
+    }
+
+    #[test]
     fn test_validate_role_hierarchy_basic() {
         // Test basic role hierarchy validation logic without complex Serenity structs
         // This focuses on the core logic in validate_role_hierarchy

@@ -57,7 +57,7 @@ pub struct GhRepo {
 
 impl GhRepo {
     pub fn pushed_date(&self) -> Option<&str> {
-        self.pushed_at.as_deref().map(|s| &s[..s.len().min(10)])
+        self.pushed_at.as_deref().map(|s| s.get(..10).unwrap_or(s))
     }
 }
 
@@ -72,23 +72,24 @@ fn repo_cache() -> &'static Mutex<HashMap<String, (GhRepo, Instant)>> {
     REPO_CACHE.get_or_init(|| Mutex::new(HashMap::new()))
 }
 
-fn github_client(token: Option<&str>) -> Result<reqwest::Client> {
-    let mut headers = reqwest::header::HeaderMap::new();
-    headers.insert(
-        reqwest::header::USER_AGENT,
-        reqwest::header::HeaderValue::from_static("clouder-bot"),
-    );
-    headers.insert(
-        reqwest::header::ACCEPT,
-        reqwest::header::HeaderValue::from_static("application/vnd.github+json"),
-    );
-    if let Some(t) = token {
-        let val = reqwest::header::HeaderValue::from_str(&format!("Bearer {t}"))?;
-        headers.insert(reqwest::header::AUTHORIZATION, val);
-    }
-    Ok(reqwest::Client::builder()
-        .default_headers(headers)
-        .build()?)
+static CLIENT: OnceLock<reqwest::Client> = OnceLock::new();
+
+fn client() -> &'static reqwest::Client {
+    CLIENT.get_or_init(|| {
+        let mut headers = reqwest::header::HeaderMap::new();
+        headers.insert(
+            reqwest::header::USER_AGENT,
+            reqwest::header::HeaderValue::from_static("clouder-bot"),
+        );
+        headers.insert(
+            reqwest::header::ACCEPT,
+            reqwest::header::HeaderValue::from_static("application/vnd.github+json"),
+        );
+        reqwest::Client::builder()
+            .default_headers(headers)
+            .build()
+            .expect("failed to build reqwest client")
+    })
 }
 
 pub async fn fetch_user(username: &str, token: Option<&str>) -> Result<GhUser> {
@@ -104,7 +105,11 @@ pub async fn fetch_user(username: &str, token: Option<&str>) -> Result<GhUser> {
 
     debug!("github: fetching user {}", username);
     let url = format!("{GITHUB_API}/users/{username}");
-    let resp = github_client(token)?.get(&url).send().await?;
+    let mut req = client().get(&url);
+    if let Some(t) = token {
+        req = req.bearer_auth(t);
+    }
+    let resp = req.send().await?;
 
     if resp.status() == reqwest::StatusCode::NOT_FOUND {
         bail!("not found");
@@ -134,7 +139,11 @@ pub async fn fetch_repo(owner: &str, repo: &str, token: Option<&str>) -> Result<
 
     debug!("github: fetching repo {}", key);
     let url = format!("{GITHUB_API}/repos/{key}");
-    let resp = github_client(token)?.get(&url).send().await?;
+    let mut req = client().get(&url);
+    if let Some(t) = token {
+        req = req.bearer_auth(t);
+    }
+    let resp = req.send().await?;
 
     if resp.status() == reqwest::StatusCode::NOT_FOUND {
         bail!("not found");

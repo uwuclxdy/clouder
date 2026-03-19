@@ -27,6 +27,7 @@ pub struct Config {
     pub web: WebConfig,
     pub database: DatabaseConfig,
     pub llm: LlmConfig,
+    pub github_token: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -218,6 +219,8 @@ impl Config {
         let llm_dm_allowed_users = parse_user_ids("LLM_DM_ALLOWED_USERS");
         let llm_no_cooldown_users = parse_user_ids("LLM_NO_COOLDOWN_USERS");
 
+        let github_token = env::var("GITHUB_TOKEN").ok().filter(|s| !s.is_empty());
+
         Ok(Config {
             discord: DiscordConfig {
                 token: discord_token,
@@ -252,6 +255,7 @@ impl Config {
                 dm_allowed_users: llm_dm_allowed_users,
                 no_cooldown_users: llm_no_cooldown_users,
             },
+            github_token,
         })
     }
 
@@ -292,6 +296,7 @@ impl Config {
                 dm_allowed_users: vec![],
                 no_cooldown_users: vec![],
             },
+            github_token: None,
         }
     }
 }

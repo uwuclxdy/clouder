@@ -4,6 +4,7 @@ pub mod commands_tests;
 pub mod config_tests;
 pub mod database_tests;
 pub mod events_tests;
+mod github_tests;
 mod help_tests;
 mod huggingface_tests;
 mod mediaonly_tests;

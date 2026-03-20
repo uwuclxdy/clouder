@@ -215,20 +215,9 @@ pub async fn bot(ctx: Context<'_>) -> Result<(), Error> {
     Ok(())
 }
 
-#[poise::command(slash_command)]
+#[poise::command(slash_command, guild_only)]
 pub async fn server(ctx: Context<'_>) -> Result<(), Error> {
-    let guild_id = match ctx.guild_id() {
-        Some(id) => id,
-        None => {
-            ctx.send(
-                poise::CreateReply::default()
-                    .content("this command can only be used in a server!")
-                    .ephemeral(true),
-            )
-            .await?;
-            return Ok(());
-        }
-    };
+    let guild_id = ctx.guild_id().unwrap();
 
     let full_guild = match ctx.http().get_guild_with_counts(guild_id).await {
         Ok(guild) => guild,
@@ -850,21 +839,11 @@ pub async fn user(
     Ok(())
 }
 
-#[poise::command(slash_command)]
+#[poise::command(slash_command, guild_only)]
 pub async fn role(
     ctx: Context<'_>,
     #[description = "Role to get information about"] role: serenity::Role,
 ) -> Result<(), Error> {
-    if ctx.guild_id().is_none() {
-        ctx.send(
-            poise::CreateReply::default()
-                .content("this command can only be used in a server!")
-                .ephemeral(true),
-        )
-        .await?;
-        return Ok(());
-    }
-
     let created_at = role.id.created_at();
     let created_timestamp = format!(
         "{} ({})",
@@ -1030,21 +1009,11 @@ pub async fn role(
     Ok(())
 }
 
-#[poise::command(slash_command)]
+#[poise::command(slash_command, guild_only)]
 pub async fn channel(
     ctx: Context<'_>,
     #[description = "Channel to get information about"] channel: Option<serenity::GuildChannel>,
 ) -> Result<(), Error> {
-    if ctx.guild_id().is_none() {
-        ctx.send(
-            poise::CreateReply::default()
-                .content("❌ this command can only be used in a server!")
-                .ephemeral(true),
-        )
-        .await?;
-        return Ok(());
-    }
-
     let target_channel = match channel {
         Some(ch) => ch,
         None => match ctx.channel_id().to_channel(&ctx.http()).await {

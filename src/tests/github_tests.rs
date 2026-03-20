@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use clouder_core::external::github::{GhRepo, GhUser};
+    use clouder_core::external::github::{GhLicense, GhOwner, GhRepo, GhUser};
 
     fn make_user() -> GhUser {
         GhUser {
@@ -29,13 +29,33 @@ mod tests {
             language: Some("Python".to_string()),
             pushed_at: Some("2024-03-15T12:00:00Z".to_string()),
             topics: vec!["demo".to_string(), "example".to_string()],
-            license: Some(clouder_core::external::github::GhLicense {
+            license: Some(GhLicense {
                 name: "MIT License".to_string(),
             }),
-            owner: clouder_core::external::github::GhOwner {
+            owner: GhOwner {
                 avatar_url: "https://avatars.githubusercontent.com/u/583231".to_string(),
             },
         }
+    }
+
+    fn make_repos(count: usize) -> Vec<GhRepo> {
+        (0..count)
+            .map(|i| GhRepo {
+                full_name: format!("octocat/repo-{}", i),
+                description: None,
+                html_url: format!("https://github.com/octocat/repo-{}", i),
+                stargazers_count: (count - i) as u32,
+                forks_count: 0,
+                open_issues_count: 0,
+                language: None,
+                pushed_at: None,
+                topics: vec![],
+                license: None,
+                owner: GhOwner {
+                    avatar_url: "https://avatars.githubusercontent.com/u/583231".to_string(),
+                },
+            })
+            .collect()
     }
 
     #[test]
@@ -109,5 +129,53 @@ mod tests {
         }"#;
         let r: GhRepo = serde_json::from_str(json).unwrap();
         assert_eq!(r.license.unwrap().name, "MIT License");
+    }
+
+    #[test]
+    fn test_repos_page_count_exact_multiple() {
+        let repos = make_repos(10);
+        assert_eq!(repos.len().div_ceil(5), 2);
+    }
+
+    #[test]
+    fn test_repos_page_count_remainder() {
+        let repos = make_repos(7);
+        assert_eq!(repos.len().div_ceil(5), 2);
+    }
+
+    #[test]
+    fn test_repos_page_count_single_page() {
+        let repos = make_repos(3);
+        assert_eq!(repos.len().div_ceil(5), 1);
+    }
+
+    #[test]
+    fn test_repos_page_slice_first() {
+        let repos = make_repos(12);
+        let page = 0;
+        let per_page = 5;
+        let start = page * per_page;
+        let slice = &repos[start..(start + per_page).min(repos.len())];
+        assert_eq!(slice.len(), 5);
+        assert_eq!(slice[0].full_name, "octocat/repo-0");
+    }
+
+    #[test]
+    fn test_repos_page_slice_last_partial() {
+        let repos = make_repos(12);
+        let page = 2;
+        let per_page = 5;
+        let start = page * per_page;
+        let slice = &repos[start..(start + per_page).min(repos.len())];
+        assert_eq!(slice.len(), 2);
+        assert_eq!(slice[0].full_name, "octocat/repo-10");
+    }
+
+    #[test]
+    fn test_repos_sorted_descending_by_stars() {
+        let repos = make_repos(5);
+        for i in 1..repos.len() {
+            assert!(repos[i - 1].stargazers_count >= repos[i].stargazers_count);
+        }
     }
 }

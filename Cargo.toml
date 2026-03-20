@@ -31,7 +31,7 @@ sqlx = { version = "0.8.6", features = [
     "macros",
 ], default-features = false }
 chrono = { version = "0.4.44", features = ["serde"] }
-chrono-tz = { version = "0.10" }
+chrono-tz = { version = "0.10.4" }
 reqwest = { version = "0.13.2" }
 axum = { version = "0.8.8" }
 uuid = { version = "1.22.0" }
@@ -47,7 +47,7 @@ uwurs = "0.3.4"
 
 [package]
 name = "clouder"
-version = "0.2.3"
+version = "0.2.4"
 edition = "2024"
 
 [[bin]]

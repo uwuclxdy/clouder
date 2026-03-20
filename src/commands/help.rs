@@ -155,6 +155,20 @@ pub fn get_all_commands() -> Vec<CommandInfo> {
             category: CommandCategory::ApiIntegration,
             permissions: None,
         },
+        CommandInfo {
+            name: "/github".to_string(),
+            description: "look up a github user or repository".to_string(),
+            usage: Some("/github [user] [repo]".to_string()),
+            category: CommandCategory::ApiIntegration,
+            permissions: None,
+        },
+        CommandInfo {
+            name: "/gh_trending".to_string(),
+            description: "browse github trending repositories".to_string(),
+            usage: Some("/gh_trending".to_string()),
+            category: CommandCategory::ApiIntegration,
+            permissions: None,
+        },
     ]
 }
 

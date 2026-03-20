@@ -29,7 +29,7 @@ impl axum::extract::FromRef<WebState> for Key {
 }
 
 pub async fn run(app_state: AppState) -> Result<()> {
-    info!("starting API: {}/api/", app_state.config.web.api_base,);
+    info!("starting API: {}/api", app_state.config.web.bind_addr,);
 
     let key = cookie_key_from_secret(&app_state.config.web.session_secret);
     let state = WebState {
@@ -165,6 +165,7 @@ pub async fn run(app_state: AppState) -> Result<()> {
         "starting web dashboard: {}",
         &state.app_state.config.web.bind_addr,
     );
+	info!("web base address: {}", &state.app_state.config.web.api_base);
     axum::serve(listener, app).await?;
 
     Ok(())

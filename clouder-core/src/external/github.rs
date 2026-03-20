@@ -98,12 +98,12 @@ pub async fn fetch_user(username: &str, token: Option<&str>) -> Result<GhUser> {
         if let Some((user, at)) = cache.get(username)
             && at.elapsed() < CACHE_TTL
         {
-            debug!("github: user cache hit for {}", username);
+            debug!("user cache hit for {}", username);
             return Ok(user.clone());
         }
     }
 
-    debug!("github: fetching user {}", username);
+    debug!("fetching user {}", username);
     let url = format!("{GITHUB_API}/users/{username}");
     let mut req = client().get(&url);
     if let Some(t) = token {
@@ -132,12 +132,12 @@ pub async fn fetch_repo(owner: &str, repo: &str, token: Option<&str>) -> Result<
         if let Some((r, at)) = cache.get(&key)
             && at.elapsed() < CACHE_TTL
         {
-            debug!("github: repo cache hit for {}", key);
+            debug!("repo cache hit for {}", key);
             return Ok(r.clone());
         }
     }
 
-    debug!("github: fetching repo {}", key);
+    debug!("fetching repo {}", key);
     let url = format!("{GITHUB_API}/repos/{key}");
     let mut req = client().get(&url);
     if let Some(t) = token {

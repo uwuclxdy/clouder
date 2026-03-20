@@ -1,4 +1,4 @@
--- 008: Fix reminder_configs unique constraint and cleanup duplicates
+-- 008: Fix reminder_configs
 
 -- Remove duplicate reminder_configs, keeping the row with the highest id per guild+type
 DELETE FROM reminder_configs

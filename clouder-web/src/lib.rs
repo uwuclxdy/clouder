@@ -165,7 +165,7 @@ pub async fn run(app_state: AppState) -> Result<()> {
         "starting web dashboard: {}",
         &state.app_state.config.web.bind_addr,
     );
-	info!("web base address: {}", &state.app_state.config.web.api_base);
+    info!("web base address: {}", &state.app_state.config.web.api_base);
     axum::serve(listener, app).await?;
 
     Ok(())

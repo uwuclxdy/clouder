@@ -61,8 +61,11 @@ impl GhRepo {
     }
 }
 
+type ReposMap = HashMap<String, (Vec<GhRepo>, Instant)>;
+
 static USER_CACHE: OnceLock<Mutex<HashMap<String, (GhUser, Instant)>>> = OnceLock::new();
 static REPO_CACHE: OnceLock<Mutex<HashMap<String, (GhRepo, Instant)>>> = OnceLock::new();
+static REPOS_CACHE: OnceLock<Mutex<ReposMap>> = OnceLock::new();
 
 fn user_cache() -> &'static Mutex<HashMap<String, (GhUser, Instant)>> {
     USER_CACHE.get_or_init(|| Mutex::new(HashMap::new()))
@@ -70,6 +73,10 @@ fn user_cache() -> &'static Mutex<HashMap<String, (GhUser, Instant)>> {
 
 fn repo_cache() -> &'static Mutex<HashMap<String, (GhRepo, Instant)>> {
     REPO_CACHE.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
+fn repos_cache() -> &'static Mutex<ReposMap> {
+    REPOS_CACHE.get_or_init(|| Mutex::new(HashMap::new()))
 }
 
 static CLIENT: OnceLock<reqwest::Client> = OnceLock::new();
@@ -156,4 +163,37 @@ pub async fn fetch_repo(owner: &str, repo: &str, token: Option<&str>) -> Result<
     }
 
     Ok(r)
+}
+
+pub async fn fetch_repos(username: &str, token: Option<&str>) -> Result<Vec<GhRepo>> {
+    {
+        let cache = repos_cache().lock().unwrap();
+        if let Some((repos, at)) = cache.get(username)
+            && at.elapsed() < CACHE_TTL
+        {
+            debug!("repos cache hit for {}", username);
+            return Ok(repos.clone());
+        }
+    }
+
+    debug!("fetching repos for {}", username);
+    let url = format!("{GITHUB_API}/users/{username}/repos?per_page=100");
+    let mut req = client().get(&url);
+    if let Some(t) = token {
+        req = req.bearer_auth(t);
+    }
+    let resp = req.send().await?;
+
+    if resp.status() == reqwest::StatusCode::NOT_FOUND {
+        bail!("not found");
+    }
+    let mut repos: Vec<GhRepo> = resp.error_for_status()?.json().await?;
+    repos.sort_by(|a, b| b.stargazers_count.cmp(&a.stargazers_count));
+
+    {
+        let mut cache = repos_cache().lock().unwrap();
+        cache.insert(username.to_string(), (repos.clone(), Instant::now()));
+    }
+
+    Ok(repos)
 }

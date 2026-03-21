@@ -58,6 +58,8 @@ Constructed once at startup via `AppState::new(config, db, http)`. Shared across
 
 ## database
 
+> **note:** create only the tables needed for the functionality that you're currently working on!
+
 ### initialize_database
 
 `pub async fn initialize_database(db_url: &str) -> Result<SqlitePool>` -- creates the `data/` directory and SQLite file if missing, connects, and runs all migrations sequentially. Migrations are embedded at compile time via `include_str!`.

@@ -2,6 +2,7 @@ use crate::serenity;
 use chrono::{Duration, Utc};
 use clouder_core::config::AppState;
 use clouder_core::database::selfroles::{SelfRoleConfig, SelfRoleCooldown};
+use clouder_core::shared::check_interaction_expired;
 use serenity::all::{CreateInteractionResponse, CreateInteractionResponseMessage, Mentionable};
 use tracing::{error, info, warn};
 
@@ -37,7 +38,7 @@ async fn reply_ephemeral(
         )
         .await
     {
-        error!("respond: {}", e);
+        check_interaction_expired(&e);
     }
 }
 

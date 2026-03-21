@@ -1,5 +1,7 @@
 use crate::serenity;
 use clouder_core::config::AppState;
+#[cfg(feature = "llm")]
+use clouder_core::shared::check_interaction_expired;
 use std::time::Duration;
 use tracing::{debug, error, warn};
 
@@ -333,7 +335,7 @@ pub async fn handle_ai_retry_interaction(
             )
             .await
         {
-            error!("send unauthorized response: {}", e);
+            check_interaction_expired(&e);
         }
         return;
     }
@@ -371,7 +373,7 @@ pub async fn handle_ai_retry_interaction(
                 )
                 .await
             {
-                error!("send cooldown response: {}", e);
+                check_interaction_expired(&e);
             }
             return;
         }
@@ -388,7 +390,7 @@ pub async fn handle_ai_retry_interaction(
         )
         .await
     {
-        error!("acknowledge retry interaction: {}", e);
+        check_interaction_expired(&e);
         return;
     }
 

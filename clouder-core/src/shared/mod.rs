@@ -7,7 +7,20 @@ use crate::database::selfroles::{SelfRoleConfig, SelfRoleLabel};
 use anyhow::Result;
 use serde_json::{Value, json};
 use serenity::all::{GuildId, Http, Permissions};
-use tracing::{error, warn};
+use tracing::{debug, error, warn};
+
+const DISCORD_UNKNOWN_INTERACTION_ERROR_CODE: &str = "10062";
+
+pub fn check_interaction_expired(error: &impl std::fmt::Display) {
+    let error = error.to_string();
+    let expired = error.contains(DISCORD_UNKNOWN_INTERACTION_ERROR_CODE)
+        || error.contains("Unknown Interaction");
+    if expired {
+        debug!("interaction expired: {}", error);
+    } else {
+        error!("send cooldown response: {}", error);
+    }
+}
 
 pub fn format_selfrole_button_label(emoji: &str, label: &str) -> String {
     let trimmed = emoji.trim();
@@ -890,6 +903,55 @@ pub async fn update_welcome_goodbye_config(
         config.goodbye_embed_timestamp = v;
     }
 
+    // validate URL fields
+    for url in [
+        &config.welcome_embed_thumbnail,
+        &config.welcome_embed_image,
+        &config.goodbye_embed_thumbnail,
+        &config.goodbye_embed_image,
+    ]
+    .into_iter()
+    .flatten()
+    {
+        if !crate::utils::is_valid_url(url) {
+            return Err(format!(
+                "invalid URL '{}': must start with http:// or https://",
+                url
+            ));
+        }
+    }
+
+    // validate content lengths (Discord limits)
+    let checks: &[(&Option<String>, usize, &str)] = &[
+        (
+            &config.welcome_message_content,
+            2000,
+            "welcome_message_content",
+        ),
+        (
+            &config.goodbye_message_content,
+            2000,
+            "goodbye_message_content",
+        ),
+        (&config.welcome_embed_title, 256, "welcome_embed_title"),
+        (&config.goodbye_embed_title, 256, "goodbye_embed_title"),
+        (
+            &config.welcome_embed_description,
+            4096,
+            "welcome_embed_description",
+        ),
+        (
+            &config.goodbye_embed_description,
+            4096,
+            "goodbye_embed_description",
+        ),
+        (&config.welcome_embed_footer, 2048, "welcome_embed_footer"),
+        (&config.goodbye_embed_footer, 2048, "goodbye_embed_footer"),
+    ];
+    for (field, max, name) in checks {
+        validate_content_lengths(&[((*field).as_deref(), *max, *name)])?;
+    }
+
     WelcomeGoodbyeConfig::upsert_config(&app_state.db, &config)
         .await
         .map_err(|e| format!("Failed to save config: {}", e))?;
@@ -1414,6 +1476,18 @@ pub async fn send_dm_to_user(http: &Http, user_id: u64, content: &str) -> Result
 
 const MAX_CUSTOM_REMINDERS_PER_GUILD: i64 = 10;
 
+fn validate_content_lengths(fields: &[(Option<&str>, usize, &str)]) -> Result<(), String> {
+    for &(field, max_length, field_name) in fields {
+        if let Some(value) = field
+            && value.len() > max_length
+        {
+            return Err(format!("{} exceeds {} characters", field_name, max_length));
+        }
+    }
+
+    Ok(())
+}
+
 /// Get all reminder configs for a guild, with their ping roles
 pub async fn get_reminders_config(app_state: &AppState, guild_id: u64) -> Result<Value, String> {
     use crate::database::reminders::{
@@ -1523,6 +1597,24 @@ pub async fn upsert_reminder_config(
         .get("timezone")
         .and_then(|v| v.as_str())
         .unwrap_or("UTC");
+
+    // validate wysi time format (HH:MM)
+    if let Some(t) = wysi_morning
+        && !crate::utils::is_valid_hhmm(t)
+    {
+        return Err(format!("invalid wysi_morning_time '{}', expected HH:MM", t));
+    }
+    if let Some(t) = wysi_evening
+        && !crate::utils::is_valid_hhmm(t)
+    {
+        return Err(format!("invalid wysi_evening_time '{}', expected HH:MM", t));
+    }
+
+    validate_content_lengths(&[
+        (message_content, 2000, "message_content"),
+        (embed_title, 256, "embed_title"),
+        (embed_description, 4096, "embed_description"),
+    ])?;
 
     // validate timezone
     if timezone.parse::<chrono_tz::Tz>().is_err() {
@@ -1797,11 +1889,7 @@ pub async fn create_custom_reminder(
     let embed_color = payload.get("embed_color").and_then(|v| v.as_i64());
 
     // validate schedule_time (HH:MM)
-    let time_parts: Vec<&str> = schedule_time.split(':').collect();
-    if time_parts.len() != 2
-        || time_parts[0].parse::<u32>().is_err()
-        || time_parts[1].parse::<u32>().is_err()
-    {
+    if !crate::utils::is_valid_hhmm(schedule_time) {
         return Err("invalid schedule_time format, expected HH:MM".to_string());
     }
 
@@ -1820,6 +1908,12 @@ pub async fn create_custom_reminder(
     if timezone.parse::<chrono_tz::Tz>().is_err() {
         return Err(format!("invalid timezone: {}", timezone));
     }
+
+    validate_content_lengths(&[
+        (message_content, 2000, "message_content"),
+        (embed_title, 256, "embed_title"),
+        (embed_description, 4096, "embed_description"),
+    ])?;
 
     // ensure guild_config exists (foreign key requirement)
     use crate::database::reminders::GuildConfig;
@@ -1935,11 +2029,7 @@ pub async fn update_custom_reminder(
         .or(existing.embed_color);
 
     // validate schedule_time (HH:MM)
-    let time_parts: Vec<&str> = schedule_time.split(':').collect();
-    if time_parts.len() != 2
-        || time_parts[0].parse::<u32>().is_err()
-        || time_parts[1].parse::<u32>().is_err()
-    {
+    if !crate::utils::is_valid_hhmm(schedule_time) {
         return Err("invalid schedule_time format, expected HH:MM".to_string());
     }
 
@@ -1958,6 +2048,12 @@ pub async fn update_custom_reminder(
     if timezone.parse::<chrono_tz::Tz>().is_err() {
         return Err(format!("invalid timezone: {}", timezone));
     }
+
+    validate_content_lengths(&[
+        (message_content, 2000, "message_content"),
+        (embed_title, 256, "embed_title"),
+        (embed_description, 4096, "embed_description"),
+    ])?;
 
     CustomReminder::update(
         &app_state.db,

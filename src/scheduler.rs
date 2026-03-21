@@ -6,16 +6,17 @@ use clouder_core::{
         CustomReminder, CustomReminderLog, CustomReminderPingRole, CustomReminderSubscription,
         ReminderConfig, ReminderLog, ReminderSubscription, ReminderType, UserSettings,
     },
+    utils::parse_hhmm,
 };
 use serde_json::json;
 use serenity::all::{ChannelId, CreateMessage};
 use tokio::time::{Duration as TokioDuration, interval};
 use tracing::{error, info, warn};
 
-/// Start the background reminder scheduler (runs every 60 seconds)
+/// Start the background reminder scheduler
 pub fn start_scheduler(state: AppState) {
     tokio::spawn(async move {
-        let mut ticker = interval(TokioDuration::from_secs(60));
+        let mut ticker = interval(TokioDuration::from_secs(state.config.scheduler_interval));
         loop {
             ticker.tick().await;
             if let Err(e) = run_due_reminders(&state).await {
@@ -388,16 +389,6 @@ fn build_reminder_message(
     }
 
     msg
-}
-
-pub fn parse_hhmm(s: &str) -> Option<NaiveTime> {
-    let parts: Vec<&str> = s.splitn(2, ':').collect();
-    if parts.len() != 2 {
-        return None;
-    }
-    let h: u32 = parts[0].parse().ok()?;
-    let m: u32 = parts[1].parse().ok()?;
-    NaiveTime::from_hms_opt(h, m, 0)
 }
 
 fn is_within_minute(current: NaiveTime, target: NaiveTime) -> bool {

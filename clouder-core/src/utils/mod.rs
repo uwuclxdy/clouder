@@ -77,6 +77,26 @@ pub fn has_permission(
     perms.contains(required)
 }
 
+pub fn parse_hhmm(s: &str) -> Option<chrono::NaiveTime> {
+    let (hours, minutes) = s.split_once(':')?;
+
+    if hours.is_empty() || minutes.is_empty() || minutes.contains(':') {
+        return None;
+    }
+
+    let hours = hours.parse::<u32>().ok()?;
+    let minutes = minutes.parse::<u32>().ok()?;
+    chrono::NaiveTime::from_hms_opt(hours, minutes, 0)
+}
+
+pub fn is_valid_hhmm(s: &str) -> bool {
+    parse_hhmm(s).is_some()
+}
+
+pub fn is_valid_url(s: &str) -> bool {
+    s.starts_with("https://") || s.starts_with("http://")
+}
+
 pub fn format_count(n: u64) -> String {
     if n >= 1_000_000 {
         format!("{:.1}M", n as f64 / 1_000_000.0)

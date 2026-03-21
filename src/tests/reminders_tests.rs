@@ -137,7 +137,8 @@ mod tests {
     #[tokio::test]
     async fn test_hhmm_parsing_and_next727() {
         use chrono::Timelike;
-        use clouder::scheduler::{next_727_timestamp, parse_hhmm};
+        use clouder::scheduler::next_727_timestamp;
+        use clouder_core::utils::parse_hhmm;
         let t = parse_hhmm("07:27").unwrap();
         assert_eq!(t.hour(), 7);
         assert_eq!(t.minute(), 27);

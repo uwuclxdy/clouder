@@ -28,6 +28,8 @@ pub struct Config {
     pub database: DatabaseConfig,
     pub llm: LlmConfig,
     pub github_token: Option<String>,
+    pub scheduler_interval: u64,
+    pub default_timezone: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -221,6 +223,13 @@ impl Config {
 
         let github_token = env::var("GITHUB_TOKEN").ok().filter(|s| !s.is_empty());
 
+        let scheduler_interval = env::var("SCHEDULER_INTERVAL")
+            .ok()
+            .and_then(|s| s.parse::<u64>().ok())
+            .unwrap_or(60);
+
+        let default_timezone = env::var("DEFAULT_TIMEZONE").unwrap_or_else(|_| "UTC".to_string());
+
         Ok(Config {
             discord: DiscordConfig {
                 token: discord_token,
@@ -256,6 +265,8 @@ impl Config {
                 no_cooldown_users: llm_no_cooldown_users,
             },
             github_token,
+            scheduler_interval,
+            default_timezone,
         })
     }
 
@@ -297,6 +308,8 @@ impl Config {
                 no_cooldown_users: vec![],
             },
             github_token: None,
+            scheduler_interval: 60,
+            default_timezone: "UTC".to_string(),
         }
     }
 }

@@ -1,5 +1,6 @@
 #[cfg(test)]
 mod tests {
+    use chrono::Timelike;
     use clouder_core::utils::*;
 
     #[test]
@@ -149,6 +150,44 @@ mod tests {
             combo,
             Permissions::MANAGE_WEBHOOKS
         ));
+    }
+
+    #[test]
+    fn test_hhmm_validation() {
+        let time = parse_hhmm("07:27").unwrap();
+        assert_eq!(time.hour(), 7);
+        assert_eq!(time.minute(), 27);
+
+        for valid in ["00:00", "07:27", "23:59"] {
+            assert!(is_valid_hhmm(valid), "expected valid time: {}", valid);
+            assert!(
+                parse_hhmm(valid).is_some(),
+                "expected parsed time: {}",
+                valid
+            );
+        }
+
+        for invalid in [
+            "24:00",
+            "5:60",
+            "12:30extra",
+            "12:30:45",
+            "",
+            "07",
+            "07:",
+            ":27",
+        ] {
+            assert!(
+                !is_valid_hhmm(invalid),
+                "expected invalid time: {}",
+                invalid
+            );
+            assert!(
+                parse_hhmm(invalid).is_none(),
+                "expected no parsed time: {}",
+                invalid
+            );
+        }
     }
 
     #[test]

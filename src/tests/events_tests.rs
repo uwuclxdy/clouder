@@ -466,6 +466,13 @@ mod tests {
         }
     }
 
+    #[test]
+    fn test_is_interaction_expired() {
+        assert!(clouder::is_interaction_expired(&"error 10062"));
+        assert!(clouder::is_interaction_expired(&"Unknown Interaction"));
+        assert!(!clouder::is_interaction_expired(&"other error"));
+    }
+
     // Helper function to test custom ID parsing
     fn parse_selfrole_custom_id(custom_id: &str) -> Option<(i64, String)> {
         if let Some(suffix) = custom_id.strip_prefix("selfrole_") {

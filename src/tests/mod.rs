@@ -10,6 +10,7 @@ mod huggingface_tests;
 mod mediaonly_tests;
 mod purge_tests;
 mod reminders_tests;
+mod shared_tests;
 pub mod utils_tests;
 mod uwufy_tests;
 mod welcome_goodbye_tests;

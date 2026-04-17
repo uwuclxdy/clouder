@@ -1502,7 +1502,7 @@ fn get_hard_split_end(content: &str, max_length: usize) -> usize {
         .take_while(|(i, c)| *i + c.len_utf8() <= max_length)
         .last()
         .map(|(i, c)| i + c.len_utf8())
-        .unwrap_or(content.len())
+        .unwrap_or_else(|| content.chars().next().map_or(0, char::len_utf8))
 }
 
 fn find_preferred_split_end(content: &str, hard_end: usize) -> Option<usize> {
@@ -1626,6 +1626,10 @@ fn split_breaks_markdown_token(content: &str, split_at: usize) -> bool {
 
     MARKERS.iter().any(|marker| {
         let marker_len = marker.len();
+        if marker_len > content_bytes.len() {
+            return false;
+        }
+
         let start_min = split_at.saturating_sub(marker_len.saturating_sub(1));
         let start_max = split_at.min(content_bytes.len().saturating_sub(marker_len));
         if start_min > start_max {
@@ -2338,6 +2342,17 @@ mod tests {
             &content,
             chunks[0].len()
         ));
+        assert_eq!(chunks.concat(), content);
+    }
+
+    #[test]
+    fn splits_at_first_char_boundary_when_limit_is_smaller_than_first_char() {
+        let content = "🙂abcd";
+        let chunks = split_message_for_discord(content, 1);
+
+        assert_eq!(chunks[0], "🙂");
+        assert!(chunks[0].len() > 1);
+        assert!(chunks.iter().skip(1).all(|chunk| chunk.len() <= 1));
         assert_eq!(chunks.concat(), content);
     }
 }

@@ -1508,7 +1508,7 @@ fn get_hard_split_end(content: &str, max_length: usize) -> usize {
 fn find_preferred_split_end(content: &str, hard_end: usize) -> Option<usize> {
     content[..hard_end]
         .char_indices()
-        .filter_map(|(i, c)| c.is_whitespace().then_some(i))
+        .filter_map(|(i, c)| c.is_whitespace().then_some(i + c.len_utf8()))
         .filter(|&i| i > 0)
         .rfind(|&i| !split_breaks_markdown_token(content, i))
 }

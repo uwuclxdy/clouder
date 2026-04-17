@@ -1585,13 +1585,20 @@ fn is_escaped(content: &str, marker_index: usize) -> bool {
 
 fn split_breaks_markdown_token(content: &str, split_at: usize) -> bool {
     const MARKERS: [&str; 4] = ["```", "**", "__", "~~"];
+    let content_bytes = content.as_bytes();
 
     MARKERS.iter().any(|marker| {
-        let marker_len = marker.len();
+        let marker_bytes = marker.as_bytes();
+        let marker_len = marker_bytes.len();
+
         (1..marker_len).any(|offset| {
-            split_at >= offset
-                && split_at - offset + marker_len <= content.len()
-                && &content[split_at - offset..split_at - offset + marker_len] == *marker
+            if split_at < offset {
+                return false;
+            }
+
+            let start = split_at - offset;
+            start + marker_len <= content_bytes.len()
+                && &content_bytes[start..start + marker_len] == marker_bytes
         })
     })
 }

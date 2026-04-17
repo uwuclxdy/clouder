@@ -1514,8 +1514,7 @@ fn find_preferred_split_end(content: &str, hard_end: usize) -> Option<usize> {
     content[..hard_end]
         .char_indices()
         .filter_map(|(i, c)| c.is_whitespace().then_some(i))
-        .filter(|&i| !split_breaks_markdown_token(content, i))
-        .next_back()
+        .rfind(|&i| !split_breaks_markdown_token(content, i))
 }
 
 fn find_balanced_split_before(content: &str, from: usize) -> Option<usize> {
@@ -1524,9 +1523,7 @@ fn find_balanced_split_before(content: &str, from: usize) -> Option<usize> {
         .map(|(i, _)| i)
         .rev()
         .find(|&i| {
-            i > 0
-                && !split_breaks_markdown_token(content, i)
-                && is_markdown_balanced(&content[..i])
+            i > 0 && !split_breaks_markdown_token(content, i) && is_markdown_balanced(&content[..i])
         })
 }
 
@@ -1569,19 +1566,11 @@ fn is_markdown_balanced(content: &str) -> bool {
             }
         }
 
-        let ch_len = content[i..]
-            .chars()
-            .next()
-            .map(char::len_utf8)
-            .unwrap_or(1);
+        let ch_len = content[i..].chars().next().map(char::len_utf8).unwrap_or(1);
         i += ch_len;
     }
 
-    !in_fence
-        && !in_inline_code
-        && !in_bold_asterisk
-        && !in_bold_underscore
-        && !in_strikethrough
+    !in_fence && !in_inline_code && !in_bold_asterisk && !in_bold_underscore && !in_strikethrough
 }
 
 fn is_escaped(content: &str, marker_index: usize) -> bool {

@@ -1452,24 +1452,165 @@ pub async fn send_dm_to_user(http: &Http, user_id: u64, content: &str) -> Result
         .await?;
 
     let channel_id = channel.id;
-    let mut remaining = content;
-    while !remaining.is_empty() {
-        let end = remaining
-            .char_indices()
-            .take_while(|(i, _)| *i < 2000)
-            .last()
-            .map(|(i, c)| i + c.len_utf8())
-            .unwrap_or(remaining.len());
-        let (chunk, rest) = remaining.split_at(end);
-        remaining = rest;
-
-        let msg = serenity::all::CreateMessage::new().content(chunk);
+    for chunk in split_message_for_discord(content, 2000) {
+        let msg = serenity::all::CreateMessage::new().content(&chunk);
         if let Err(e) = http.send_message(channel_id, Vec::new(), &msg).await {
             error!("failed to send dm chunk to {}: {}", user_id, e);
         }
     }
 
     Ok(())
+}
+
+fn split_message_for_discord(content: &str, max_length: usize) -> Vec<String> {
+    if content.is_empty() {
+        return Vec::new();
+    }
+
+    let mut chunks = Vec::new();
+    let mut remaining = content;
+    let max_length = max_length.max(1);
+
+    while !remaining.is_empty() {
+        let hard_end = get_hard_split_end(remaining, max_length);
+        if hard_end == remaining.len() {
+            chunks.push(remaining.to_string());
+            break;
+        }
+
+        let mut end = find_preferred_split_end(remaining, hard_end).unwrap_or(hard_end);
+        if end == 0 {
+            end = hard_end;
+        }
+
+        if !is_markdown_balanced(&remaining[..end])
+            && let Some(safe_end) = find_balanced_split_before(remaining, end)
+        {
+            end = safe_end;
+        }
+
+        if end == 0 {
+            end = hard_end;
+        }
+
+        let (chunk, rest) = remaining.split_at(end);
+        chunks.push(chunk.to_string());
+        remaining = rest;
+    }
+
+    chunks
+}
+
+fn get_hard_split_end(content: &str, max_length: usize) -> usize {
+    content
+        .char_indices()
+        .take_while(|(i, _)| *i < max_length)
+        .last()
+        .map(|(i, c)| i + c.len_utf8())
+        .unwrap_or(content.len())
+}
+
+fn find_preferred_split_end(content: &str, hard_end: usize) -> Option<usize> {
+    content[..hard_end]
+        .char_indices()
+        .filter_map(|(i, c)| c.is_whitespace().then_some(i))
+        .filter(|&i| !split_breaks_markdown_token(content, i))
+        .next_back()
+}
+
+fn find_balanced_split_before(content: &str, from: usize) -> Option<usize> {
+    content[..from]
+        .char_indices()
+        .map(|(i, _)| i)
+        .rev()
+        .find(|&i| {
+            i > 0
+                && !split_breaks_markdown_token(content, i)
+                && is_markdown_balanced(&content[..i])
+        })
+}
+
+fn is_markdown_balanced(content: &str) -> bool {
+    let mut in_fence = false;
+    let mut in_inline_code = false;
+    let mut in_bold_asterisk = false;
+    let mut in_bold_underscore = false;
+    let mut in_strikethrough = false;
+
+    let mut i = 0;
+    while i < content.len() {
+        if !is_escaped(content, i) {
+            if content[i..].starts_with("```") {
+                if !in_inline_code {
+                    in_fence = !in_fence;
+                }
+                i += 3;
+                continue;
+            }
+            if !in_fence && content[i..].starts_with('`') {
+                in_inline_code = !in_inline_code;
+                i += 1;
+                continue;
+            }
+            if !in_fence && !in_inline_code && content[i..].starts_with("**") {
+                in_bold_asterisk = !in_bold_asterisk;
+                i += 2;
+                continue;
+            }
+            if !in_fence && !in_inline_code && content[i..].starts_with("__") {
+                in_bold_underscore = !in_bold_underscore;
+                i += 2;
+                continue;
+            }
+            if !in_fence && !in_inline_code && content[i..].starts_with("~~") {
+                in_strikethrough = !in_strikethrough;
+                i += 2;
+                continue;
+            }
+        }
+
+        let ch_len = content[i..]
+            .chars()
+            .next()
+            .map(char::len_utf8)
+            .unwrap_or(1);
+        i += ch_len;
+    }
+
+    !in_fence
+        && !in_inline_code
+        && !in_bold_asterisk
+        && !in_bold_underscore
+        && !in_strikethrough
+}
+
+fn is_escaped(content: &str, marker_index: usize) -> bool {
+    if marker_index == 0 {
+        return false;
+    }
+
+    let mut slash_count = 0usize;
+    for ch in content[..marker_index].chars().rev() {
+        if ch == '\\' {
+            slash_count += 1;
+        } else {
+            break;
+        }
+    }
+    slash_count % 2 == 1
+}
+
+fn split_breaks_markdown_token(content: &str, split_at: usize) -> bool {
+    const MARKERS: [&str; 4] = ["```", "**", "__", "~~"];
+
+    MARKERS.iter().any(|marker| {
+        let marker_len = marker.len();
+        (1..marker_len).any(|offset| {
+            split_at >= offset
+                && split_at - offset + marker_len <= content.len()
+                && &content[split_at - offset..split_at - offset + marker_len] == *marker
+        })
+    })
 }
 
 // Reminder functions
@@ -2113,4 +2254,41 @@ pub async fn delete_custom_reminder(
         .map_err(|e| format!("DB error: {}", e))?;
 
     Ok(json!({ "success": true }))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::split_message_for_discord;
+
+    #[test]
+    fn splits_before_unclosed_markdown_when_possible() {
+        let content = format!("{} **bold text** tail", "a".repeat(1990));
+        let chunks = split_message_for_discord(&content, 2000);
+
+        assert_eq!(chunks.len(), 2);
+        assert!(!chunks[0].contains("**"));
+        assert_eq!(chunks.concat(), content);
+    }
+
+    #[test]
+    fn keeps_balanced_markdown_for_each_chunk_when_possible() {
+        let content = format!("{} **bold text** {}", "a".repeat(1990), "b".repeat(30));
+        let chunks = split_message_for_discord(&content, 2000);
+
+        for chunk in &chunks {
+            assert!(chunk.len() <= 2000);
+            assert!(super::is_markdown_balanced(chunk), "chunk was: {chunk}");
+        }
+        assert_eq!(chunks.concat(), content);
+    }
+
+    #[test]
+    fn falls_back_to_hard_limit_when_no_safe_split_exists() {
+        let content = format!("```{}```", "x".repeat(2100));
+        let chunks = split_message_for_discord(&content, 2000);
+
+        assert!(chunks.len() > 1);
+        assert!(chunks.iter().all(|chunk| chunk.len() <= 2000));
+        assert_eq!(chunks.concat(), content);
+    }
 }

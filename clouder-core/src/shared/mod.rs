@@ -1479,18 +1479,11 @@ fn split_message_for_discord(content: &str, max_length: usize) -> Vec<String> {
         }
 
         let mut end = find_preferred_split_end(remaining, hard_end).unwrap_or(hard_end);
-        if end == 0 {
-            end = hard_end;
-        }
 
         if !is_markdown_balanced(&remaining[..end])
             && let Some(safe_end) = find_balanced_split_before(remaining, end)
         {
             end = safe_end;
-        }
-
-        if end == 0 {
-            end = hard_end;
         }
 
         let (chunk, rest) = remaining.split_at(end);
@@ -1514,6 +1507,7 @@ fn find_preferred_split_end(content: &str, hard_end: usize) -> Option<usize> {
     content[..hard_end]
         .char_indices()
         .filter_map(|(i, c)| c.is_whitespace().then_some(i))
+        .filter(|&i| i > 0)
         .rfind(|&i| !split_breaks_markdown_token(content, i))
 }
 

@@ -2,16 +2,46 @@ use crate::WebState;
 use crate::session;
 use axum::extract::{Query, State};
 use axum::response::Redirect;
-use axum_extra::extract::cookie::SignedCookieJar;
+use axum_extra::extract::cookie::{Cookie, SameSite, SignedCookieJar};
 use clouder_core::DashboardUser;
 use clouder_core::database::dashboard_sessions::DashboardSession;
+use cookie::time::Duration as CookieDuration;
+use rand::Rng;
 use serde::Deserialize;
+use subtle::ConstantTimeEq;
 use tracing::{error, info, warn};
+
+const OAUTH_STATE_COOKIE: &str = "clouder_oauth_state";
+const OAUTH_STATE_TTL_SECONDS: i64 = 600;
+const OAUTH_STATE_BYTES: usize = 16;
 
 #[derive(Deserialize)]
 pub struct OAuthCallback {
     code: Option<String>,
     error: Option<String>,
+    state: Option<String>,
+}
+
+fn random_hex(bytes: usize) -> String {
+    let mut buf = vec![0u8; bytes];
+    rand::rng().fill_bytes(&mut buf);
+    buf.iter().map(|b| format!("{:02x}", b)).collect()
+}
+
+fn oauth_state_cookie(value: String, secure: bool) -> Cookie<'static> {
+    let mut c = Cookie::new(OAUTH_STATE_COOKIE, value);
+    c.set_path("/");
+    c.set_http_only(true);
+    c.set_same_site(SameSite::Lax);
+    c.set_secure(secure);
+    c.set_max_age(CookieDuration::seconds(OAUTH_STATE_TTL_SECONDS));
+    c
+}
+
+fn clear_oauth_state(jar: SignedCookieJar) -> SignedCookieJar {
+    let mut c = Cookie::from(OAUTH_STATE_COOKIE);
+    c.set_path("/");
+    jar.remove(c)
 }
 
 #[derive(Debug)]
@@ -21,14 +51,21 @@ struct DiscordProfile {
     avatar: Option<String>,
 }
 
-pub async fn login(State(state): State<WebState>) -> Redirect {
+pub async fn login(
+    State(state): State<WebState>,
+    jar: SignedCookieJar,
+) -> (SignedCookieJar, Redirect) {
     let oauth = &state.app_state.config.web.oauth;
+    let oauth_state = random_hex(OAUTH_STATE_BYTES);
     let url = format!(
-        "https://discord.com/oauth2/authorize?client_id={}&response_type=code&redirect_uri={}&scope=identify+guilds",
+        "https://discord.com/oauth2/authorize?client_id={}&response_type=code&redirect_uri={}&scope=identify+guilds&state={}",
         oauth.client_id,
         urlencoding::encode(&oauth.redirect_uri),
+        oauth_state,
     );
-    Redirect::temporary(&url)
+    let secure = state.app_state.config.web.api_base.starts_with("https://");
+    let new_jar = jar.add(oauth_state_cookie(oauth_state, secure));
+    (new_jar, Redirect::temporary(&url))
 }
 
 pub async fn callback(
@@ -36,6 +73,23 @@ pub async fn callback(
     Query(query): Query<OAuthCallback>,
     jar: SignedCookieJar,
 ) -> (SignedCookieJar, Redirect) {
+    // Validate OAuth state to defeat login-CSRF / account-linking. The cookie
+    // was signed when /auth/login fired; missing or mismatched values reject
+    // before we exchange any code.
+    let stored_state = jar.get(OAUTH_STATE_COOKIE).map(|c| c.value().to_string());
+    let presented_state = query.state.as_deref().unwrap_or("");
+    let valid_state = match stored_state.as_deref() {
+        Some(stored) if !stored.is_empty() && !presented_state.is_empty() => {
+            stored.as_bytes().ct_eq(presented_state.as_bytes()).into()
+        }
+        _ => false,
+    };
+    let jar = clear_oauth_state(jar);
+    if !valid_state {
+        warn!("oauth state mismatch or missing — possible csrf");
+        return (jar, Redirect::to("/login?error=state_mismatch"));
+    }
+
     if let Some(err) = query.error {
         warn!("discord oauth error: {}", err);
         return (jar, Redirect::to("/login?error=denied"));

@@ -4,6 +4,7 @@ mod dashboard;
 mod session;
 
 use anyhow::Result;
+use axum::extract::DefaultBodyLimit;
 use axum::http::{HeaderName, HeaderValue};
 use axum::{Router, routing::get, routing::post};
 use axum_extra::extract::cookie::Key;
@@ -37,6 +38,12 @@ const DEFAULT_RATE_BURST: u32 = 30;
 // Discord API call, so we keep the bucket small to avoid getting bot-banned.
 const DM_RATE_PER_SEC: u64 = 1;
 const DM_RATE_BURST: u32 = 5;
+// Hard cap on dashboard JSON request bodies. 256 KB covers any legitimate
+// config payload while denying memory-amplification attacks.
+const DEFAULT_BODY_LIMIT_BYTES: usize = 256 * 1024;
+// DM endpoint has its own much tighter cap — Discord rejects messages over
+// 2000 chars and the handler caps content there too.
+const DM_BODY_LIMIT_BYTES: usize = 4 * 1024;
 
 #[derive(Clone)]
 pub struct WebState {
@@ -146,6 +153,7 @@ pub async fn run(app_state: AppState) -> Result<()> {
 
     let dm_route = Router::new()
         .route("/api/{user_id}", post(api::api_send_dm))
+        .layer(DefaultBodyLimit::max(DM_BODY_LIMIT_BYTES))
         .layer(dm_rate_limit)
         .with_state(state.clone());
 
@@ -266,6 +274,7 @@ pub async fn run(app_state: AppState) -> Result<()> {
             "/api/user/subscription/{id}",
             axum::routing::delete(api::api_user_subscription_delete),
         )
+        .layer(DefaultBodyLimit::max(DEFAULT_BODY_LIMIT_BYTES))
         .layer(rate_limit)
         .layer(security_headers)
         .with_state(state.clone())

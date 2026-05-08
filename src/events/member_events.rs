@@ -169,6 +169,20 @@ pub async fn member_removal(
     member_data_if_available: &Option<Member>,
 ) {
     let data = ctx.data.read().await;
+
+    // Discord-side membership change must revoke dashboard cache immediately;
+    // otherwise the kicked user keeps write access until their cache row TTLs.
+    if let Some(pool) = data.get::<Database>()
+        && let Err(e) = clouder_core::database::guild_cache::CachedGuild::delete_for_user(
+            pool,
+            &user.id.to_string(),
+            &guild_id.to_string(),
+        )
+        .await
+    {
+        warn!("guild cache invalidation on removal failed: {}", e);
+    }
+
     let config = match fetch_config(&data, guild_id).await {
         Some(config) => config,
         None => return,

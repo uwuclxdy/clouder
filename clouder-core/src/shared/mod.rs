@@ -913,9 +913,9 @@ pub async fn update_welcome_goodbye_config(
     .into_iter()
     .flatten()
     {
-        if !crate::utils::is_valid_url(url) {
+        if !crate::utils::is_valid_https_url(url) {
             return Err(format!(
-                "invalid URL '{}': must start with http:// or https://",
+                "invalid URL '{}': must be https with a public host",
                 url
             ));
         }

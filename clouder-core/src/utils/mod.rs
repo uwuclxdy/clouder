@@ -93,8 +93,35 @@ pub fn is_valid_hhmm(s: &str) -> bool {
     parse_hhmm(s).is_some()
 }
 
-pub fn is_valid_url(s: &str) -> bool {
-    s.starts_with("https://") || s.starts_with("http://")
+/// Validates a public https URL: scheme must be https, host must resolve to a
+/// public address (not loopback, link-local, private, or unspecified). Hostnames
+/// that aren't IP literals are accepted; DNS rebinding is out of scope here
+/// because these URLs are sent to Discord, not fetched server-side.
+pub fn is_valid_https_url(s: &str) -> bool {
+    use std::net::IpAddr;
+    let Ok(u) = url::Url::parse(s) else {
+        return false;
+    };
+    if u.scheme() != "https" {
+        return false;
+    }
+    let Some(host) = u.host_str() else {
+        return false;
+    };
+    if let Ok(ip) = host.parse::<IpAddr>() {
+        return match ip {
+            IpAddr::V4(v4) => {
+                !v4.is_loopback()
+                    && !v4.is_unspecified()
+                    && !v4.is_private()
+                    && !v4.is_link_local()
+                    && !v4.is_broadcast()
+                    && !v4.is_multicast()
+            }
+            IpAddr::V6(v6) => !v6.is_loopback() && !v6.is_unspecified() && !v6.is_multicast(),
+        };
+    }
+    true
 }
 
 pub fn format_count(n: u64) -> String {

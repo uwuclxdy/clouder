@@ -8,6 +8,28 @@ use tracing::debug;
 const CACHE_TTL: Duration = Duration::from_secs(300);
 const GITHUB_API: &str = "https://api.github.com";
 
+/// GitHub usernames: 1-39 chars, ASCII alphanumeric or hyphens, no leading or
+/// trailing hyphen. Validated before URL construction so user input can't
+/// inject path/query segments into the API request.
+fn is_valid_github_username(s: &str) -> bool {
+    !s.is_empty()
+        && s.len() <= 39
+        && s.chars().all(|c| c.is_ascii_alphanumeric() || c == '-')
+        && !s.starts_with('-')
+        && !s.ends_with('-')
+}
+
+/// GitHub repo names: 1-100 chars, ASCII alphanumeric, hyphen, underscore, or
+/// dot. Plain dots are not valid repo names. Same rationale as usernames.
+fn is_valid_github_repo(s: &str) -> bool {
+    !s.is_empty()
+        && s.len() <= 100
+        && s != "."
+        && s != ".."
+        && s.chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_' || c == '.')
+}
+
 #[derive(Debug, Clone, Deserialize)]
 pub struct GhUser {
     pub login: String,
@@ -100,6 +122,9 @@ fn client() -> &'static reqwest::Client {
 }
 
 pub async fn fetch_user(username: &str, token: Option<&str>) -> Result<GhUser> {
+    if !is_valid_github_username(username) {
+        bail!("invalid github username");
+    }
     {
         let cache = user_cache().lock().unwrap();
         if let Some((user, at)) = cache.get(username)
@@ -132,6 +157,9 @@ pub async fn fetch_user(username: &str, token: Option<&str>) -> Result<GhUser> {
 }
 
 pub async fn fetch_repo(owner: &str, repo: &str, token: Option<&str>) -> Result<GhRepo> {
+    if !is_valid_github_username(owner) || !is_valid_github_repo(repo) {
+        bail!("invalid github owner or repo name");
+    }
     let key = format!("{owner}/{repo}");
 
     {
@@ -166,6 +194,9 @@ pub async fn fetch_repo(owner: &str, repo: &str, token: Option<&str>) -> Result<
 }
 
 pub async fn fetch_repos(username: &str, token: Option<&str>) -> Result<Vec<GhRepo>> {
+    if !is_valid_github_username(username) {
+        bail!("invalid github username");
+    }
     {
         let cache = repos_cache().lock().unwrap();
         if let Some((repos, at)) = cache.get(username)

@@ -13,7 +13,6 @@ const API_KEY_BYTES: usize = 32;
 #[derive(Debug, sqlx::FromRow)]
 pub struct DashboardUser {
     pub user_id: String,
-    pub api_key: String,
     pub api_key_hash: Option<String>,
     pub oauth_token: Option<String>,
     pub oauth_token_updated_at: Option<i64>,
@@ -60,7 +59,7 @@ impl DashboardUser {
         let key = generate_api_key();
         let hash = hash_api_key(pepper, &key);
         sqlx::query(
-            "INSERT INTO dashboard_users (user_id, api_key, api_key_hash) VALUES (?, '', ?)
+            "INSERT INTO dashboard_users (user_id, api_key_hash) VALUES (?, ?)
              ON CONFLICT(user_id) DO UPDATE SET api_key_hash = excluded.api_key_hash, updated_at = unixepoch()
              WHERE dashboard_users.api_key_hash IS NULL",
         )
@@ -79,7 +78,7 @@ impl DashboardUser {
         let key = generate_api_key();
         let hash = hash_api_key(pepper, &key);
         sqlx::query(
-            "UPDATE dashboard_users SET api_key = '', api_key_hash = ?, updated_at = unixepoch() WHERE user_id = ?",
+            "UPDATE dashboard_users SET api_key_hash = ?, updated_at = unixepoch() WHERE user_id = ?",
         )
         .bind(&hash)
         .bind(user_id)

@@ -4,6 +4,7 @@
 //! Contains configuration, database models, and shared business logic.
 
 pub mod config;
+pub mod crypto;
 pub mod database;
 pub mod external;
 pub mod shared;
@@ -11,4 +12,5 @@ pub mod utils;
 
 // Re-export commonly used types
 pub use config::{AppState, Config};
+pub use database::dashboard_sessions::DashboardSession;
 pub use database::dashboard_users::DashboardUser;

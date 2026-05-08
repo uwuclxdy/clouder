@@ -1,8 +1,9 @@
 use crate::WebState;
-use crate::session;
+use crate::session::{self, SessionUser};
 use axum::extract::{Path, Query, State};
 use axum::response::{Html, IntoResponse, Redirect, Response};
 use axum_extra::extract::cookie::SignedCookieJar;
+use clouder_core::DashboardUser;
 use clouder_core::database::guild_cache::CachedGuild;
 use clouder_core::utils::has_permission;
 use serde::Deserialize;
@@ -31,6 +32,7 @@ fn html_escape(s: &str) -> String {
         .replace('<', "&lt;")
         .replace('>', "&gt;")
         .replace('"', "&quot;")
+        .replace('\'', "&#39;")
 }
 
 fn render(template: &str, vars: &[(&str, &str)]) -> String {
@@ -79,20 +81,76 @@ fn render_sidebar(guild_id: &str, active: &str, raw_perms: i64) -> String {
         .join("\n")
 }
 
+/// Validates the guild_id is a numeric Discord snowflake. Rejecting non-numeric
+/// input here removes any chance of HTML/JS injection through `guild_id` placeholders
+/// in the templates and prevents path-traversal-style abuse downstream.
+fn parse_snowflake(s: &str) -> Option<u64> {
+    s.parse::<u64>().ok()
+}
+
+#[derive(Debug, Clone)]
+struct DisplayProfile {
+    username: String,
+    avatar_url: String,
+}
+
+/// Discord avatar hashes are 32-char hex (static) or `a_` + 32 hex (animated).
+/// Anything else is malformed input — possibly an injection attempt — so fall
+/// back to a default avatar rather than splicing the value into a URL.
+fn is_valid_avatar_hash(hash: &str) -> bool {
+    let body = hash.strip_prefix("a_").unwrap_or(hash);
+    !body.is_empty() && body.chars().all(|c| c.is_ascii_hexdigit())
+}
+
+fn avatar_url_for(user_id: &str, avatar: Option<&str>) -> String {
+    match avatar {
+        Some(hash) if is_valid_avatar_hash(hash) => format!(
+            "https://cdn.discordapp.com/avatars/{}/{}.png?size=64",
+            user_id, hash
+        ),
+        _ => {
+            let index = user_id.parse::<u64>().unwrap_or(0) % 6;
+            format!("https://cdn.discordapp.com/embed/avatars/{}.png", index)
+        }
+    }
+}
+
+/// Loads the cached profile for a session user. Returns escaped strings safe
+/// for direct insertion into HTML templates.
+async fn load_profile(state: &WebState, user: &SessionUser) -> DisplayProfile {
+    let row = DashboardUser::get_by_user_id(&state.app_state.db, &user.user_id)
+        .await
+        .ok()
+        .flatten();
+    let username = row
+        .as_ref()
+        .and_then(|u| u.username.clone())
+        .unwrap_or_else(|| "user".to_string());
+    let avatar = row.as_ref().and_then(|u| u.avatar.clone());
+    DisplayProfile {
+        username: html_escape(&username),
+        avatar_url: html_escape(&avatar_url_for(&user.user_id, avatar.as_deref())),
+    }
+}
+
 #[derive(Deserialize, Default)]
 pub struct LoginQuery {
     error: Option<String>,
 }
 
-pub async fn index(jar: SignedCookieJar) -> Response {
-    match session::extract(&jar) {
+pub async fn index(State(state): State<WebState>, jar: SignedCookieJar) -> Response {
+    match session::extract(&state, &jar).await {
         Some(_) => Redirect::to("/servers").into_response(),
         None => Redirect::to("/login").into_response(),
     }
 }
 
-pub async fn login_page(jar: SignedCookieJar, Query(query): Query<LoginQuery>) -> Response {
-    if session::extract(&jar).is_some() {
+pub async fn login_page(
+    State(state): State<WebState>,
+    jar: SignedCookieJar,
+    Query(query): Query<LoginQuery>,
+) -> Response {
+    if session::extract(&state, &jar).await.is_some() {
         return Redirect::to("/servers").into_response();
     }
 
@@ -106,7 +164,7 @@ pub async fn login_page(jar: SignedCookieJar, Query(query): Query<LoginQuery>) -
                 "missing_code" => "invalid oauth response.",
                 _ => "something went wrong.",
             };
-            format!(r#"<p class="error-msg">{}</p>"#, msg)
+            format!(r#"<p class="error-msg">{}</p>"#, html_escape(msg))
         })
         .unwrap_or_default();
 
@@ -114,7 +172,7 @@ pub async fn login_page(jar: SignedCookieJar, Query(query): Query<LoginQuery>) -
 }
 
 pub async fn servers_page(State(state): State<WebState>, jar: SignedCookieJar) -> Response {
-    let Some(user) = session::extract(&jar) else {
+    let Some(user) = session::extract(&state, &jar).await else {
         return Redirect::to("/login").into_response();
     };
 
@@ -135,16 +193,19 @@ pub async fn servers_page(State(state): State<WebState>, jar: SignedCookieJar) -
 
     let cards = render_guild_cards(&cached_guilds);
     let has_cache = (!cached_guilds.is_empty()).to_string();
+    let profile = load_profile(&state, &user).await;
+    let csrf = html_escape(&user.csrf_token);
 
     Html(render(
         SERVERS_HTML,
         &[
-            ("USERNAME", &user.username),
-            ("AVATAR_URL", &user.avatar_url()),
+            ("USERNAME", &profile.username),
+            ("AVATAR_URL", &profile.avatar_url),
             ("SERVER_CARDS", &cards),
             ("HAS_CACHE", &has_cache),
-            ("GUILD_INSTALL_URL", &guild_install_url),
-            ("USER_INSTALL_URL", &user_install_url),
+            ("GUILD_INSTALL_URL", &html_escape(&guild_install_url)),
+            ("USER_INSTALL_URL", &html_escape(&user_install_url)),
+            ("CSRF_TOKEN", &csrf),
         ],
     ))
     .into_response()
@@ -153,14 +214,16 @@ pub async fn servers_page(State(state): State<WebState>, jar: SignedCookieJar) -
 fn render_guild_cards(guilds: &[CachedGuild]) -> String {
     guilds
         .iter()
+        .filter(|g| parse_snowflake(&g.guild_id).is_some())
         .map(|g| {
             let name = html_escape(&g.name);
+            let safe_guild_id = html_escape(&g.guild_id);
             let icon_html = match &g.icon {
-                Some(hash) => format!(
+                Some(hash) if is_valid_avatar_hash(hash) => format!(
                     r#"<img src="https://cdn.discordapp.com/icons/{}/{}.png?size=64" alt="" class="server-icon">"#,
-                    g.guild_id, hash
+                    safe_guild_id, hash
                 ),
-                None => {
+                _ => {
                     let first = g
                         .name
                         .chars()
@@ -176,23 +239,72 @@ fn render_guild_cards(guilds: &[CachedGuild]) -> String {
                 }
             };
             format!(
-                r#"<div class="card server-card" role="button" tabindex="0" onclick="location.href='/dashboard/{}/about'" onkeydown="if(event.key==='Enter')location.href='/dashboard/{}/about'">
-                    {}
+                r#"<div class="card server-card" role="button" tabindex="0" onclick="location.href='/dashboard/{gid}/about'" onkeydown="if(event.key==='Enter')location.href='/dashboard/{gid}/about'">
+                    {icon}
                     <div class="server-info">
-                        <span class="server-name">{}</span>
-                        <span class="label">{}</span>
+                        <span class="server-name">{name}</span>
+                        <span class="label">{gid}</span>
                     </div>
                     <span class="arrow">→</span>
                 </div>"#,
-                g.guild_id, g.guild_id, icon_html, name, g.guild_id
+                gid = safe_guild_id,
+                icon = icon_html,
+                name = name,
             )
         })
         .collect::<Vec<_>>()
         .join("\n")
 }
 
-pub async fn dashboard_redirect(Path(guild_id): Path<String>) -> Redirect {
-    Redirect::to(&format!("/dashboard/{}/about", guild_id))
+pub async fn dashboard_redirect(Path(guild_id): Path<String>) -> Response {
+    if parse_snowflake(&guild_id).is_none() {
+        return Redirect::to("/servers").into_response();
+    }
+    Redirect::to(&format!("/dashboard/{}/about", guild_id)).into_response()
+}
+
+/// Common scaffolding for permission-gated dashboard pages: extracts the
+/// session, validates the guild_id is a snowflake, checks cached permissions,
+/// then returns the data the per-page handler needs to fill its template.
+struct PageContext {
+    profile: DisplayProfile,
+    guild_id: String,
+    guild_name: String,
+    sidebar: String,
+    csrf: String,
+}
+
+async fn page_context(
+    state: &WebState,
+    jar: &SignedCookieJar,
+    raw_guild_id: &str,
+    active: &str,
+    required: Permissions,
+) -> Result<PageContext, Response> {
+    let Some(user) = session::extract(state, jar).await else {
+        return Err(Redirect::to("/login").into_response());
+    };
+    if parse_snowflake(raw_guild_id).is_none() {
+        return Err(Redirect::to("/servers").into_response());
+    }
+    let Some(raw_perms) = guild_perms(state, &user.user_id, raw_guild_id).await else {
+        return Err(Redirect::to("/servers").into_response());
+    };
+    let perms = Permissions::from_bits_truncate(raw_perms as u64);
+    if !has_permission(perms, required) {
+        return Err(Redirect::to("/servers").into_response());
+    }
+    let guild_name = guild_name_or_id(state, &user.user_id, raw_guild_id).await;
+    let sidebar = render_sidebar(raw_guild_id, active, raw_perms);
+    let profile = load_profile(state, &user).await;
+    let csrf = html_escape(&user.csrf_token);
+    Ok(PageContext {
+        profile,
+        guild_id: raw_guild_id.to_string(),
+        guild_name: html_escape(&guild_name),
+        sidebar,
+        csrf,
+    })
 }
 
 pub async fn selfroles_page(
@@ -200,26 +312,27 @@ pub async fn selfroles_page(
     jar: SignedCookieJar,
     Path(guild_id): Path<String>,
 ) -> Response {
-    let Some(user) = session::extract(&jar) else {
-        return Redirect::to("/login").into_response();
+    let ctx = match page_context(
+        &state,
+        &jar,
+        &guild_id,
+        "selfroles",
+        Permissions::MANAGE_ROLES,
+    )
+    .await
+    {
+        Ok(c) => c,
+        Err(r) => return r,
     };
-    let Some(raw_perms) = guild_perms(&state, &user.user_id, &guild_id).await else {
-        return Redirect::to("/servers").into_response();
-    };
-    let perms = Permissions::from_bits_truncate(raw_perms as u64);
-    if !has_permission(perms, Permissions::MANAGE_ROLES) {
-        return Redirect::to("/servers").into_response();
-    }
-    let guild_name = guild_name_or_id(&state, &user.user_id, &guild_id).await;
-    let sidebar = render_sidebar(&guild_id, "selfroles", raw_perms);
     Html(render(
         SELFROLES_HTML,
         &[
-            ("USERNAME", &user.username),
-            ("AVATAR_URL", &user.avatar_url()),
-            ("GUILD_ID", &guild_id),
-            ("GUILD_NAME", &guild_name),
-            ("SIDEBAR_LINKS", &sidebar),
+            ("USERNAME", &ctx.profile.username),
+            ("AVATAR_URL", &ctx.profile.avatar_url),
+            ("GUILD_ID", &ctx.guild_id),
+            ("GUILD_NAME", &ctx.guild_name),
+            ("SIDEBAR_LINKS", &ctx.sidebar),
+            ("CSRF_TOKEN", &ctx.csrf),
         ],
     ))
     .into_response()
@@ -230,28 +343,29 @@ pub async fn welcome_goodbye_page(
     jar: SignedCookieJar,
     Path(guild_id): Path<String>,
 ) -> Response {
-    let Some(user) = session::extract(&jar) else {
-        return Redirect::to("/login").into_response();
+    let ctx = match page_context(
+        &state,
+        &jar,
+        &guild_id,
+        "welcome-goodbye",
+        Permissions::MANAGE_GUILD,
+    )
+    .await
+    {
+        Ok(c) => c,
+        Err(r) => return r,
     };
-    let Some(raw_perms) = guild_perms(&state, &user.user_id, &guild_id).await else {
-        return Redirect::to("/servers").into_response();
-    };
-    let perms = Permissions::from_bits_truncate(raw_perms as u64);
-    if !has_permission(perms, Permissions::MANAGE_GUILD) {
-        return Redirect::to("/servers").into_response();
-    }
     let default_color = format!("#{:06X}", state.app_state.config.web.embed.default_color);
-    let guild_name = guild_name_or_id(&state, &user.user_id, &guild_id).await;
-    let sidebar = render_sidebar(&guild_id, "welcome-goodbye", raw_perms);
     Html(render(
         WELCOME_HTML,
         &[
-            ("USERNAME", &user.username),
-            ("AVATAR_URL", &user.avatar_url()),
-            ("GUILD_ID", &guild_id),
-            ("GUILD_NAME", &guild_name),
+            ("USERNAME", &ctx.profile.username),
+            ("AVATAR_URL", &ctx.profile.avatar_url),
+            ("GUILD_ID", &ctx.guild_id),
+            ("GUILD_NAME", &ctx.guild_name),
             ("DEFAULT_COLOR", &default_color),
-            ("SIDEBAR_LINKS", &sidebar),
+            ("SIDEBAR_LINKS", &ctx.sidebar),
+            ("CSRF_TOKEN", &ctx.csrf),
         ],
     ))
     .into_response()
@@ -262,26 +376,27 @@ pub async fn mediaonly_page(
     jar: SignedCookieJar,
     Path(guild_id): Path<String>,
 ) -> Response {
-    let Some(user) = session::extract(&jar) else {
-        return Redirect::to("/login").into_response();
+    let ctx = match page_context(
+        &state,
+        &jar,
+        &guild_id,
+        "mediaonly",
+        Permissions::MANAGE_CHANNELS,
+    )
+    .await
+    {
+        Ok(c) => c,
+        Err(r) => return r,
     };
-    let Some(raw_perms) = guild_perms(&state, &user.user_id, &guild_id).await else {
-        return Redirect::to("/servers").into_response();
-    };
-    let perms = Permissions::from_bits_truncate(raw_perms as u64);
-    if !has_permission(perms, Permissions::MANAGE_CHANNELS) {
-        return Redirect::to("/servers").into_response();
-    }
-    let guild_name = guild_name_or_id(&state, &user.user_id, &guild_id).await;
-    let sidebar = render_sidebar(&guild_id, "mediaonly", raw_perms);
     Html(render(
         MEDIAONLY_HTML,
         &[
-            ("USERNAME", &user.username),
-            ("AVATAR_URL", &user.avatar_url()),
-            ("GUILD_ID", &guild_id),
-            ("GUILD_NAME", &guild_name),
-            ("SIDEBAR_LINKS", &sidebar),
+            ("USERNAME", &ctx.profile.username),
+            ("AVATAR_URL", &ctx.profile.avatar_url),
+            ("GUILD_ID", &ctx.guild_id),
+            ("GUILD_NAME", &ctx.guild_name),
+            ("SIDEBAR_LINKS", &ctx.sidebar),
+            ("CSRF_TOKEN", &ctx.csrf),
         ],
     ))
     .into_response()
@@ -292,26 +407,20 @@ pub async fn about_page(
     jar: SignedCookieJar,
     Path(guild_id): Path<String>,
 ) -> Response {
-    let Some(user) = session::extract(&jar) else {
-        return Redirect::to("/login").into_response();
+    let ctx = match page_context(&state, &jar, &guild_id, "about", Permissions::MANAGE_GUILD).await
+    {
+        Ok(c) => c,
+        Err(r) => return r,
     };
-    let Some(raw_perms) = guild_perms(&state, &user.user_id, &guild_id).await else {
-        return Redirect::to("/servers").into_response();
-    };
-    let perms = Permissions::from_bits_truncate(raw_perms as u64);
-    if !has_permission(perms, Permissions::MANAGE_GUILD) {
-        return Redirect::to("/servers").into_response();
-    }
-    let guild_name = guild_name_or_id(&state, &user.user_id, &guild_id).await;
-    let sidebar = render_sidebar(&guild_id, "about", raw_perms);
     Html(render(
         ABOUT_HTML,
         &[
-            ("USERNAME", &user.username),
-            ("AVATAR_URL", &user.avatar_url()),
-            ("GUILD_ID", &guild_id),
-            ("GUILD_NAME", &guild_name),
-            ("SIDEBAR_LINKS", &sidebar),
+            ("USERNAME", &ctx.profile.username),
+            ("AVATAR_URL", &ctx.profile.avatar_url),
+            ("GUILD_ID", &ctx.guild_id),
+            ("GUILD_NAME", &ctx.guild_name),
+            ("SIDEBAR_LINKS", &ctx.sidebar),
+            ("CSRF_TOKEN", &ctx.csrf),
         ],
     ))
     .into_response()
@@ -322,55 +431,64 @@ pub async fn uwufy_page(
     jar: SignedCookieJar,
     Path(guild_id): Path<String>,
 ) -> Response {
-    let Some(user) = session::extract(&jar) else {
-        return Redirect::to("/login").into_response();
+    let ctx = match page_context(&state, &jar, &guild_id, "uwufy", Permissions::MANAGE_GUILD).await
+    {
+        Ok(c) => c,
+        Err(r) => return r,
     };
-    let Some(raw_perms) = guild_perms(&state, &user.user_id, &guild_id).await else {
-        return Redirect::to("/servers").into_response();
-    };
-    let perms = Permissions::from_bits_truncate(raw_perms as u64);
-    if !has_permission(perms, Permissions::MANAGE_GUILD) {
-        return Redirect::to("/servers").into_response();
-    }
-    let guild_name = guild_name_or_id(&state, &user.user_id, &guild_id).await;
-    let sidebar = render_sidebar(&guild_id, "uwufy", raw_perms);
     Html(render(
         UWUFY_HTML,
         &[
-            ("USERNAME", &user.username),
-            ("AVATAR_URL", &user.avatar_url()),
-            ("GUILD_ID", &guild_id),
-            ("GUILD_NAME", &guild_name),
-            ("SIDEBAR_LINKS", &sidebar),
+            ("USERNAME", &ctx.profile.username),
+            ("AVATAR_URL", &ctx.profile.avatar_url),
+            ("GUILD_ID", &ctx.guild_id),
+            ("GUILD_NAME", &ctx.guild_name),
+            ("SIDEBAR_LINKS", &ctx.sidebar),
+            ("CSRF_TOKEN", &ctx.csrf),
         ],
     ))
     .into_response()
 }
 
 pub async fn profile_page(State(state): State<WebState>, jar: SignedCookieJar) -> Response {
-    let Some(user) = session::extract(&jar) else {
+    let Some(user) = session::extract(&state, &jar).await else {
         return Redirect::to("/login").into_response();
     };
 
-    let dashboard_user =
-        match clouder_core::DashboardUser::upsert(&state.app_state.db, &user.user_id).await {
-            Ok(u) => u,
-            Err(e) => {
-                error!("failed to upsert dashboard user: {}", e);
-                return Redirect::to("/servers").into_response();
-            }
-        };
+    let dashboard_user = match DashboardUser::upsert(
+        &state.app_state.db,
+        &user.user_id,
+        &state.app_state.config.web.api_key_pepper,
+    )
+    .await
+    {
+        Ok((u, _)) => u,
+        Err(e) => {
+            error!("failed to upsert dashboard user: {}", e);
+            return Redirect::to("/servers").into_response();
+        }
+    };
 
     let api_base = &state.app_state.config.web.api_base;
+    let profile = load_profile(&state, &user).await;
+
+    // Plaintext key is only available right after generation; thereafter only
+    // the hash exists. We surface a placeholder so the UI can prompt regenerate.
+    let api_key_display = if dashboard_user.api_key_hash.is_some() {
+        "(hidden — regenerate to view a new key)"
+    } else {
+        "(no key — click regenerate)"
+    };
 
     Html(render(
         PROFILE_HTML,
         &[
-            ("USERNAME", &user.username),
-            ("AVATAR_URL", &user.avatar_url()),
-            ("API_KEY", &dashboard_user.api_key),
-            ("USER_ID", &user.user_id),
-            ("API_BASE", api_base),
+            ("USERNAME", &profile.username),
+            ("AVATAR_URL", &profile.avatar_url),
+            ("API_KEY", &html_escape(api_key_display)),
+            ("USER_ID", &html_escape(&user.user_id)),
+            ("API_BASE", &html_escape(api_base)),
+            ("CSRF_TOKEN", &html_escape(&user.csrf_token)),
         ],
     ))
     .into_response()
@@ -381,26 +499,27 @@ pub async fn reminders_page(
     jar: SignedCookieJar,
     Path(guild_id): Path<String>,
 ) -> Response {
-    let Some(user) = session::extract(&jar) else {
-        return Redirect::to("/login").into_response();
+    let ctx = match page_context(
+        &state,
+        &jar,
+        &guild_id,
+        "reminders",
+        Permissions::MANAGE_GUILD,
+    )
+    .await
+    {
+        Ok(c) => c,
+        Err(r) => return r,
     };
-    let Some(raw_perms) = guild_perms(&state, &user.user_id, &guild_id).await else {
-        return Redirect::to("/servers").into_response();
-    };
-    let perms = Permissions::from_bits_truncate(raw_perms as u64);
-    if !has_permission(perms, Permissions::MANAGE_GUILD) {
-        return Redirect::to("/servers").into_response();
-    }
-    let guild_name = guild_name_or_id(&state, &user.user_id, &guild_id).await;
-    let sidebar = render_sidebar(&guild_id, "reminders", raw_perms);
     Html(render(
         REMINDERS_HTML,
         &[
-            ("USERNAME", &user.username),
-            ("AVATAR_URL", &user.avatar_url()),
-            ("GUILD_ID", &guild_id),
-            ("GUILD_NAME", &guild_name),
-            ("SIDEBAR_LINKS", &sidebar),
+            ("USERNAME", &ctx.profile.username),
+            ("AVATAR_URL", &ctx.profile.avatar_url),
+            ("GUILD_ID", &ctx.guild_id),
+            ("GUILD_NAME", &ctx.guild_name),
+            ("SIDEBAR_LINKS", &ctx.sidebar),
+            ("CSRF_TOKEN", &ctx.csrf),
         ],
     ))
     .into_response()

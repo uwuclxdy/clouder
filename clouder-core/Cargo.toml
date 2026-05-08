@@ -21,6 +21,10 @@ rand = { workspace = true }
 dotenvy = { workspace = true }
 regex = { workspace = true }
 reqwest = { workspace = true, features = ["json"] }
+hmac = { workspace = true }
+sha2 = { workspace = true }
+subtle = { workspace = true }
+aes-gcm = { workspace = true }
 clouder-llm = { path = "../clouder-llm", optional = true }
 
 [features]

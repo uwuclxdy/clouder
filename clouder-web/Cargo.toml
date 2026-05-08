@@ -24,3 +24,10 @@ clouder-core = { path = "../clouder-core" }
 serenity = { workspace = true }
 sqlx = { workspace = true }
 cookie = "0.18.1"
+hmac = { workspace = true }
+sha2 = { workspace = true }
+subtle = { workspace = true }
+hkdf = { workspace = true }
+tower = { workspace = true }
+tower_governor = { workspace = true }
+tower-http = { workspace = true }

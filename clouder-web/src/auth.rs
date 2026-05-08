@@ -1,8 +1,10 @@
 use crate::WebState;
-use crate::session::{self, SessionUser};
+use crate::session;
 use axum::extract::{Query, State};
 use axum::response::Redirect;
 use axum_extra::extract::cookie::SignedCookieJar;
+use clouder_core::DashboardUser;
+use clouder_core::database::dashboard_sessions::DashboardSession;
 use serde::Deserialize;
 use tracing::{error, info, warn};
 
@@ -10,6 +12,13 @@ use tracing::{error, info, warn};
 pub struct OAuthCallback {
     code: Option<String>,
     error: Option<String>,
+}
+
+#[derive(Debug)]
+struct DiscordProfile {
+    user_id: String,
+    username: String,
+    avatar: Option<String>,
 }
 
 pub async fn login(State(state): State<WebState>) -> Redirect {
@@ -45,7 +54,7 @@ pub async fn callback(
         }
     };
 
-    let user = match fetch_user(&access_token).await {
+    let profile = match fetch_user(&access_token).await {
         Ok(u) => u,
         Err(e) => {
             error!("discord user fetch failed: {}", e);
@@ -53,15 +62,79 @@ pub async fn callback(
         }
     };
 
-    info!("user {} ({}) logged in", user.username, user.user_id);
-    if let Err(e) = clouder_core::DashboardUser::upsert(&state.app_state.db, &user.user_id).await {
+    info!("user {} ({}) logged in", profile.username, profile.user_id);
+
+    if let Err(e) = DashboardUser::upsert(
+        &state.app_state.db,
+        &profile.user_id,
+        &state.app_state.config.web.api_key_pepper,
+    )
+    .await
+    {
         error!("failed to upsert dashboard user: {}", e);
+        return (jar, Redirect::to("/login?error=auth_failed"));
     }
+    let encrypted_token = match clouder_core::crypto::encrypt(
+        &state.app_state.config.web.oauth_encryption_key_bytes,
+        access_token.as_bytes(),
+    ) {
+        Ok(c) => c,
+        Err(e) => {
+            error!("failed to encrypt oauth token: {}", e);
+            return (jar, Redirect::to("/login?error=auth_failed"));
+        }
+    };
+    if let Err(e) =
+        DashboardUser::store_oauth_token(&state.app_state.db, &profile.user_id, &encrypted_token)
+            .await
+    {
+        error!("failed to store oauth token: {}", e);
+        return (jar, Redirect::to("/login?error=auth_failed"));
+    }
+    if let Err(e) = DashboardUser::store_profile(
+        &state.app_state.db,
+        &profile.user_id,
+        &profile.username,
+        profile.avatar.as_deref(),
+    )
+    .await
+    {
+        warn!("failed to store profile: {}", e);
+    }
+
+    if let Err(e) =
+        clouder_core::shared::refresh_guild_cache(&state.app_state, &profile.user_id, &access_token)
+            .await
+    {
+        warn!("guild cache refresh on login failed: {}", e);
+    }
+
+    let session = match DashboardSession::create(
+        &state.app_state.db,
+        &profile.user_id,
+        session::SESSION_TTL_SECONDS,
+    )
+    .await
+    {
+        Ok(s) => s,
+        Err(e) => {
+            error!("failed to create session: {}", e);
+            return (jar, Redirect::to("/login?error=auth_failed"));
+        }
+    };
+
     let secure = state.app_state.config.web.api_base.starts_with("https://");
-    (session::store(jar, &user, secure), Redirect::to("/servers"))
+    let new_jar = session::store_cookie(jar, &session.session_id, secure);
+    (new_jar, Redirect::to("/servers"))
 }
 
-pub async fn logout(jar: SignedCookieJar) -> (SignedCookieJar, Redirect) {
+pub async fn logout(
+    State(state): State<WebState>,
+    jar: SignedCookieJar,
+) -> (SignedCookieJar, Redirect) {
+    if let Some(session_id) = session::read_cookie(&jar) {
+        let _ = DashboardSession::delete(&state.app_state.db, &session_id).await;
+    }
     (session::clear(jar), Redirect::to("/"))
 }
 
@@ -94,7 +167,7 @@ async fn exchange_code(state: &WebState, code: &str) -> Result<String, String> {
         .ok_or_else(|| "missing access_token in discord response".to_string())
 }
 
-async fn fetch_user(access_token: &str) -> Result<SessionUser, String> {
+async fn fetch_user(access_token: &str) -> Result<DiscordProfile, String> {
     let client = reqwest::Client::new();
     let response = client
         .get("https://discord.com/api/users/@me")
@@ -108,10 +181,9 @@ async fn fetch_user(access_token: &str) -> Result<SessionUser, String> {
         return Err(format!("discord user endpoint returned error: {}", body));
     }
     let json: serde_json::Value = response.json().await.map_err(|e| e.to_string())?;
-    Ok(SessionUser {
+    Ok(DiscordProfile {
         user_id: json["id"].as_str().unwrap_or("").to_string(),
         username: json["username"].as_str().unwrap_or("unknown").to_string(),
         avatar: json["avatar"].as_str().map(|s| s.to_string()),
-        access_token: access_token.to_string(),
     })
 }

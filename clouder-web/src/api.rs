@@ -3,12 +3,13 @@ use axum::{
     extract::{Path, State},
     http::{HeaderMap, StatusCode},
 };
+use clouder_core::DashboardUser;
 use clouder_core::config::AppState;
 use serde_json::{Value, json};
 use serenity::all::Permissions;
-use tracing::{error, info};
+use tracing::{error, info, warn};
 
-use crate::session::Auth;
+use crate::session::{Auth, CsrfAuth};
 
 async fn require_guild_perm(
     state: &AppState,
@@ -45,12 +46,36 @@ async fn require_guild_access(
 }
 
 pub async fn api_guilds_refresh(
-    auth: Auth,
+    auth: CsrfAuth,
     State(state): State<AppState>,
 ) -> Result<Json<Value>, StatusCode> {
-    match clouder_core::shared::refresh_guild_cache(&state, &auth.0.user_id, &auth.0.access_token)
+    let user = DashboardUser::get_by_user_id(&state.db, &auth.0.user_id)
         .await
-    {
+        .map_err(|e| {
+            error!("dashboard user lookup failed: {}", e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?
+        .ok_or(StatusCode::UNAUTHORIZED)?;
+    let encrypted = user.oauth_token.ok_or_else(|| {
+        warn!(
+            "user {} has no stored oauth token; re-login required",
+            auth.0.user_id
+        );
+        StatusCode::UNAUTHORIZED
+    })?;
+    let token_bytes =
+        clouder_core::crypto::decrypt(&state.config.web.oauth_encryption_key_bytes, &encrypted)
+            .map_err(|e| {
+                // Decrypt failure means the stored ciphertext is unrecoverable
+                // (key rotated, db tampered, or corrupted). Force re-auth.
+                warn!("oauth token decrypt failed for {}: {}", auth.0.user_id, e);
+                StatusCode::UNAUTHORIZED
+            })?;
+    let token = String::from_utf8(token_bytes).map_err(|_| {
+        warn!("decrypted oauth token is not valid utf-8");
+        StatusCode::UNAUTHORIZED
+    })?;
+    match clouder_core::shared::refresh_guild_cache(&state, &auth.0.user_id, &token).await {
         Ok((guilds, updated)) => {
             let guild_list: Vec<Value> = guilds
                 .iter()
@@ -126,7 +151,7 @@ pub async fn api_selfroles_list(
 }
 
 pub async fn api_selfroles_create(
-    auth: Auth,
+    auth: CsrfAuth,
     Path(guild_id): Path<String>,
     State(state): State<AppState>,
     Json(payload): Json<serde_json::Value>,
@@ -153,7 +178,7 @@ pub async fn api_selfroles_create(
 }
 
 pub async fn api_selfroles_update(
-    auth: Auth,
+    auth: CsrfAuth,
     Path((guild_id, config_id)): Path<(String, String)>,
     State(state): State<AppState>,
     Json(payload): Json<serde_json::Value>,
@@ -189,7 +214,7 @@ pub async fn api_selfroles_update(
 }
 
 pub async fn api_selfroles_delete(
-    auth: Auth,
+    auth: CsrfAuth,
     Path((guild_id, config_id)): Path<(String, String)>,
     State(state): State<AppState>,
 ) -> Result<Json<Value>, StatusCode> {
@@ -237,7 +262,7 @@ pub async fn api_welcome_goodbye_get(
 }
 
 pub async fn api_welcome_goodbye_post(
-    auth: Auth,
+    auth: CsrfAuth,
     Path(guild_id): Path<String>,
     State(state): State<AppState>,
     Json(payload): Json<Value>,
@@ -264,7 +289,7 @@ pub async fn api_welcome_goodbye_post(
 }
 
 pub async fn api_welcome_goodbye_test(
-    auth: Auth,
+    auth: CsrfAuth,
     Path((guild_id, message_type)): Path<(String, String)>,
     State(state): State<AppState>,
 ) -> Result<Json<Value>, StatusCode> {
@@ -320,7 +345,7 @@ pub async fn api_mediaonly_get(
 }
 
 pub async fn api_mediaonly_post(
-    auth: Auth,
+    auth: CsrfAuth,
     Path(guild_id): Path<String>,
     State(state): State<AppState>,
     Json(payload): Json<Value>,
@@ -360,7 +385,7 @@ pub async fn api_mediaonly_post(
 }
 
 pub async fn api_mediaonly_put(
-    auth: Auth,
+    auth: CsrfAuth,
     Path((guild_id, channel_id)): Path<(String, String)>,
     State(state): State<AppState>,
     Json(payload): Json<Value>,
@@ -396,7 +421,7 @@ pub async fn api_mediaonly_put(
 }
 
 pub async fn api_mediaonly_delete(
-    auth: Auth,
+    auth: CsrfAuth,
     Path((guild_id, channel_id)): Path<(String, String)>,
     State(state): State<AppState>,
 ) -> Result<Json<Value>, StatusCode> {
@@ -468,7 +493,7 @@ pub async fn api_guild_config_get(
 }
 
 pub async fn api_guild_config_post(
-    auth: Auth,
+    auth: CsrfAuth,
     Path(guild_id): Path<String>,
     State(state): State<AppState>,
     Json(payload): Json<Value>,
@@ -534,7 +559,7 @@ pub async fn api_uwufy_get(
 }
 
 pub async fn api_uwufy_toggle(
-    auth: Auth,
+    auth: CsrfAuth,
     Path((guild_id, user_id)): Path<(String, String)>,
     State(state): State<AppState>,
     Json(payload): Json<Value>,
@@ -561,7 +586,7 @@ pub async fn api_uwufy_toggle(
 }
 
 pub async fn api_uwufy_disable_all(
-    auth: Auth,
+    auth: CsrfAuth,
     Path(guild_id): Path<String>,
     State(state): State<AppState>,
 ) -> Result<Json<Value>, StatusCode> {
@@ -596,13 +621,14 @@ pub async fn api_send_dm(
         .and_then(|v| v.to_str().ok())
         .ok_or(StatusCode::UNAUTHORIZED)?;
 
-    let record = clouder_core::DashboardUser::get_by_api_key(&state.db, key_str)
-        .await
-        .map_err(|e| {
-            error!("failed to lookup api key: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?
-        .ok_or(StatusCode::UNAUTHORIZED)?;
+    let record =
+        DashboardUser::get_by_api_key(&state.db, &state.config.web.api_key_pepper, key_str)
+            .await
+            .map_err(|e| {
+                error!("failed to lookup api key: {}", e);
+                StatusCode::INTERNAL_SERVER_ERROR
+            })?
+            .ok_or(StatusCode::UNAUTHORIZED)?;
 
     if record.user_id != user_id {
         return Err(StatusCode::UNAUTHORIZED);
@@ -627,17 +653,18 @@ pub async fn api_send_dm(
 }
 
 pub async fn api_regenerate_key(
-    auth: Auth,
+    auth: CsrfAuth,
     State(state): State<AppState>,
 ) -> Result<Json<Value>, StatusCode> {
-    let record = clouder_core::DashboardUser::regenerate_key(&state.db, &auth.0.user_id)
-        .await
-        .map_err(|e| {
-            error!("failed to regenerate api key: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?;
+    let key =
+        DashboardUser::regenerate_key(&state.db, &auth.0.user_id, &state.config.web.api_key_pepper)
+            .await
+            .map_err(|e| {
+                error!("failed to regenerate api key: {}", e);
+                StatusCode::INTERNAL_SERVER_ERROR
+            })?;
 
-    Ok(Json(json!({ "api_key": record.api_key })))
+    Ok(Json(json!({ "api_key": key })))
 }
 
 pub async fn api_reminders_get(
@@ -663,7 +690,7 @@ pub async fn api_reminders_get(
 }
 
 pub async fn api_reminders_post(
-    auth: Auth,
+    auth: CsrfAuth,
     Path(guild_id): Path<String>,
     State(state): State<AppState>,
     Json(payload): Json<Value>,
@@ -689,7 +716,7 @@ pub async fn api_reminders_post(
 }
 
 pub async fn api_reminders_test(
-    auth: Auth,
+    auth: CsrfAuth,
     Path((guild_id, config_id)): Path<(String, String)>,
     State(state): State<AppState>,
 ) -> Result<Json<Value>, StatusCode> {
@@ -799,7 +826,7 @@ pub async fn api_user_dm_reminders_get(
 }
 
 pub async fn api_user_dm_reminders_post(
-    auth: Auth,
+    auth: CsrfAuth,
     State(state): State<AppState>,
     Json(payload): Json<Value>,
 ) -> Result<Json<Value>, StatusCode> {
@@ -838,7 +865,7 @@ pub async fn api_user_subscriptions_get(
 }
 
 pub async fn api_user_subscribe(
-    auth: Auth,
+    auth: CsrfAuth,
     Path(config_id): Path<String>,
     State(state): State<AppState>,
 ) -> Result<Json<Value>, StatusCode> {
@@ -854,7 +881,7 @@ pub async fn api_user_subscribe(
 }
 
 pub async fn api_user_unsubscribe(
-    auth: Auth,
+    auth: CsrfAuth,
     Path(config_id): Path<String>,
     State(state): State<AppState>,
 ) -> Result<Json<Value>, StatusCode> {
@@ -870,7 +897,7 @@ pub async fn api_user_unsubscribe(
 }
 
 pub async fn api_user_subscription_delete(
-    auth: Auth,
+    auth: CsrfAuth,
     Path(sub_id): Path<String>,
     State(state): State<AppState>,
 ) -> Result<Json<Value>, StatusCode> {
@@ -924,7 +951,7 @@ pub async fn api_custom_reminders_list(
 }
 
 pub async fn api_custom_reminder_create(
-    auth: Auth,
+    auth: CsrfAuth,
     Path(guild_id): Path<String>,
     State(state): State<AppState>,
     Json(payload): Json<Value>,
@@ -950,7 +977,7 @@ pub async fn api_custom_reminder_create(
 }
 
 pub async fn api_custom_reminder_update(
-    auth: Auth,
+    auth: CsrfAuth,
     Path((guild_id, reminder_id)): Path<(String, String)>,
     State(state): State<AppState>,
     Json(payload): Json<Value>,
@@ -987,7 +1014,7 @@ pub async fn api_custom_reminder_update(
 }
 
 pub async fn api_custom_reminder_delete(
-    auth: Auth,
+    auth: CsrfAuth,
     Path((guild_id, reminder_id)): Path<(String, String)>,
     State(state): State<AppState>,
 ) -> Result<Json<Value>, StatusCode> {
@@ -1017,7 +1044,7 @@ pub async fn api_custom_reminder_delete(
 }
 
 pub async fn api_custom_reminder_test(
-    auth: Auth,
+    auth: CsrfAuth,
     Path((guild_id, reminder_id)): Path<(String, String)>,
     State(state): State<AppState>,
 ) -> Result<Json<Value>, StatusCode> {

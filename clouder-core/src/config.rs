@@ -21,6 +21,11 @@ const DEFAULT_LLM_TEMPERATURE: f32 = 0.7;
 const DEFAULT_LLM_MAX_TOKENS: u32 = 1000;
 const DEFAULT_LLM_TIMEOUT_SECONDS: u64 = 30;
 
+// Minimum byte length for any cryptographic secret loaded from env. 32 bytes
+// (256 bits) is the standard "comfortably above brute-force" threshold and
+// matches the output size of SHA-256 used by HKDF/HMAC downstream.
+const MIN_SECRET_LEN: usize = 32;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
     pub discord: DiscordConfig,
@@ -46,6 +51,13 @@ pub struct WebConfig {
     pub oauth: OAuthConfig,
     pub embed: EmbedConfig,
     pub session_secret: String,
+    pub api_key_pepper: String,
+    /// 32-byte AES-256 key (hex-encoded, 64 chars) used to encrypt stored
+    /// Discord OAuth tokens at rest. Decoded into `oauth_encryption_key_bytes`
+    /// on startup; the original hex string is retained only for distinctness checks.
+    pub oauth_encryption_key: String,
+    #[serde(skip)]
+    pub oauth_encryption_key_bytes: [u8; 32],
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -102,6 +114,44 @@ fn optional_env(key: &str, default: &str) -> String {
     })
 }
 
+fn require_secret_env(key: &str) -> Result<String, anyhow::Error> {
+    let value = require_env(key)?;
+    if value.len() < MIN_SECRET_LEN {
+        error!("{} must be at least {} bytes", key, MIN_SECRET_LEN);
+        anyhow::bail!("{} too short (need {}+ bytes)", key, MIN_SECRET_LEN);
+    }
+    Ok(value)
+}
+
+fn require_distinct_secrets(secrets: &[(&str, &str)]) -> Result<(), anyhow::Error> {
+    for (i, (a_name, a_val)) in secrets.iter().enumerate() {
+        for (b_name, b_val) in &secrets[i + 1..] {
+            if a_val == b_val {
+                error!("{} must not equal {}", a_name, b_name);
+                anyhow::bail!("{} must not equal {}", a_name, b_name);
+            }
+        }
+    }
+    Ok(())
+}
+
+/// Decodes a 64-char hex string into a 32-byte AES-256 key. Hex (vs. raw
+/// random bytes) is the standard env-var encoding because it survives shell
+/// quoting and `.env` round-trips without escaping issues.
+fn decode_aes_key(name: &str, hex: &str) -> Result<[u8; 32], anyhow::Error> {
+    if hex.len() != 64 {
+        error!("{} must be 64 hex chars (32 bytes)", name);
+        anyhow::bail!("{} must be 64 hex chars (32 bytes)", name);
+    }
+    let mut out = [0u8; 32];
+    for (i, chunk) in hex.as_bytes().chunks(2).enumerate() {
+        let pair = std::str::from_utf8(chunk).map_err(|_| anyhow::anyhow!("{} not utf-8", name))?;
+        out[i] = u8::from_str_radix(pair, 16)
+            .map_err(|_| anyhow::anyhow!("{} contains non-hex characters", name))?;
+    }
+    Ok(out)
+}
+
 impl Config {
     pub fn from_env() -> Result<Self, anyhow::Error> {
         let discord_token = require_env("DISCORD_TOKEN")?;
@@ -153,10 +203,22 @@ impl Config {
         let redirect_uri = env::var("DISCORD_REDIRECT_URI")
             .unwrap_or_else(|_| format!("{}/auth/callback", api_base));
 
-        let session_secret = env::var("SESSION_SECRET").unwrap_or_else(|_| {
-            warn!("SESSION_SECRET not set, falling back to client_secret");
-            oauth_client_secret.clone()
-        });
+        let session_secret = require_secret_env("SESSION_SECRET")?;
+        let api_key_pepper = require_secret_env("API_KEY_PEPPER")?;
+        let oauth_encryption_key = require_secret_env("OAUTH_ENCRYPTION_KEY")?;
+        let oauth_encryption_key_bytes =
+            decode_aes_key("OAUTH_ENCRYPTION_KEY", &oauth_encryption_key)?;
+
+        // Reusing the same secret across distinct cryptographic contexts (cookie
+        // signing, API-key HMAC, OAuth-token AEAD, OAuth client auth) erodes the
+        // isolation each primitive depends on: a leak in one role compromises all
+        // of them. Force operators to provision separate values per role.
+        require_distinct_secrets(&[
+            ("SESSION_SECRET", &session_secret),
+            ("API_KEY_PEPPER", &api_key_pepper),
+            ("OAUTH_ENCRYPTION_KEY", &oauth_encryption_key),
+            ("DISCORD_CLIENT_SECRET", &oauth_client_secret),
+        ])?;
 
         // Parse LLM configuration
         let llm_provider = match env::var("LLM_PROVIDER") {
@@ -248,6 +310,9 @@ impl Config {
                     default_color: embed_default_color,
                 },
                 session_secret,
+                api_key_pepper,
+                oauth_encryption_key,
+                oauth_encryption_key_bytes,
             },
             database: DatabaseConfig { url: database_url },
             llm: LlmConfig {
@@ -289,6 +354,14 @@ impl Config {
                     default_color: DEFAULT_EMBED_COLOR,
                 },
                 session_secret: "test_session_secret_at_least_32_bytes".to_string(),
+                api_key_pepper: "test_api_key_pepper_at_least_32_bytes".to_string(),
+                oauth_encryption_key:
+                    "0000000000000000000000000000000000000000000000000000000000000001".to_string(),
+                oauth_encryption_key_bytes: {
+                    let mut k = [0u8; 32];
+                    k[31] = 1;
+                    k
+                },
             },
             database: DatabaseConfig {
                 url: ":memory:".to_string(),

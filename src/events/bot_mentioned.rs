@@ -229,7 +229,7 @@ async fn handle_llm_request(
 
         // Add "try again" button to the last chunk
         if is_last_chunk {
-            let action_row = create_retry_button(user_id, &prompt, message.id.get());
+            let action_row = create_retry_button(user_id, message.id.get());
             create_message = create_message.components(vec![action_row]);
         }
 
@@ -309,9 +309,9 @@ pub async fn handle_ai_retry_interaction(
     interaction: &serenity::ComponentInteraction,
     data: &AppState,
 ) {
-    // Parse custom_id: "ai_retry_{user_id}_{prompt_hash}_{original_message_id}"
+    // Parse custom_id: "ai_retry_{user_id}_{original_message_id}"
     let parts: Vec<&str> = interaction.data.custom_id.split('_').collect();
-    if parts.len() != 5 || parts[0] != "ai" || parts[1] != "retry" {
+    if parts.len() != 4 || parts[0] != "ai" || parts[1] != "retry" {
         error!("invalid custom_id format: {}", interaction.data.custom_id);
         return;
     }
@@ -324,10 +324,10 @@ pub async fn handle_ai_retry_interaction(
         }
     };
 
-    let original_message_id = match parts[4].parse::<u64>() {
+    let original_message_id = match parts[3].parse::<u64>() {
         Ok(id) => id,
         Err(_) => {
-            error!("invalid message_id in custom_id: {}", parts[4]);
+            error!("invalid message_id in custom_id: {}", parts[3]);
             return;
         }
     };
@@ -539,7 +539,6 @@ pub async fn handle_ai_retry_interaction(
                         .content("failed to generate new response, please try again later")
                         .components(vec![create_retry_button(
                             requesting_user_id,
-                            &prompt,
                             original_message_id,
                         )]),
                 )
@@ -568,7 +567,6 @@ pub async fn handle_ai_retry_interaction(
                 .content(content)
                 .components(vec![create_retry_button(
                     requesting_user_id,
-                    &prompt,
                     original_message_id,
                 )]),
         )
@@ -578,26 +576,12 @@ pub async fn handle_ai_retry_interaction(
     }
 }
 
-fn create_retry_button(
-    user_id: u64,
-    prompt: &str,
-    original_message_id: u64,
-) -> serenity::CreateActionRow {
+fn create_retry_button(user_id: u64, original_message_id: u64) -> serenity::CreateActionRow {
     use serenity::all::{ButtonStyle, CreateActionRow, CreateButton};
-    use std::collections::hash_map::DefaultHasher;
-    use std::hash::{Hash, Hasher};
 
-    let prompt_hash = {
-        let mut hasher = DefaultHasher::new();
-        prompt.hash(&mut hasher);
-        hasher.finish()
-    };
-
-    // Format: "ai_retry_{user_id}_{prompt_hash}_{original_message_id}"
-    let custom_id = format!(
-        "ai_retry_{}_{}_{}",
-        user_id, prompt_hash, original_message_id
-    );
+    // Format: "ai_retry_{user_id}_{original_message_id}". The retry handler
+    // re-fetches the original message from Discord to recover the prompt.
+    let custom_id = format!("ai_retry_{}_{}", user_id, original_message_id);
 
     let retry_button = CreateButton::new(custom_id)
         .label("try again")
@@ -624,10 +608,9 @@ mod tests {
     #[test]
     fn test_retry_button_creation() {
         let user_id = 123456789u64;
-        let prompt = "Hello, how are you?";
         let original_message_id = 987654321u64;
 
-        let action_row = create_retry_button(user_id, prompt, original_message_id);
+        let action_row = create_retry_button(user_id, original_message_id);
 
         // Verify the action row is created correctly
         if let serenity::CreateActionRow::Buttons(buttons) = action_row {
@@ -653,48 +636,29 @@ mod tests {
 
     #[test]
     fn test_custom_id_parsing() {
-        // Test valid custom_id parsing logic
-        let custom_id = "ai_retry_123456789_987654321_555444333";
+        let custom_id = "ai_retry_123456789_555444333";
         let parts: Vec<&str> = custom_id.split('_').collect();
 
-        assert_eq!(parts.len(), 5);
+        assert_eq!(parts.len(), 4);
         assert_eq!(parts[0], "ai");
         assert_eq!(parts[1], "retry");
         assert_eq!(parts[2], "123456789");
-        assert_eq!(parts[3], "987654321");
-        assert_eq!(parts[4], "555444333");
+        assert_eq!(parts[3], "555444333");
 
-        // Test user_id parsing
         let user_id: u64 = parts[2].parse().unwrap();
         assert_eq!(user_id, 123456789);
 
-        // Test original_message_id parsing
-        let original_message_id: u64 = parts[4].parse().unwrap();
+        let original_message_id: u64 = parts[3].parse().unwrap();
         assert_eq!(original_message_id, 555444333);
     }
 
     #[test]
     fn test_custom_id_format_consistency() {
         let user_id = 123456789u64;
-        let prompt = "Test prompt";
         let original_message_id = 555444333u64;
 
-        // Create button and extract custom_id logic
-        use std::collections::hash_map::DefaultHasher;
-        use std::hash::{Hash, Hasher};
+        let expected_custom_id = format!("ai_retry_{}_{}", user_id, original_message_id);
 
-        let prompt_hash = {
-            let mut hasher = DefaultHasher::new();
-            prompt.hash(&mut hasher);
-            hasher.finish()
-        };
-
-        let expected_custom_id = format!(
-            "ai_retry_{}_{}_{}",
-            user_id, prompt_hash, original_message_id
-        );
-
-        // Verify the format matches what we expect
         assert!(expected_custom_id.starts_with("ai_retry_"));
         assert!(expected_custom_id.contains(&user_id.to_string()));
         assert!(expected_custom_id.contains(&original_message_id.to_string()));
@@ -702,33 +666,29 @@ mod tests {
 
     #[test]
     fn test_retry_interaction_custom_id_validation() {
-        // Test the exact validation logic used in handle_ai_retry_interaction
-
-        // Valid custom_id
-        let valid_custom_id = "ai_retry_123456789_987654321_555444333";
+        let valid_custom_id = "ai_retry_123456789_555444333";
         let parts: Vec<&str> = valid_custom_id.split('_').collect();
-        assert_eq!(parts.len(), 5);
+        assert_eq!(parts.len(), 4);
         assert_eq!(parts[0], "ai");
         assert_eq!(parts[1], "retry");
         assert!(parts[2].parse::<u64>().is_ok());
-        assert!(parts[4].parse::<u64>().is_ok());
+        assert!(parts[3].parse::<u64>().is_ok());
 
-        // Invalid custom_ids
         let invalid_ids = vec![
-            "ai_retry_123_456",            // too few parts
-            "invalid_retry_123_456_789",   // wrong prefix
-            "ai_invalid_123_456_789",      // wrong action
-            "ai_retry_notanumber_456_789", // invalid user_id
-            "ai_retry_123_456_notanumber", // invalid original_message_id
+            "ai_retry_123",            // too few parts
+            "invalid_retry_123_456",   // wrong prefix
+            "ai_invalid_123_456",      // wrong action
+            "ai_retry_notanumber_456", // invalid user_id
+            "ai_retry_123_notanumber", // invalid original_message_id
         ];
 
         for invalid_id in invalid_ids {
             let parts: Vec<&str> = invalid_id.split('_').collect();
-            let is_valid = parts.len() == 5
+            let is_valid = parts.len() == 4
                 && parts[0] == "ai"
                 && parts[1] == "retry"
                 && parts[2].parse::<u64>().is_ok()
-                && parts[4].parse::<u64>().is_ok();
+                && parts[3].parse::<u64>().is_ok();
             assert!(!is_valid, "Custom ID should be invalid: {}", invalid_id);
         }
     }

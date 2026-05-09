@@ -32,8 +32,8 @@ const LIMITER_RETAIN_INTERVAL_SECS: u64 = 60;
 const COOKIE_KEY_HKDF_INFO: &[u8] = b"clouder-web cookie signing key v1";
 // Default rate limits per remote IP: enough headroom for normal dashboard
 // browsing while shedding scripted abuse before it reaches handlers.
-const DEFAULT_RATE_PER_SEC: u64 = 2;
-const DEFAULT_RATE_BURST: u32 = 30;
+const DEFAULT_RATE_PER_SEC: u64 = 30;
+const DEFAULT_RATE_BURST: u32 = 60;
 // Stricter limit on the DM-send endpoint: every request is an outbound
 // Discord API call, so we keep the bucket small to avoid getting bot-banned.
 const DM_RATE_PER_SEC: u64 = 1;

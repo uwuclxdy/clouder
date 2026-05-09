@@ -24,16 +24,28 @@ function toast(message, type = 'info', duration = 3000) {
 }
 
 async function apiFetch(method, url, body) {
+  const headers = {};
+  const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+  if (csrfToken) headers['X-CSRF-Token'] = csrfToken;
+
   const opts = {
     method,
-    headers: { 'Content-Type': 'application/json' },
+    credentials: 'same-origin',
+    headers,
   };
-  if (body !== undefined) opts.body = JSON.stringify(body);
+
+  if (body !== undefined) {
+    headers['Content-Type'] = 'application/json';
+    opts.body = JSON.stringify(body);
+  }
 
   const res = await fetch(url, opts);
   if (res.status === 401) {
     window.location.href = '/login';
     throw new Error('session expired');
+  }
+  if (res.status === 403) {
+    toast('session expired or page stale. refresh and try again.', 'error');
   }
   return res;
 }

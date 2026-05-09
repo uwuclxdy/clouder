@@ -92,8 +92,8 @@ pub async fn run(app_state: AppState) -> Result<()> {
             HeaderValue::from_static(
                 "default-src 'self'; \
                  img-src 'self' https://cdn.discordapp.com data:; \
-                 script-src 'self'; \
-                 style-src 'self'; \
+                 script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; \
+                 style-src 'self' 'unsafe-inline'; \
                  connect-src 'self'; \
                  frame-ancestors 'none'; \
                  base-uri 'self'; \
@@ -322,4 +322,33 @@ async fn static_js() -> impl axum::response::IntoResponse {
         )],
         include_str!("../static/app.js"),
     )
+}
+
+#[cfg(test)]
+mod tests {
+    const AUTHENTICATED_TEMPLATES: &[&str] = &[
+        include_str!("../templates/about.html"),
+        include_str!("../templates/mediaonly.html"),
+        include_str!("../templates/profile.html"),
+        include_str!("../templates/reminders.html"),
+        include_str!("../templates/selfroles.html"),
+        include_str!("../templates/servers.html"),
+        include_str!("../templates/uwufy.html"),
+        include_str!("../templates/welcome_goodbye.html"),
+    ];
+
+    #[test]
+    fn authenticated_templates_include_csrf_meta() {
+        for template in AUTHENTICATED_TEMPLATES {
+            assert!(template.contains(r#"<meta name="csrf-token" content="{{CSRF_TOKEN}}"#));
+        }
+    }
+
+    #[test]
+    fn app_js_sends_csrf_header() {
+        let app_js = include_str!("../static/app.js");
+        assert!(app_js.contains(r#"meta[name="csrf-token"]"#));
+        assert!(app_js.contains("X-CSRF-Token"));
+        assert!(app_js.contains("credentials: 'same-origin'"));
+    }
 }

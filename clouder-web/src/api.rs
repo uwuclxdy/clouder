@@ -640,12 +640,8 @@ pub async fn api_send_dm(
     }
     .ok_or(StatusCode::BAD_REQUEST)?;
 
-    // Discord caps a single message at 2000 chars; reject anything longer to
-    // prevent multi-message fan-out from a single API call exhausting bot quota.
-    // Count chars (not bytes) to match Discord's limit semantics.
-    let char_count = content.chars().count();
-    if char_count == 0 || char_count > 2000 {
-        return Err(StatusCode::PAYLOAD_TOO_LARGE);
+    if content.is_empty() {
+        return Err(StatusCode::BAD_REQUEST);
     }
 
     let user_id_u64: u64 = user_id.parse().map_err(|_| StatusCode::BAD_REQUEST)?;

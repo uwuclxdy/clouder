@@ -3,8 +3,6 @@
 -- credential lookup to api_key_hash. SQLite < 3.35 cannot drop columns in
 -- place, so we recreate the table to avoid leaving a misleading column behind.
 
-DROP TABLE IF EXISTS dashboard_users_new;
-
 CREATE TABLE dashboard_users_new (
     user_id                TEXT    PRIMARY KEY NOT NULL,
     api_key_hash           TEXT,

@@ -61,6 +61,7 @@ async fn run_migrations(pool: &SqlitePool) -> Result<()> {
     ];
 
     create_migration_ledger(pool).await?;
+    recover_partial_migrations(pool).await?;
     bootstrap_migration_ledger(pool).await?;
 
     for migration in migrations {
@@ -69,13 +70,19 @@ async fn run_migrations(pool: &SqlitePool) -> Result<()> {
         }
 
         info!("running migration {}", migration.name);
+        let mut tx = pool.begin().await?;
         for statement in split_sql_statements(migration.content) {
             let statement = statement.trim();
             if !statement.is_empty() {
-                sqlx::query(statement).execute(pool).await?;
+                sqlx::query(statement).execute(&mut *tx).await?;
             }
         }
-        record_migration(pool, migration.version, migration.name).await?;
+        sqlx::query("INSERT OR IGNORE INTO schema_migrations (version, name) VALUES (?, ?)")
+            .bind(migration.version)
+            .bind(migration.name)
+            .execute(&mut *tx)
+            .await?;
+        tx.commit().await?;
     }
 
     info!("db migrations ok");
@@ -116,6 +123,30 @@ async fn create_migration_ledger(pool: &SqlitePool) -> Result<()> {
     )
     .execute(pool)
     .await?;
+
+    Ok(())
+}
+
+async fn recover_partial_migrations(pool: &SqlitePool) -> Result<()> {
+    let new_exists = table_exists(pool, "dashboard_users_new").await?;
+    let old_exists = table_exists(pool, "dashboard_users").await?;
+
+    if new_exists && !old_exists {
+        sqlx::query("ALTER TABLE dashboard_users_new RENAME TO dashboard_users")
+            .execute(pool)
+            .await?;
+        sqlx::query(
+            "CREATE UNIQUE INDEX IF NOT EXISTS idx_dashboard_users_api_key_hash
+                ON dashboard_users(api_key_hash) WHERE api_key_hash IS NOT NULL",
+        )
+        .execute(pool)
+        .await?;
+        record_migration(pool, 12, "recovered partial migration").await?;
+    } else if new_exists {
+        sqlx::query("DROP TABLE dashboard_users_new")
+            .execute(pool)
+            .await?;
+    }
 
     Ok(())
 }
@@ -329,6 +360,41 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(count, 12);
+    }
+
+    #[tokio::test]
+    async fn recovers_dashboard_users_rename_after_partial_run() {
+        let pool = SqlitePool::connect("sqlite::memory:").await.unwrap();
+        run_migrations(&pool).await.unwrap();
+
+        sqlx::query("INSERT INTO dashboard_users (user_id) VALUES ('u1')")
+            .execute(&pool)
+            .await
+            .unwrap();
+        sqlx::query("ALTER TABLE dashboard_users RENAME TO dashboard_users_new")
+            .execute(&pool)
+            .await
+            .unwrap();
+        sqlx::query("DELETE FROM schema_migrations WHERE version = 12")
+            .execute(&pool)
+            .await
+            .unwrap();
+
+        run_migrations(&pool).await.unwrap();
+
+        let count: i64 =
+            sqlx::query_scalar("SELECT COUNT(*) FROM dashboard_users WHERE user_id = 'u1'")
+                .fetch_one(&pool)
+                .await
+                .unwrap();
+        assert_eq!(count, 1);
+        let stale: i64 = sqlx::query_scalar(
+            "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'dashboard_users_new'",
+        )
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+        assert_eq!(stale, 0);
     }
 
     #[tokio::test]

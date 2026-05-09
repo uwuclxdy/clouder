@@ -24,16 +24,15 @@ pub use clouder_core::config::AppState;
 // Sweep expired sessions periodically so the table never grows unbounded
 // while still letting deletes batch — 15 minutes balances cost and freshness.
 const SESSION_CLEANUP_INTERVAL_SECS: u64 = 15 * 60;
-// Reclaim per-IP rate-limiter state once a minute so stale buckets don't pin
-// memory; matches `tower-governor`'s recommended retain cadence.
-const LIMITER_RETAIN_INTERVAL_SECS: u64 = 60;
+// Reclaim per-IP rate-limiter state once a minute so stale buckets don't pin memory
+const LIMITER_RETAIN_INTERVAL_SECS: u64 = 5;
 // HKDF "info" string for cookie key derivation. Namespaced + versioned so a
 // future format change can swap the label without invalidating prior secrets.
 const COOKIE_KEY_HKDF_INFO: &[u8] = b"clouder-web cookie signing key v1";
 // Default rate limits per remote IP: enough headroom for normal dashboard
 // browsing while shedding scripted abuse before it reaches handlers.
-const DEFAULT_RATE_PER_SEC: u64 = 30;
-const DEFAULT_RATE_BURST: u32 = 60;
+const DEFAULT_RATE_PER_SEC: u64 = 100;
+const DEFAULT_RATE_BURST: u32 = 300;
 // Stricter limit on the DM-send endpoint: every request is an outbound
 // Discord API call, so we keep the bucket small to avoid getting bot-banned.
 const DM_RATE_PER_SEC: u64 = 1;

@@ -664,13 +664,17 @@ pub async fn api_regenerate_key(
     auth: CsrfAuth,
     State(state): State<AppState>,
 ) -> Result<Json<Value>, StatusCode> {
-    let key =
-        DashboardUser::regenerate_key(&state.db, &auth.0.user_id, &state.config.web.api_key_pepper)
-            .await
-            .map_err(|e| {
-                error!("failed to regenerate api key: {}", e);
-                StatusCode::INTERNAL_SERVER_ERROR
-            })?;
+    let key = DashboardUser::regenerate_key(
+        &state.db,
+        &auth.0.user_id,
+        &state.config.web.api_key_pepper,
+        &state.config.web.oauth_encryption_key_bytes,
+    )
+    .await
+    .map_err(|e| {
+        error!("failed to regenerate api key: {}", e);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
 
     Ok(Json(json!({ "api_key": key })))
 }

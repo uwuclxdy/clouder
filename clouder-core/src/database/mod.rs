@@ -58,6 +58,10 @@ async fn run_migrations(pool: &SqlitePool) -> Result<()> {
             12,
             include_str!("../../migrations/012_drop_legacy_api_key.sql"),
         ),
+        Migration::new(
+            13,
+            include_str!("../../migrations/013_dashboard_users_api_key_ciphertext.sql"),
+        ),
     ];
 
     create_migration_ledger(pool).await?;
@@ -175,6 +179,10 @@ async fn bootstrap_migration_ledger(pool: &SqlitePool) -> Result<()> {
         && !column_exists(pool, "dashboard_users", "api_key").await?
     {
         record_migration(pool, 12, "pre-ledger migration").await?;
+    }
+
+    if column_exists(pool, "dashboard_users", "api_key_ciphertext").await? {
+        record_migration(pool, 13, "pre-ledger migration").await?;
     }
 
     Ok(())
@@ -359,7 +367,7 @@ mod tests {
             .fetch_one(&pool)
             .await
             .unwrap();
-        assert_eq!(count, 12);
+        assert_eq!(count, 13);
     }
 
     #[tokio::test]

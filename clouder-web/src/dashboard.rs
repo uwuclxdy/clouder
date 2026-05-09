@@ -459,6 +459,7 @@ pub async fn profile_page(State(state): State<WebState>, jar: SignedCookieJar) -
         &state.app_state.db,
         &user.user_id,
         &state.app_state.config.web.api_key_pepper,
+        &state.app_state.config.web.oauth_encryption_key_bytes,
     )
     .await
     {
@@ -472,12 +473,18 @@ pub async fn profile_page(State(state): State<WebState>, jar: SignedCookieJar) -
     let api_base = &state.app_state.config.web.api_base;
     let profile = load_profile(&state, &user).await;
 
-    // Plaintext key is only available right after generation; thereafter only
-    // the hash exists. We surface a placeholder so the UI can prompt regenerate.
-    let api_key_display = if dashboard_user.api_key_hash.is_some() {
-        "(hidden — regenerate to view a new key)"
-    } else {
-        "(no key — click regenerate)"
+    // Decrypt the stored ciphertext for display. Legacy rows (pre-migration 013)
+    // only have a hash, so the user must regenerate before they can view a key.
+    let decrypted = dashboard_user
+        .decrypt_api_key(&state.app_state.config.web.oauth_encryption_key_bytes)
+        .unwrap_or_else(|e| {
+            error!("failed to decrypt api key: {}", e);
+            None
+        });
+    let api_key_display = match decrypted.as_deref() {
+        Some(k) => k,
+        None if dashboard_user.api_key_hash.is_some() => "(hidden — regenerate to view a new key)",
+        None => "(no key — click regenerate)",
     };
 
     Html(render(

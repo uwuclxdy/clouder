@@ -122,6 +122,7 @@ pub async fn callback(
         &state.app_state.db,
         &profile.user_id,
         &state.app_state.config.web.api_key_pepper,
+        &state.app_state.config.web.oauth_encryption_key_bytes,
     )
     .await
     {

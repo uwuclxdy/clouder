@@ -5,6 +5,8 @@ use sha2::Sha256;
 use sqlx::SqlitePool;
 use subtle::ConstantTimeEq;
 
+use crate::crypto;
+
 // 32 random bytes (256 bits) is enough entropy that the public hex form
 // (64 chars) won't collide and isn't brute-forceable, while staying short
 // enough for users to copy-paste comfortably.
@@ -14,6 +16,7 @@ const API_KEY_BYTES: usize = 32;
 pub struct DashboardUser {
     pub user_id: String,
     pub api_key_hash: Option<String>,
+    pub api_key_ciphertext: Option<String>,
     pub oauth_token: Option<String>,
     pub oauth_token_updated_at: Option<i64>,
     pub username: Option<String>,
@@ -50,7 +53,12 @@ impl DashboardUser {
     ///      migration, or hash was wiped by migration 010) → INSERT collides;
     ///      ON CONFLICT backfills the hash. The key is returned to the caller.
     ///   3. Row exists with a hash → early return, no SQL touched, no new key.
-    pub async fn upsert(db: &SqlitePool, user_id: &str, pepper: &str) -> Result<(Self, String)> {
+    pub async fn upsert(
+        db: &SqlitePool,
+        user_id: &str,
+        pepper: &str,
+        enc_key: &[u8; 32],
+    ) -> Result<(Self, String)> {
         if let Some(existing) = Self::get_by_user_id(db, user_id).await?
             && existing.api_key_hash.is_some()
         {
@@ -58,13 +66,17 @@ impl DashboardUser {
         }
         let key = generate_api_key();
         let hash = hash_api_key(pepper, &key);
+        let ciphertext = crypto::encrypt(enc_key, key.as_bytes())?;
         sqlx::query(
-            "INSERT INTO dashboard_users (user_id, api_key_hash) VALUES (?, ?)
-             ON CONFLICT(user_id) DO UPDATE SET api_key_hash = excluded.api_key_hash, updated_at = unixepoch()
+            "INSERT INTO dashboard_users (user_id, api_key_hash, api_key_ciphertext) VALUES (?, ?, ?)
+             ON CONFLICT(user_id) DO UPDATE SET api_key_hash = excluded.api_key_hash,
+                                                api_key_ciphertext = excluded.api_key_ciphertext,
+                                                updated_at = unixepoch()
              WHERE dashboard_users.api_key_hash IS NULL",
         )
         .bind(user_id)
         .bind(&hash)
+        .bind(&ciphertext)
         .execute(db)
         .await?;
 
@@ -74,17 +86,37 @@ impl DashboardUser {
         Ok((user, key))
     }
 
-    pub async fn regenerate_key(db: &SqlitePool, user_id: &str, pepper: &str) -> Result<String> {
+    pub async fn regenerate_key(
+        db: &SqlitePool,
+        user_id: &str,
+        pepper: &str,
+        enc_key: &[u8; 32],
+    ) -> Result<String> {
         let key = generate_api_key();
         let hash = hash_api_key(pepper, &key);
+        let ciphertext = crypto::encrypt(enc_key, key.as_bytes())?;
         sqlx::query(
-            "UPDATE dashboard_users SET api_key_hash = ?, updated_at = unixepoch() WHERE user_id = ?",
+            "UPDATE dashboard_users
+             SET api_key_hash = ?, api_key_ciphertext = ?, updated_at = unixepoch()
+             WHERE user_id = ?",
         )
         .bind(&hash)
+        .bind(&ciphertext)
         .bind(user_id)
         .execute(db)
         .await?;
         Ok(key)
+    }
+
+    /// Returns the plaintext API key by decrypting `api_key_ciphertext`.
+    /// Returns `None` for legacy rows that only have a hash (predating
+    /// migration 013) — those users must regenerate to view their key.
+    pub fn decrypt_api_key(&self, enc_key: &[u8; 32]) -> Result<Option<String>> {
+        let Some(ct) = self.api_key_ciphertext.as_deref() else {
+            return Ok(None);
+        };
+        let bytes = crypto::decrypt(enc_key, ct)?;
+        Ok(Some(String::from_utf8(bytes)?))
     }
 
     pub async fn get_by_user_id(db: &SqlitePool, user_id: &str) -> Result<Option<Self>> {

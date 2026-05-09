@@ -68,4 +68,8 @@
 
 ### `dashboard_users`
 - primary key `user_id` (text)
-- `api_key` (text unique), `created_at` (int unixepoch), `updated_at` (int unixepoch)
+- `api_key_hash` (text unique nullable -- HMAC-SHA256 hex with API_KEY_PEPPER, used for auth lookup)
+- `api_key_ciphertext` (text nullable -- AES-256-GCM(OAUTH_ENCRYPTION_KEY) hex, decrypted only on the user's own profile so they can view the key without regenerating)
+- `oauth_token` (text nullable -- AES-256-GCM ciphertext), `oauth_token_updated_at` (int unixepoch nullable)
+- `username` (text nullable), `avatar` (text nullable)
+- `created_at` (int unixepoch), `updated_at` (int unixepoch)

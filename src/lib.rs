@@ -158,6 +158,17 @@ fn start_cleanup_task(app_state: AppState) {
             } else {
                 debug!("cleaned expired cooldowns");
             }
+
+            if let Err(e) =
+                clouder_core::database::dashboard_sessions::DashboardSession::delete_expired(
+                    &app_state.db,
+                )
+                .await
+            {
+                error!("cleanup expired sessions: {}", e);
+            } else {
+                debug!("cleaned expired sessions");
+            }
         }
     });
 }

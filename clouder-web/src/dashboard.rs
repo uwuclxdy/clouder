@@ -141,7 +141,7 @@ pub struct LoginQuery {
 pub async fn index(State(state): State<WebState>, jar: SignedCookieJar) -> Response {
     match session::extract(&state, &jar).await {
         Some(_) => Redirect::to("/servers").into_response(),
-        None => Redirect::to("/login").into_response(),
+        None => (session::clear(jar), Redirect::to("/login")).into_response(),
     }
 }
 
@@ -168,12 +168,16 @@ pub async fn login_page(
         })
         .unwrap_or_default();
 
-    Html(render(LOGIN_HTML, &[("ERROR_MSG", &error_html)])).into_response()
+    (
+        session::clear(jar),
+        Html(render(LOGIN_HTML, &[("ERROR_MSG", &error_html)])),
+    )
+        .into_response()
 }
 
 pub async fn servers_page(State(state): State<WebState>, jar: SignedCookieJar) -> Response {
     let Some(user) = session::extract(&state, &jar).await else {
-        return Redirect::to("/login").into_response();
+        return (session::clear(jar), Redirect::to("/login")).into_response();
     };
 
     let cached_guilds = CachedGuild::get_for_user(&state.app_state.db, &user.user_id)
@@ -276,13 +280,13 @@ struct PageContext {
 
 async fn page_context(
     state: &WebState,
-    jar: &SignedCookieJar,
+    jar: SignedCookieJar,
     raw_guild_id: &str,
     active: &str,
     required: Permissions,
 ) -> Result<PageContext, Response> {
-    let Some(user) = session::extract(state, jar).await else {
-        return Err(Redirect::to("/login").into_response());
+    let Some(user) = session::extract(state, &jar).await else {
+        return Err((session::clear(jar), Redirect::to("/login")).into_response());
     };
     if parse_snowflake(raw_guild_id).is_none() {
         return Err(Redirect::to("/servers").into_response());
@@ -314,7 +318,7 @@ pub async fn selfroles_page(
 ) -> Response {
     let ctx = match page_context(
         &state,
-        &jar,
+        jar,
         &guild_id,
         "selfroles",
         Permissions::MANAGE_ROLES,
@@ -345,7 +349,7 @@ pub async fn welcome_goodbye_page(
 ) -> Response {
     let ctx = match page_context(
         &state,
-        &jar,
+        jar,
         &guild_id,
         "welcome-goodbye",
         Permissions::MANAGE_GUILD,
@@ -378,7 +382,7 @@ pub async fn mediaonly_page(
 ) -> Response {
     let ctx = match page_context(
         &state,
-        &jar,
+        jar,
         &guild_id,
         "mediaonly",
         Permissions::MANAGE_CHANNELS,
@@ -407,8 +411,7 @@ pub async fn about_page(
     jar: SignedCookieJar,
     Path(guild_id): Path<String>,
 ) -> Response {
-    let ctx = match page_context(&state, &jar, &guild_id, "about", Permissions::MANAGE_GUILD).await
-    {
+    let ctx = match page_context(&state, jar, &guild_id, "about", Permissions::MANAGE_GUILD).await {
         Ok(c) => c,
         Err(r) => return r,
     };
@@ -431,8 +434,7 @@ pub async fn uwufy_page(
     jar: SignedCookieJar,
     Path(guild_id): Path<String>,
 ) -> Response {
-    let ctx = match page_context(&state, &jar, &guild_id, "uwufy", Permissions::MANAGE_GUILD).await
-    {
+    let ctx = match page_context(&state, jar, &guild_id, "uwufy", Permissions::MANAGE_GUILD).await {
         Ok(c) => c,
         Err(r) => return r,
     };
@@ -452,7 +454,7 @@ pub async fn uwufy_page(
 
 pub async fn profile_page(State(state): State<WebState>, jar: SignedCookieJar) -> Response {
     let Some(user) = session::extract(&state, &jar).await else {
-        return Redirect::to("/login").into_response();
+        return (session::clear(jar), Redirect::to("/login")).into_response();
     };
 
     let dashboard_user = match DashboardUser::upsert(
@@ -508,7 +510,7 @@ pub async fn reminders_page(
 ) -> Response {
     let ctx = match page_context(
         &state,
-        &jar,
+        jar,
         &guild_id,
         "reminders",
         Permissions::MANAGE_GUILD,

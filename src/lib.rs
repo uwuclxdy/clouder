@@ -24,6 +24,7 @@ pub use crate::commands::purge::purge;
 pub use crate::commands::random::random;
 pub use crate::commands::reminders::reminders;
 pub use crate::commands::selfroles::selfroles;
+pub use crate::commands::tinyfox::tinyfox;
 pub use crate::commands::uwufy::uwufy;
 pub use crate::events::event_handler;
 use tracing::{debug, error, info};
@@ -86,6 +87,7 @@ async fn async_main() -> Result<()> {
                 hf(),
                 github(),
                 gh_trending(),
+                tinyfox(),
             ],
             event_handler: |ctx, event, framework, data| {
                 Box::pin(event_handler(ctx, event, framework, data))

@@ -9,4 +9,5 @@ pub mod purge;
 pub mod random;
 pub mod reminders;
 pub mod selfroles;
+pub mod tinyfox;
 pub mod uwufy;

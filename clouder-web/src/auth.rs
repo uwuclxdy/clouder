@@ -4,9 +4,9 @@ use axum::extract::{Query, State};
 use axum::response::Redirect;
 use axum_extra::extract::cookie::{Cookie, SameSite, SignedCookieJar};
 use clouder_core::DashboardUser;
+use clouder_core::crypto::random_hex;
 use clouder_core::database::dashboard_sessions::DashboardSession;
 use cookie::time::Duration as CookieDuration;
-use rand::Rng;
 use serde::Deserialize;
 use subtle::ConstantTimeEq;
 use tracing::{error, info, warn};
@@ -20,12 +20,6 @@ pub struct OAuthCallback {
     code: Option<String>,
     error: Option<String>,
     state: Option<String>,
-}
-
-fn random_hex(bytes: usize) -> String {
-    let mut buf = vec![0u8; bytes];
-    rand::rng().fill_bytes(&mut buf);
-    buf.iter().map(|b| format!("{:02x}", b)).collect()
 }
 
 fn oauth_state_cookie(value: String, secure: bool) -> Cookie<'static> {

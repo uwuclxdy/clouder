@@ -41,6 +41,14 @@ fn from_hex(hex: &str) -> Result<Vec<u8>> {
         .collect()
 }
 
+/// Generates `len_bytes` of CSPRNG output, hex-encoded (two chars per byte).
+/// Used for opaque session IDs, CSRF tokens, and OAuth state values.
+pub fn random_hex(len_bytes: usize) -> String {
+    let mut buf = vec![0u8; len_bytes];
+    rand::rng().fill_bytes(&mut buf);
+    to_hex(&buf)
+}
+
 /// Encrypts `plaintext` with the given 32-byte key. Output is hex-encoded
 /// `nonce || ciphertext_with_tag`, suitable for SQLite TEXT storage.
 pub fn encrypt(key_bytes: &[u8; 32], plaintext: &[u8]) -> Result<String> {

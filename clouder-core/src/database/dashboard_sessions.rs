@@ -1,5 +1,5 @@
+use crate::crypto::random_hex;
 use anyhow::Result;
-use rand::Rng;
 use sqlx::SqlitePool;
 use subtle::ConstantTimeEq;
 
@@ -15,12 +15,6 @@ pub struct DashboardSession {
     pub csrf_token: String,
     pub expires_at: i64,
     pub created_at: i64,
-}
-
-fn random_hex(len_bytes: usize) -> String {
-    let mut buf = vec![0u8; len_bytes];
-    rand::rng().fill_bytes(&mut buf);
-    buf.iter().map(|b| format!("{:02x}", b)).collect()
 }
 
 impl DashboardSession {

@@ -1,7 +1,7 @@
 use anyhow::Result;
 use clouder_core::config::AppState;
 use clouder_core::external::github_trending::{Period, TrendingRepo, fetch_trending};
-use clouder_core::utils::{format_count, get_embed_color};
+use clouder_core::utils::{format_count, get_embed_color, nav_row, truncate};
 use poise::serenity_prelude as serenity;
 use serenity::all::{
     ButtonStyle, ComponentInteractionCollector, CreateActionRow, CreateButton, CreateEmbed,
@@ -172,19 +172,6 @@ fn period_row(ids: &ButtonIds, active: Period) -> CreateActionRow {
     ])
 }
 
-fn nav_row(prev_id: &str, next_id: &str, page: usize, total_pages: usize) -> CreateActionRow {
-    CreateActionRow::Buttons(vec![
-        CreateButton::new(prev_id)
-            .label("◀")
-            .style(ButtonStyle::Secondary)
-            .disabled(page == 0),
-        CreateButton::new(next_id)
-            .label("▶")
-            .style(ButtonStyle::Secondary)
-            .disabled(page + 1 >= total_pages),
-    ])
-}
-
 fn page_embed(
     repos: &[TrendingRepo],
     page: usize,
@@ -230,17 +217,4 @@ fn page_embed(
         page + 1,
         pages
     )))
-}
-
-fn truncate(s: &str, max_chars: usize) -> String {
-    if s.chars().count() <= max_chars {
-        s.to_string()
-    } else {
-        let end = s
-            .char_indices()
-            .nth(max_chars)
-            .map(|(i, _)| i)
-            .unwrap_or(s.len());
-        format!("{}…", &s[..end])
-    }
 }

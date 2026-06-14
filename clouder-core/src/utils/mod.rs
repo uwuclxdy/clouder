@@ -1,5 +1,5 @@
 use crate::config::AppState;
-use serenity::all::Color;
+use serenity::all::{ButtonStyle, Color, CreateActionRow, CreateButton};
 
 pub mod content_detection;
 pub mod welcome_goodbye;
@@ -132,4 +132,35 @@ pub fn format_count(n: u64) -> String {
     } else {
         n.to_string()
     }
+}
+
+/// Truncate `s` to at most `max_chars` characters (not bytes), appending an
+/// ellipsis when the string is cut. Safe across multi-byte UTF-8 boundaries.
+pub fn truncate(s: &str, max_chars: usize) -> String {
+    if s.chars().count() <= max_chars {
+        s.to_string()
+    } else {
+        let end = s
+            .char_indices()
+            .nth(max_chars)
+            .map(|(i, _)| i)
+            .unwrap_or(s.len());
+        format!("{}…", &s[..end])
+    }
+}
+
+/// A previous/next pagination button row (◀ / ▶). `total` is the page count —
+/// a one-item-per-page list passes its length. Buttons disable at the first and
+/// last page. Wrap in `vec![..]` to use as a message's full component list.
+pub fn nav_row(prev_id: &str, next_id: &str, page: usize, total: usize) -> CreateActionRow {
+    CreateActionRow::Buttons(vec![
+        CreateButton::new(prev_id)
+            .label("◀")
+            .style(ButtonStyle::Secondary)
+            .disabled(page == 0),
+        CreateButton::new(next_id)
+            .label("▶")
+            .style(ButtonStyle::Secondary)
+            .disabled(page + 1 >= total),
+    ])
 }

@@ -1,10 +1,10 @@
 use anyhow::Result;
 use clouder_core::config::AppState;
-use clouder_core::utils::get_embed_color;
+use clouder_core::utils::{get_embed_color, nav_row};
 use poise::serenity_prelude as serenity;
 use serenity::all::{
-    ButtonStyle, CreateActionRow, CreateButton, CreateEmbed, CreateEmbedFooter,
-    CreateInteractionResponse, CreateInteractionResponseMessage, EditMessage,
+    CreateEmbed, CreateEmbedFooter, CreateInteractionResponse, CreateInteractionResponseMessage,
+    EditMessage,
 };
 use serenity::collector::ComponentInteractionCollector;
 use std::time::Duration;
@@ -300,7 +300,7 @@ async fn show_category_help(
                     total_pages,
                     color,
                 ))
-                .components(nav_buttons(&prev_id, &next_id, page, total_pages)),
+                .components(vec![nav_row(&prev_id, &next_id, page, total_pages)]),
         )
         .await?
         .into_message()
@@ -338,7 +338,7 @@ async fn show_category_help(
                             total_pages,
                             color,
                         ))
-                        .components(nav_buttons(&prev_id, &next_id, page, total_pages)),
+                        .components(vec![nav_row(&prev_id, &next_id, page, total_pages)]),
                 ),
             )
             .await?;
@@ -381,24 +381,6 @@ fn build_page_embed(
         commands.len(),
         category.as_str()
     )))
-}
-
-fn nav_buttons(
-    prev_id: &str,
-    next_id: &str,
-    page: usize,
-    total_pages: usize,
-) -> Vec<CreateActionRow> {
-    vec![CreateActionRow::Buttons(vec![
-        CreateButton::new(prev_id)
-            .label("◀")
-            .style(ButtonStyle::Secondary)
-            .disabled(page == 0),
-        CreateButton::new(next_id)
-            .label("▶")
-            .style(ButtonStyle::Secondary)
-            .disabled(page + 1 >= total_pages),
-    ])]
 }
 
 async fn category_autocomplete(_ctx: Context<'_>, partial: &str) -> impl Iterator<Item = String> {

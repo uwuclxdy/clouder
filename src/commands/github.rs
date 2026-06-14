@@ -1,7 +1,7 @@
 use anyhow::Result;
 use clouder_core::config::AppState;
 use clouder_core::external::github::{GhRepo, GhUser, fetch_repo, fetch_repos, fetch_user};
-use clouder_core::utils::{format_count, get_embed_color};
+use clouder_core::utils::{format_count, get_embed_color, nav_row};
 use poise::serenity_prelude as serenity;
 use serenity::all::{
     ButtonStyle, ComponentInteractionCollector, CreateActionRow, CreateButton, CreateEmbed,
@@ -113,7 +113,7 @@ pub async fn github(
                 let (embed, components) = if viewing_repos {
                     (
                         repos_page_embed(&repos, page, total_pages, &u, color),
-                        nav_buttons(&prev_id, &next_id, page, total_pages),
+                        vec![nav_row(&prev_id, &next_id, page, total_pages)],
                     )
                 } else {
                     (user_embed(&u, total_stars, color), repos_button(&repos_id))
@@ -151,19 +151,6 @@ fn repos_button(repos_id: &str) -> Vec<CreateActionRow> {
         CreateButton::new(repos_id)
             .label("repos")
             .style(ButtonStyle::Secondary),
-    ])]
-}
-
-fn nav_buttons(prev_id: &str, next_id: &str, page: usize, total: usize) -> Vec<CreateActionRow> {
-    vec![CreateActionRow::Buttons(vec![
-        CreateButton::new(prev_id)
-            .label("◀")
-            .style(ButtonStyle::Secondary)
-            .disabled(page == 0),
-        CreateButton::new(next_id)
-            .label("▶")
-            .style(ButtonStyle::Secondary)
-            .disabled(page + 1 >= total),
     ])]
 }
 

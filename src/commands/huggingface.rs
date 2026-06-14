@@ -1,11 +1,11 @@
 use anyhow::Result;
 use clouder_core::config::AppState;
 use clouder_core::external::huggingface::{HfModel, fetch_latest, fetch_trending};
-use clouder_core::utils::{format_count, get_embed_color};
+use clouder_core::utils::{format_count, get_embed_color, nav_row, truncate};
 use poise::serenity_prelude as serenity;
 use serenity::all::{
-    ButtonStyle, CreateActionRow, CreateButton, CreateEmbed, CreateEmbedAuthor, CreateEmbedFooter,
-    CreateInteractionResponse, CreateInteractionResponseMessage, EditMessage,
+    CreateEmbed, CreateEmbedAuthor, CreateEmbedFooter, CreateInteractionResponse,
+    CreateInteractionResponseMessage, EditMessage,
 };
 use serenity::collector::ComponentInteractionCollector;
 use std::time::Duration;
@@ -71,7 +71,7 @@ async fn paginate(
         .send(
             poise::CreateReply::default()
                 .embed(build_embed(&models[page], page, total, label, color))
-                .components(nav_buttons(&prev_id, &next_id, page, total)),
+                .components(vec![nav_row(&prev_id, &next_id, page, total)]),
         )
         .await?
         .into_message()
@@ -102,7 +102,7 @@ async fn paginate(
                 CreateInteractionResponse::UpdateMessage(
                     CreateInteractionResponseMessage::new()
                         .embed(build_embed(&models[page], page, total, label, color))
-                        .components(nav_buttons(&prev_id, &next_id, page, total)),
+                        .components(vec![nav_row(&prev_id, &next_id, page, total)]),
                 ),
             )
             .await?;
@@ -157,30 +157,4 @@ fn build_embed(
             total,
             label
         )))
-}
-
-fn truncate(s: &str, max_chars: usize) -> String {
-    if s.chars().count() <= max_chars {
-        s.to_string()
-    } else {
-        let end = s
-            .char_indices()
-            .nth(max_chars)
-            .map(|(i, _)| i)
-            .unwrap_or(s.len());
-        format!("{}…", &s[..end])
-    }
-}
-
-fn nav_buttons(prev_id: &str, next_id: &str, page: usize, total: usize) -> Vec<CreateActionRow> {
-    vec![CreateActionRow::Buttons(vec![
-        CreateButton::new(prev_id)
-            .label("◀")
-            .style(ButtonStyle::Secondary)
-            .disabled(page == 0),
-        CreateButton::new(next_id)
-            .label("▶")
-            .style(ButtonStyle::Secondary)
-            .disabled(page + 1 >= total),
-    ])]
 }

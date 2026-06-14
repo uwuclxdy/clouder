@@ -54,4 +54,19 @@ impl GuildConfig {
 
         Self::get_or_default(db, guild_id).await
     }
+
+    /// Insert a default config row for `guild_id` if none exists, so foreign-key
+    /// references (reminder configs, etc.) resolve. Existing rows are left
+    /// untouched — never overwrites a guild's prefix, color, or timezone.
+    pub async fn ensure_exists(db: &SqlitePool, guild_id: &str, timezone: &str) -> Result<()> {
+        sqlx::query(
+            "INSERT INTO guild_configs (guild_id, timezone) VALUES (?, ?)
+             ON CONFLICT(guild_id) DO NOTHING",
+        )
+        .bind(guild_id)
+        .bind(timezone)
+        .execute(db)
+        .await?;
+        Ok(())
+    }
 }

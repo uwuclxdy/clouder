@@ -60,67 +60,6 @@ impl UserSettings {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct GuildConfig {
-    pub guild_id: String,
-    pub command_prefix: String,
-    pub embed_color: Option<i64>,
-    pub timezone: String,
-    pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
-}
-
-impl GuildConfig {
-    pub async fn get(pool: &SqlitePool, guild_id: &str) -> Result<Option<Self>, sqlx::Error> {
-        let row = sqlx::query(
-            r#"
-            SELECT guild_id, command_prefix, embed_color, timezone, created_at, updated_at
-            FROM guild_configs
-            WHERE guild_id = ?
-            "#,
-        )
-        .bind(guild_id)
-        .fetch_optional(pool)
-        .await?;
-
-        if let Some(row) = row {
-            Ok(Some(Self {
-                guild_id: row.get("guild_id"),
-                command_prefix: row.get("command_prefix"),
-                embed_color: row.get("embed_color"),
-                timezone: row.get("timezone"),
-                created_at: parse_sqlite_datetime(&row.get::<String, _>("created_at")),
-                updated_at: parse_sqlite_datetime(&row.get::<String, _>("updated_at")),
-            }))
-        } else {
-            Ok(None)
-        }
-    }
-
-    pub async fn upsert(
-        pool: &SqlitePool,
-        guild_id: &str,
-        command_prefix: &str,
-        embed_color: Option<i64>,
-        timezone: &str,
-    ) -> Result<(), sqlx::Error> {
-        sqlx::query(
-            r#"
-            INSERT OR REPLACE INTO guild_configs (guild_id, command_prefix, embed_color, timezone, updated_at)
-            VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
-            "#,
-        )
-        .bind(guild_id)
-        .bind(command_prefix)
-        .bind(embed_color)
-        .bind(timezone)
-        .execute(pool)
-        .await?;
-
-        Ok(())
-    }
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ReminderType {
     Wysi,

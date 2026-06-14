@@ -26,7 +26,7 @@
 
 ### `guild_configs`
 - primary key `guild_id` (text)
-- `command_prefix` (text), `embed_color` (integer, nullable), `timezone` (text), `created_at` (datetime), `updated_at` (datetime)
+- `command_prefix` (text), `embed_color` (text hex `#RRGGBB`, nullable; legacy integer values converted by migration 002), `timezone` (text), `created_at` (datetime), `updated_at` (datetime)
 
 ### `reminder_configs`
 - primary key `id` (int)

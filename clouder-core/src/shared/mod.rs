@@ -1793,16 +1793,10 @@ pub async fn upsert_reminder_config(
     }
 
     // Ensure guild_config exists before creating reminder_config (foreign key requirement)
-    use crate::database::reminders::GuildConfig;
-    if GuildConfig::get(&app_state.db, &guild_id_str)
+    use crate::database::guild_configs::GuildConfig;
+    GuildConfig::ensure_exists(&app_state.db, &guild_id_str, timezone)
         .await
-        .map_err(|e| e.to_string())?
-        .is_none()
-    {
-        GuildConfig::upsert(&app_state.db, &guild_id_str, "!", None, timezone)
-            .await
-            .map_err(|e| format!("Failed to create guild config: {}", e))?;
-    }
+        .map_err(|e| format!("Failed to create guild config: {}", e))?;
 
     let config_id = ReminderConfig::upsert(
         &app_state.db,
@@ -2087,16 +2081,10 @@ pub async fn create_custom_reminder(
     ])?;
 
     // ensure guild_config exists (foreign key requirement)
-    use crate::database::reminders::GuildConfig;
-    if GuildConfig::get(&app_state.db, &guild_id_str)
+    use crate::database::guild_configs::GuildConfig;
+    GuildConfig::ensure_exists(&app_state.db, &guild_id_str, timezone)
         .await
-        .map_err(|e| e.to_string())?
-        .is_none()
-    {
-        GuildConfig::upsert(&app_state.db, &guild_id_str, "!", None, timezone)
-            .await
-            .map_err(|e| format!("Failed to create guild config: {}", e))?;
-    }
+        .map_err(|e| format!("Failed to create guild config: {}", e))?;
 
     let config_id = CustomReminder::create(
         &app_state.db,

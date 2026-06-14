@@ -3,10 +3,6 @@
 The full reference for **clouder**, a modular Discord bot written in Rust (Serenity + Poise) with an
 Axum web dashboard, an OpenAI-compatible LLM client, and a reminder scheduler.
 
-> This wiki is a read-only mirror of the in-repo [`wiki/`](https://github.com/uwuclxdy/clouder/tree/main/wiki)
-> folder. Edit the files there; web edits are overwritten on the next sync. For the project overview,
-> see the [README](https://github.com/uwuclxdy/clouder#readme).
-
 ## Pages
 
 | Page | Covers |

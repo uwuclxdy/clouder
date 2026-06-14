@@ -23,7 +23,7 @@ are feature flags, so you can ship the full stack or just the bot.
 
 ## ✨ Highlights
 
-| | |
+| Feature | What it does |
 |---|---|
 | **LLM integration** | Replies to `@mentions` via any OpenAI-compatible provider, with a per-user whitelist and cooldowns |
 | **Web dashboard** | Axum REST API behind Discord OAuth2 with signed session cookies |
@@ -115,7 +115,7 @@ LLM, GitHub, embed color, and scheduler settings are optional. See the
 
 ## 📄 License
 
-No license has been declared yet. Until one is added, all rights are reserved by the author.
+[MIT](LICENSE)
 
 ---
 

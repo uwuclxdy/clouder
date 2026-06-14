@@ -58,6 +58,7 @@ aes-gcm = "0.10.3"
 name = "clouder"
 version = "0.2.4"
 edition = "2024"
+license = "MIT"
 
 [[bin]]
 name = "clouder"

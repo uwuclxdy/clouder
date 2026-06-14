@@ -2,6 +2,7 @@
 name = "clouder-llm"
 version = "0.1.2"
 edition = "2024"
+license = "MIT"
 
 [lib]
 name = "clouder_llm"

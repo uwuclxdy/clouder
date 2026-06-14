@@ -69,7 +69,7 @@ pub async fn handle_uwufy_message(
                     .title("missing perms")
                     .description(format!(
                         "{} \n> uwufy is **enabled** for <@{}>,",
-                        desc, &user_id_str
+                        desc, user_id_str
                     ));
                 let builder = serenity::CreateMessage::new().embed(embed);
                 let _ = message.channel_id.send_message(&ctx.http, builder).await;
@@ -143,7 +143,7 @@ pub async fn handle_uwufy_message(
     if let Err(e) = webhook.execute(&ctx.http, false, execute).await {
         warn!("execute uwufy webhook: {}", e);
         let fallback = serenity::CreateMessage::new()
-            .content(format!("**{}:** {}", &message.author.name, &uwufied));
+            .content(format!("**{}:** {}", message.author.name, uwufied));
         let _ = message.channel_id.send_message(&ctx.http, fallback).await;
     }
 }

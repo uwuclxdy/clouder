@@ -1,130 +1,124 @@
-# Clouder
+<div align="center">
 
-A modular Discord bot built with Rust. Features slash commands, a web dashboard, LLM integration, scheduled reminders, and self-role management.
+# ☁️ clouder
 
-## Workspace
+**A modular Discord bot written in Rust.**
 
-| Crate | Description |
-|-------|-------------|
-| `clouder` | Bot binary — runtime, commands, events, scheduler |
-| `clouder-core` | Shared library — config, database, business logic, utilities |
-| `clouder-llm` | OpenAI-compatible LLM client (optional, feature: `llm`) |
-| `clouder-web` | Axum web dashboard with REST API (optional, feature: `web`) |
+Slash commands, a web dashboard, LLM chat, self-roles, and scheduled reminders, all in one binary.
 
-Both `web` and `llm` features are enabled by default.
+[![Rust 2024](https://img.shields.io/badge/Rust-2024-CE422B?logo=rust&logoColor=white)](https://www.rust-lang.org/)
+[![Serenity + Poise](https://img.shields.io/badge/Serenity%20%2B%20Poise-5865F2?logo=discord&logoColor=white)](https://github.com/serenity-rs/serenity)
+[![Axum](https://img.shields.io/badge/Axum-dashboard-000000?logo=rust&logoColor=white)](https://github.com/tokio-rs/axum)
+[![SQLite](https://img.shields.io/badge/SQLite-bundled-003B57?logo=sqlite&logoColor=white)](https://www.sqlite.org/)
+[![version](https://img.shields.io/badge/version-0.2.4-blue)](https://github.com/uwuclxdy/clouder/releases)
 
-## Commands
+[**Quickstart**](#-quickstart) · [**Commands**](#%EF%B8%8F-commands) · [**Wiki**](https://github.com/uwuclxdy/clouder/wiki) · [**Configuration**](https://github.com/uwuclxdy/clouder/wiki/Configuration)
 
-| Command | Description | Permission |
-|---------|-------------|------------|
-| `/about bot\|server\|user\|role\|channel` | Info and stats (uptime, RAM, CPU, latency) | — |
-| `/help [category]` | List commands by category | — |
-| `/selfroles` | Link to web dashboard for self-role setup | — |
-| `/purge <count\|message_id>` | Bulk delete messages | Manage Messages |
-| `/mediaonly <channel> [enabled]` | Toggle media-only mode on a channel | Manage Channels |
-| `/channel delete\|clone\|nuke` | Channel management | Manage Channels |
-| `/reminders` | View active reminders | — |
-| `/hf latest\|trending` | Browse HuggingFace models | — |
-| `/github <user> [repo]` | GitHub user or repo stats | — |
-| `/gh-trending [period]` | Trending GitHub repos | — |
-| `/uwufy [user]` | Toggle uwuify on a user | — |
-| `/random` | Random number generator | — |
+</div>
 
-## Features
+---
 
-- **LLM Mentions** — Responds to @mentions and replies using a configurable LLM provider (whitelist-based, per-user cooldown)
-- **Media-Only** — Auto-deletes non-media messages in configured channels
-- **UwUify** — Replaces messages from uwuified users
-- **Welcome/Goodbye** — Sends configurable messages on member join/leave with placeholders (`{user}`, `{server}`, `{member_count}`, etc.)
-- **Self-Role Buttons** — Handles button interactions for role assignment with cooldowns
-- **Message Cleanup** — Removes orphaned self-role data when messages are deleted
+clouder runs the bot, the web dashboard, and the reminder scheduler in a single process. `web` and `llm`
+are feature flags, so you can ship the full stack or just the bot.
 
-## Web Dashboard
+## ✨ Highlights
 
-An Axum REST API running alongside the bot. Provides endpoints for managing self-roles, welcome/goodbye configs, and media-only channels. Authenticated via Discord OAuth2 with signed session cookies.
+| | |
+|---|---|
+| **LLM integration** | Replies to `@mentions` via any OpenAI-compatible provider, with a per-user whitelist and cooldowns |
+| **Web dashboard** | Axum REST API behind Discord OAuth2 with signed session cookies |
+| **Self-roles** | Button-driven role assignment with cooldowns, configured from the dashboard |
+| **Media-only channels** | Auto-deletes non-media messages, with per-channel content rules |
+| **Welcome / goodbye** | Configurable join and leave messages with `{user}`, `{server}`, `{member_count}` placeholders |
+| **Reminders** | Scheduled reminders with timezone support and channel or DM delivery |
+| **Fun extras** | `/uwufy`, `/random`, `/tinyfox`, GitHub and HuggingFace lookups |
 
-## Setup
+## 🚀 Quickstart
 
-### Prerequisites
+> [!NOTE]
+> Needs **Rust (edition 2024)**; SQLite is bundled. clouder needs three generated secrets, all distinct: `SESSION_SECRET`, `API_KEY_PEPPER`, `OAUTH_ENCRYPTION_KEY`.
 
-- Rust (edition 2024)
-- SQLite
-
-### 1. Clone and Configure
+1. Clone the repo and copy the env template.
+2. Fill `DISCORD_TOKEN`, `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, and `BOT_OWNER` in `.env`.
+3. Generate each web secret with `openssl rand -hex 32` and paste it into `.env`.
+4. Build and run.
 
 ```sh
 git clone https://github.com/uwuclxdy/clouder.git
 cd clouder
 cp .env.example .env
-```
-
-Edit `.env` and fill in the required values:
-
-```sh
-DISCORD_TOKEN=           # Bot token from Discord Developer Portal
-DISCORD_CLIENT_ID=       # Application/client ID
-DISCORD_CLIENT_SECRET=   # Client secret (used for OAuth2)
-BOT_OWNER=               # Your Discord user ID
-```
-
-### 2. Optional Configuration
-
-```sh
-# Web Dashboard
-API_BASE=https://your-domain.com    # Public URL for OAuth redirects
-WEB_BIND_ADDR=127.0.0.1:8080       # Local bind address
-
-# Embed Styling
-EMBED_DEFAULT_COLOR=#FFFFFF         # Hex or decimal
-
-# LLM Integration (set provider to enable)
-LLM_PROVIDER=openai                 # openai or ollama
-LLM_BASE_URL=                       # API endpoint
-LLM_API_KEY=                        # Bearer token
-LLM_MODEL=gpt-4o
-LLM_ALLOWED_USERS=                  # Comma-separated user IDs
-
-# GitHub API (optional, raises rate limit from 60 to 5000/hr)
-GITHUB_TOKEN=
-
-# Scheduler
-SCHEDULER_INTERVAL=60               # Reminder check interval in seconds
-DEFAULT_TIMEZONE=UTC                 # IANA timezone name
-```
-
-### 3. Build and Run
-
-```sh
+openssl rand -hex 32    # SESSION_SECRET
+openssl rand -hex 32    # API_KEY_PEPPER
+openssl rand -hex 32    # OAUTH_ENCRYPTION_KEY
 cargo build --release
 ./target/release/clouder
 ```
 
-On first run the bot creates `data/db.sqlite`, runs all migrations, and registers slash commands globally. If `.env` is missing it generates one from `.env.example` and exits with instructions.
+If `.env` is missing, clouder writes one from `.env.example` and exits, fill it in and rerun. With `.env`
+in place, the first run creates `data/db.sqlite`, applies all migrations, and registers slash commands globally.
 
-### Compile Without Optional Features
+Want bot-only or a different mix? See the [feature matrix](https://github.com/uwuclxdy/clouder/wiki/Installation#feature-matrix).
 
-```sh
-cargo build --release --no-default-features              # Bot only
-cargo build --release --no-default-features --features web   # Bot + Web
-cargo build --release --no-default-features --features llm   # Bot + LLM
+## 🧩 Architecture
+
+```mermaid
+graph TD
+    USER([Discord user]) -->|slash commands, mentions| BOT[clouder<br/>Serenity + Poise]
+    ADMIN([Server admin]) -->|OAuth2 login| WEB[clouder-web<br/>Axum dashboard]
+    BOT --> CORE[clouder-core<br/>config · database · logic]
+    WEB --> CORE
+    BOT -. llm feature .-> LLM[clouder-llm<br/>OpenAI-compatible]
+    CORE --> DB[(SQLite)]
 ```
 
-## Bot Permissions
+| Crate | Role |
+|-------|------|
+| `clouder` | Bot binary: runtime, slash commands, event handlers, scheduler |
+| `clouder-core` | Shared library: config, database, business logic, external API clients, utilities |
+| `clouder-llm` | OpenAI-compatible LLM client *(feature: `llm`)* |
+| `clouder-web` | Axum web dashboard and REST API *(feature: `web`)* |
 
-The bot needs these Discord permissions:
+## 🎛️ Commands
 
-- Send Messages, Embed Links, Read Message History
-- Manage Messages (purge, media-only)
-- Manage Roles (self-role assignment)
-- Manage Channels (channel commands, media-only)
+| Command | What it does |
+|---------|--------------|
+| `/about bot \| server \| user \| role \| channel` | Info and live stats (uptime, RAM, CPU, latency) |
+| `/help [category]` | List commands by category |
+| `/selfroles` | Open the self-role dashboard *(Manage Roles)* |
+| `/purge <count \| message_id>` | Bulk-delete messages *(Manage Messages)* |
+| `/mediaonly <channel> [enabled]` | Toggle media-only mode *(Manage Channels)* |
+| `/reminders` | View active reminders |
+| `/github <user> [repo]` · `/gh-trending` · `/hf` | GitHub and HuggingFace lookups |
+| `/uwufy [user]` · `/random` · `/tinyfox` | Fun extras |
 
-Gateway intents: `GUILD_MESSAGES`, `GUILDS`, `MESSAGE_CONTENT`, `GUILD_MEMBERS`
+Full table with permissions: [**Commands**](https://github.com/uwuclxdy/clouder/wiki/Commands) wiki page.
 
-## Database
+## 📚 Documentation
 
-SQLite with WAL mode at `data/db.sqlite`. Migrations run automatically on startup. Tables cover self-roles (configs, roles, cooldowns, labels), reminders (configs, subscriptions, logs), welcome/goodbye, media-only, uwuify toggles, dashboard users, and guild configs.
+The wiki holds the full reference. Start at the [**Home page**](https://github.com/uwuclxdy/clouder/wiki).
 
-## Background Tasks
+| Page | Covers |
+|------|--------|
+| [Installation](https://github.com/uwuclxdy/clouder/wiki/Installation) | Prerequisites, build, run, feature matrix, Discord permissions and intents |
+| [Configuration](https://github.com/uwuclxdy/clouder/wiki/Configuration) | Every environment variable, secrets, LLM and scheduler settings |
+| [Commands](https://github.com/uwuclxdy/clouder/wiki/Commands) | Full command reference with required permissions |
+| [Features](https://github.com/uwuclxdy/clouder/wiki/Features) | How each feature behaves |
+| [Web Dashboard](https://github.com/uwuclxdy/clouder/wiki/Web-Dashboard) | OAuth2 flow and REST API endpoints |
+| [Architecture](https://github.com/uwuclxdy/clouder/wiki/Architecture) | Crates, modules, `AppState`, background tasks |
+| [Database](https://github.com/uwuclxdy/clouder/wiki/Database) | Schema, tables, migrations |
 
-- **Cooldown Cleanup** — Purges expired self-role cooldowns every 5 minutes
-- **Reminder Scheduler** — Checks and sends due reminders at a configurable interval (default 60s), with deduplication
+## 🔧 Configuration
+
+clouder reads its config from `.env`. The four Discord values plus the three web secrets are required;
+LLM, GitHub, embed color, and scheduler settings are optional. See the
+[**Configuration**](https://github.com/uwuclxdy/clouder/wiki/Configuration) page for the full reference.
+
+## 📄 License
+
+No license has been declared yet. Until one is added, all rights are reserved by the author.
+
+---
+
+<div align="center">
+<sub>Built with 🦀 Rust, Serenity, Poise, and Axum.</sub>
+</div>

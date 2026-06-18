@@ -40,13 +40,19 @@
                 grid.innerHTML = '<p class="empty-state">checking your servers\u2026</p>';
             }
 
+            const showError = () => {
+                if (!hasCache) {
+                    grid.innerHTML = '<p class="empty-state">couldn\u2019t reach Discord. <a href="#" onclick="location.reload();return false;">retry</a></p>';
+                }
+            };
+
             let data;
             try {
-                const resp = await fetch('/api/guilds/refresh', { method: 'POST' });
-                if (resp.status === 401) { location.href = '/auth/logout'; return; }
-                if (!resp.ok) return;
+                const resp = await apiFetch('POST', '/api/guilds/refresh');
+                if (!resp.ok) { showError(); return; }
                 data = await resp.json();
             } catch (_) {
+                showError();
                 return;
             }
 

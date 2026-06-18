@@ -110,6 +110,13 @@ impl LlmClient {
         let content = chat_response.choices[0].message.content.clone();
         let cleaned = clean_response_tokens(&content);
 
+        // Some models (e.g. reasoning models that spend the whole budget thinking, or
+        // refusals) return an empty content field; sending that to Discord errors out.
+        if cleaned.trim().is_empty() {
+            warn!("llm returned empty content");
+            return Ok("no response generated.".to_string());
+        }
+
         debug!("llm response: {}", cleaned);
         Ok(cleaned)
     }

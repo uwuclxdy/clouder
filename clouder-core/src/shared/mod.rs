@@ -1227,6 +1227,10 @@ pub async fn refresh_guild_cache(
         fetch_discord_user_guilds(access_token),
         fetch_bot_guild_ids(&state.config.discord.token),
     );
+    // Surface transient Discord failures instead of treating them as "no guilds":
+    // an empty result would otherwise wipe the cache below and hide real servers.
+    let user_guilds = user_guilds?;
+    let bot_guild_ids = bot_guild_ids?;
 
     let mut mutual_guilds: Vec<models::GuildCacheEntry> = user_guilds
         .iter()
@@ -1284,52 +1288,43 @@ pub async fn refresh_guild_cache(
     Ok((mutual_guilds, updated))
 }
 
-async fn fetch_discord_user_guilds(access_token: &str) -> Vec<Value> {
+async fn fetch_discord_user_guilds(access_token: &str) -> Result<Vec<Value>, String> {
     let client = reqwest::Client::new();
-    match client
+    let resp = client
         .get("https://discord.com/api/v10/users/@me/guilds?limit=200")
         .bearer_auth(access_token)
         .send()
         .await
-    {
-        Ok(resp) if resp.status().is_success() => {
-            resp.json::<Vec<Value>>().await.unwrap_or_default()
-        }
-        Ok(resp) => {
-            warn!("discord user guilds: unexpected status {}", resp.status());
-            vec![]
-        }
-        Err(e) => {
-            warn!("failed to fetch user guilds: {}", e);
-            vec![]
-        }
+        .map_err(|e| format!("failed to fetch user guilds: {}", e))?;
+    let status = resp.status();
+    if !status.is_success() {
+        return Err(format!("discord user guilds: unexpected status {}", status));
     }
+    resp.json::<Vec<Value>>()
+        .await
+        .map_err(|e| format!("failed to parse user guilds: {}", e))
 }
 
-async fn fetch_bot_guild_ids(bot_token: &str) -> std::collections::HashSet<String> {
+async fn fetch_bot_guild_ids(bot_token: &str) -> Result<std::collections::HashSet<String>, String> {
     let client = reqwest::Client::new();
-    match client
+    let resp = client
         .get("https://discord.com/api/v10/users/@me/guilds?limit=200")
         .header("Authorization", format!("Bot {}", bot_token))
         .send()
         .await
-    {
-        Ok(resp) if resp.status().is_success() => {
-            let guilds: Vec<Value> = resp.json().await.unwrap_or_default();
-            guilds
-                .iter()
-                .filter_map(|g| g["id"].as_str().map(String::from))
-                .collect()
-        }
-        Ok(resp) => {
-            warn!("bot guild list: unexpected status {}", resp.status());
-            std::collections::HashSet::new()
-        }
-        Err(e) => {
-            warn!("failed to fetch bot guilds: {}", e);
-            std::collections::HashSet::new()
-        }
+        .map_err(|e| format!("failed to fetch bot guilds: {}", e))?;
+    let status = resp.status();
+    if !status.is_success() {
+        return Err(format!("bot guild list: unexpected status {}", status));
     }
+    let guilds: Vec<Value> = resp
+        .json()
+        .await
+        .map_err(|e| format!("failed to parse bot guilds: {}", e))?;
+    Ok(guilds
+        .iter()
+        .filter_map(|g| g["id"].as_str().map(String::from))
+        .collect())
 }
 
 // Uwufy functions

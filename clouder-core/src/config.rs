@@ -95,6 +95,7 @@ pub struct LlmConfig {
     pub timeout_seconds: u64,
     pub system_prompt: String,
     pub stop: String,
+    pub reasoning_effort: Option<String>,
     pub allowed_users: Vec<u64>,
     pub dm_allowed_users: Vec<u64>,
     pub no_cooldown_users: Vec<u64>,
@@ -270,6 +271,9 @@ impl Config {
 
         let llm_system_prompt = env::var("LLM_SYSTEM_PROMPT").unwrap_or_default();
         let llm_stop = env::var("LLM_STOP").unwrap_or_default();
+        let llm_reasoning_effort = env::var("LLM_REASONING_EFFORT")
+            .ok()
+            .filter(|s| !s.trim().is_empty());
 
         let parse_user_ids = |env_var: &str| -> Vec<u64> {
             env::var(env_var)
@@ -325,6 +329,7 @@ impl Config {
                 timeout_seconds: llm_timeout_seconds,
                 system_prompt: llm_system_prompt,
                 stop: llm_stop,
+                reasoning_effort: llm_reasoning_effort,
                 allowed_users: llm_allowed_users,
                 dm_allowed_users: llm_dm_allowed_users,
                 no_cooldown_users: llm_no_cooldown_users,
@@ -376,6 +381,7 @@ impl Config {
                 timeout_seconds: DEFAULT_LLM_TIMEOUT_SECONDS,
                 system_prompt: String::new(),
                 stop: String::new(),
+                reasoning_effort: None,
                 allowed_users: vec![],
                 dm_allowed_users: vec![],
                 no_cooldown_users: vec![],

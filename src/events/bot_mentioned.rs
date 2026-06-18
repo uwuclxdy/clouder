@@ -211,6 +211,7 @@ async fn handle_llm_request(
             } else {
                 Some(&data.config.llm.stop)
             },
+            data.config.llm.reasoning_effort.as_deref(),
         )
         .await?;
 
@@ -524,6 +525,7 @@ pub async fn handle_ai_retry_interaction(
             } else {
                 Some(&data.config.llm.stop)
             },
+            data.config.llm.reasoning_effort.as_deref(),
         )
         .await
     {

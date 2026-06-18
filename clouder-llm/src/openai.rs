@@ -13,6 +13,11 @@ struct ChatRequest {
     temperature: f32,
     max_tokens: u32,
     stop: Option<Vec<String>>,
+    // OpenAI-standard reasoning control; "none" disables thinking on reasoning models
+    // (e.g. via Ollama), which otherwise spend the whole token budget thinking and
+    // return empty content. Omitted entirely when unset.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    reasoning_effort: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -61,6 +66,7 @@ impl LlmClient {
         temperature: f32,
         max_tokens: u32,
         stop: Option<&str>,
+        reasoning_effort: Option<&str>,
     ) -> Result<String> {
         let url = format!("{}/chat/completions", self.base_url.trim_end_matches('/'));
 
@@ -74,6 +80,9 @@ impl LlmClient {
             temperature,
             max_tokens,
             stop: stop_sequences,
+            reasoning_effort: reasoning_effort
+                .filter(|s| !s.trim().is_empty())
+                .map(|s| s.to_string()),
         };
 
         debug!("llm request: {} model {}", url, model);
@@ -206,6 +215,7 @@ mod tests {
             temperature: 0.7,
             max_tokens: 100,
             stop: Some(vec!["STOP".to_string(), "END".to_string()]),
+            reasoning_effort: None,
         };
 
         let request_without_stop = ChatRequest {
@@ -217,6 +227,7 @@ mod tests {
             temperature: 0.7,
             max_tokens: 100,
             stop: None,
+            reasoning_effort: None,
         };
 
         // Test that both serialize correctly

@@ -68,6 +68,7 @@ Set `LLM_PROVIDER` to enable. Leave it unset to disable LLM responses entirely.
 | `LLM_TIMEOUT_SECONDS` | `30` | Request timeout |
 | `LLM_SYSTEM_PROMPT` | empty | System prompt prepended to every request |
 | `LLM_STOP` | empty | Stop sequence |
+| `LLM_REASONING_EFFORT` | unset | Reasoning effort passed to the provider (`low`, `medium`, `high`, `none`). Omitted when unset. Set to `none` to disable thinking on reasoning models (e.g. Ollama qwen) that otherwise exhaust the token budget thinking and return empty content |
 | `LLM_ALLOWED_USERS` | empty | Comma-separated user IDs allowed to trigger replies in servers |
 | `LLM_DM_ALLOWED_USERS` | empty | Comma-separated user IDs allowed to trigger replies in DMs |
 | `LLM_NO_COOLDOWN_USERS` | empty | Comma-separated user IDs exempt from the per-user cooldown |
